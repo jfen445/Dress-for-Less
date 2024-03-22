@@ -16,3 +16,15 @@ export type ProfileType = {
   socialLinks: string[];
   skills: string[];
 };
+
+export type DressType = {
+  _id: string;
+  name: string;
+  description: string;
+  size: string;
+  images: {
+    alt: string;
+    image: string;
+  }[];
+  tags: String[];
+};

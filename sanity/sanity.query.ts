@@ -18,3 +18,16 @@ export async function getProfile() {
     }`
   );
 }
+
+export async function getDress() {
+  return client.fetch(
+    groq`*[_type == "dress"]{
+      _id,
+      name,
+      description,
+      "images": images[].asset->url,
+      size,
+      tags
+    }`
+  );
+}
