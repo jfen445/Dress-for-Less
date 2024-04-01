@@ -11,10 +11,7 @@ export default async function Home() {
 
   return (
     <main className="bg-white">
-      <MobileNav />
-      <Navigation />
       <HomePage />
-      <Footer />
     </main>
   );
 }

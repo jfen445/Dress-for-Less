@@ -22,9 +22,11 @@ export type DressType = {
   name: string;
   description: string;
   size: string;
-  images: {
-    alt: string;
-    image: string;
-  }[];
-  tags: String[];
+  images: string[];
+  tags: { _type: string; label: string; _key: string }[];
+};
+
+export type ImageType = {
+  src: string;
+  alt: string;
 };

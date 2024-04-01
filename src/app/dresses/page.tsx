@@ -147,7 +147,6 @@ const DressPage = async () => {
 
   return (
     <div className="bg-white">
-      <Navigation />
       <main>
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
           <div className="py-24 text-center">
@@ -363,7 +362,6 @@ const DressPage = async () => {
           </section>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

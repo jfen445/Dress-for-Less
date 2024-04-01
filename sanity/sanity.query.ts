@@ -19,9 +19,22 @@ export async function getProfile() {
   );
 }
 
-export async function getDress() {
+export async function getAllDresses() {
   return client.fetch(
     groq`*[_type == "dress"]{
+      _id,
+      name,
+      description,
+      "images": images[].asset->url,
+      size,
+      tags
+    }`
+  );
+}
+
+export async function getDress(id: string) {
+  return client.fetch(
+    groq`*[_type == "dress" && _id == "${id}"][0]{
       _id,
       name,
       description,
