@@ -1,5 +1,6 @@
 "use client";
 
+import { redirect } from "next/navigation";
 import * as React from "react";
 
 const LoginComponent = () => {
@@ -11,6 +12,32 @@ const LoginComponent = () => {
     console.log("submitted", event, username, password);
   };
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const formElements = form.elements as typeof form.elements & {
+      email: { value: string };
+      password: { value: string };
+    };
+
+    const email = formElements.email.value;
+    const password = formElements.password.value;
+
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (response.ok) {
+      // redirect("/dresses");
+      console.log("hgello");
+    } else {
+      // Handle errors
+    }
+  }
+
   return (
     <>
       <div className="bg-white flex min-h-full h-[80vh] flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -21,7 +48,11 @@ const LoginComponent = () => {
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form className="space-y-6" action="#" method="POST">
+          <form
+            className="space-y-6"
+            method="POST"
+            onSubmit={(e) => handleSubmit(e)}
+          >
             <div>
               <label
                 htmlFor="email"
@@ -75,7 +106,7 @@ const LoginComponent = () => {
             <div>
               <button
                 type="submit"
-                onClick={(e) => onSubmit(e)}
+                // onClick={(e) => handleSubmit(e)}
                 className="flex w-full justify-center rounded-md bg-rose-300 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Sign in
