@@ -58,28 +58,29 @@ const Product = () => {
   const [images, setImages] = React.useState<ImageType[]>([]);
 
   const params = useParams<{ id: string }>();
-  console.log("param", params, params.id);
 
   React.useEffect(() => {
-    getDress(params.id).then((data) => {
-      console.log("IS THIS OWRKING", data);
-      setDress(data);
+    if (params) {
+      getDress(params.id).then((data) => {
+        console.log("IS THIS OWRKING", data);
+        setDress(data);
 
-      var obj = data.images.reduce(function (
-        acc: { [x: string]: any },
-        cur: any,
-        i: string | number
-      ) {
-        var o = { src: cur, alt: data.name + cur };
-        acc[i] = o;
-        return acc;
-      },
-      []);
+        var obj = data.images.reduce(function (
+          acc: { [x: string]: any },
+          cur: any,
+          i: string | number
+        ) {
+          var o = { src: cur, alt: data.name + cur };
+          acc[i] = o;
+          return acc;
+        },
+        []);
 
-      setImages(obj);
-      console.log("huhuhuh", obj);
-    });
-  }, [params.id]);
+        setImages(obj);
+        console.log("huhuhuh", obj);
+      });
+    }
+  }, [params, params?.id]);
 
   return (
     <div className="bg-white">

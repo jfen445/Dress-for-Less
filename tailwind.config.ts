@@ -7,6 +7,8 @@ const colors = {
     "custom-yellow": {
       "500": "#EDAE0A",
     },
+    "primary-pink": "#fda4af",
+    "secondary-pink": "#881337",
   },
 };
 

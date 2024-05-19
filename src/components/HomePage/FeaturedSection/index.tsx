@@ -21,9 +21,9 @@ const FeaturedSection = () => {
             Long-term thinking
           </h2>
           <p className="mt-3 text-xl text-white">
-            We're committed to responsible, sustainable, and ethical
+            We are committed to responsible, sustainable, and ethical
             manufacturing. Our small-scale approach allows us to focus on
-            quality and reduce our impact. We're doing our best to delay the
+            quality and reduce our impact. We are doing our best to delay the
             inevitable heat-death of the universe.
           </p>
           <a

@@ -84,7 +84,7 @@ const LoginComponent = () => {
                 <div className="text-sm">
                   <a
                     href="#"
-                    className="font-semibold text-rose-900 hover:text-indigo-500"
+                    className="font-semibold text-secondary-pink hover:text-indigo-500"
                   >
                     Forgot password?
                   </a>
@@ -107,22 +107,22 @@ const LoginComponent = () => {
               <button
                 type="submit"
                 // onClick={(e) => handleSubmit(e)}
-                className="flex w-full justify-center rounded-md bg-rose-300 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="flex w-full justify-center rounded-md bg-primary-pink px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Sign in
               </button>
             </div>
           </form>
 
-          {/* <p className="mt-10 text-center text-sm text-gray-500">
+          <p className="mt-10 text-center text-sm text-gray-500">
             Not a member?{" "}
             <a
-              href="#"
+              href="/create"
               className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
             >
-              Start a 14 day free trial
+              Create an account today
             </a>
-          </p> */}
+          </p>
         </div>
       </div>
     </>
