@@ -13,6 +13,8 @@
     "@heroicons/react": "^2.1.1",
     "@sanity/image-url": "^1.0.2",
     "@sanity/vision": "^3.34.0",
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^5.1.1",
     "cookie": "^0.6.0",
     "jose": "^5.2.4",
     "mongodb": "^6.5.0",

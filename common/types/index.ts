@@ -17,6 +17,15 @@ export type ProfileType = {
   skills: string[];
 };
 
+export type UserType = {
+  mongoID?: string;
+  name: string;
+  email: string;
+  password: string;
+  mobileNumber: string;
+  instagramHandle?: string;
+};
+
 export type DressType = {
   _id: string;
   name: string;

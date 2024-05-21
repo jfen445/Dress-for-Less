@@ -7,9 +7,9 @@ const userSchema = new Schema({
   password: { type: String, required: true },
   name: { type: String, required: true },
   mobileNumber: { type: String, required: true },
-  instagramHandle: { type: String, required: true },
+  instagramHandle: { type: String, required: false },
 });
 
-const UserSchema = mongoose.model("Users", userSchema);
+const UserSchema = mongoose.models.Users ?? mongoose.model("Users", userSchema);
 
 export { UserSchema };

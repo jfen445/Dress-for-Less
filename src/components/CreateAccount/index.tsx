@@ -5,19 +5,11 @@ import * as React from "react";
 import Input from "../Input";
 import { SignupButton } from "../SignupButton";
 import Button from "../Button";
+import { UserType } from "../../../common/types";
+import { useRouter } from "next/navigation";
 
 const CreateAccountComponent = () => {
-  const [email, setEmail] = React.useState<String>("");
-  const [firstName, setFirstName] = React.useState<String>("");
-  const [lastName, setLastName] = React.useState<String>("");
-  const [password, setPassword] = React.useState<String>("");
-  const [file, setFile] = React.useState<String>("");
-
-  const onSubmit = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault();
-    console.log("submitted", event, firstName, password);
-  };
-
+  const router = useRouter();
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -28,28 +20,50 @@ const CreateAccountComponent = () => {
       lastname: { value: string };
       email: { value: string };
       password: { value: string };
+      mobileNumber: { value: string };
+      instagramHandle: { value: string };
       image: { value: string };
     };
 
     const email = formElements.email.value;
     const password = formElements.password.value;
-    const firstname = formElements.firstname.value;
+    const name =
+      formElements.firstname.value + " " + formElements.lastname.value;
     const lastname = formElements.lastname.value;
+    const mobileNumber = formElements.mobileNumber.value;
+    const instagramHandle = formElements.instagramHandle.value;
     const file = formElements.image.value;
-    console.log("form", email, password, firstname, lastname, file);
+    console.log(
+      "form",
+      email,
+      password,
 
-    // const response = await fetch("/api/auth/login", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ username, password }),
-    // });
+      lastname,
+      mobileNumber,
+      instagramHandle,
+      file,
+      name
+    );
 
-    // if (response.ok) {
-    //   // redirect("/dresses");
-    //   console.log("hgello");
-    // } else {
-    //   // Handle errors
-    // }
+    const user: UserType = {
+      email: formElements.email.value,
+      name: formElements.firstname.value + " " + formElements.lastname.value,
+      password: formElements.password.value,
+      mobileNumber: formElements.mobileNumber.value,
+      instagramHandle: formElements.instagramHandle.value ?? "",
+    };
+
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user }),
+    });
+
+    if (response.ok) {
+      router.push("/login");
+    } else {
+      // Handle errors
+    }
   }
 
   return (
@@ -113,6 +127,40 @@ const CreateAccountComponent = () => {
 
               <div className="sm:col-span-3">
                 <label
+                  htmlFor="first-name"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  Mobile
+                </label>
+                <div className="mt-2">
+                  <Input
+                    type="tel"
+                    id="mobileNumber"
+                    name="mobileNumber"
+                    pattern="[0-9]*"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-3">
+                <label
+                  htmlFor="first-name"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  Instagram Handle
+                </label>
+                <div className="mt-2">
+                  <Input
+                    type="text"
+                    name="instagramHandle"
+                    id="instagramHandle"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-3">
+                <label
                   htmlFor="country"
                   className="block text-sm font-medium leading-6 text-gray-900"
                 >
@@ -147,7 +195,7 @@ const CreateAccountComponent = () => {
               </div>
             </div>
             <div className="sm:col-span-3 mx-auto">
-              <button type="submit">Create</button>
+              <Button type="submit">Create</Button>
             </div>
           </div>
         </form>

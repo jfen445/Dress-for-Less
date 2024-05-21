@@ -1,24 +1,29 @@
+import { dbConnect, disconnect } from "../../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
-
-import { serialize } from "cookie";
-import { encrypt } from "../../../lib";
+import { createUser } from "../../../lib/db/user-dao";
+import { IUser } from "../../../common/interfaces/user";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { name, email, password, country } = req.body;
-  // await signIn('credentials', { email, password })
+  const con = await dbConnect();
+  console.log("hit db connect", new Date().getSeconds(), con);
+  // return new NextResponse("connected and disconnected");
 
-  const sessionData = req.body;
-  const encryptedSessionData = encrypt(sessionData);
+  let user: IUser = {
+    email: req.body.user.email,
+    name: req.body.user.name,
+    password: req.body.user.password,
+    mobileNumber: req.body.user.mobileNumber,
+    instagramHandle: req.body.user.instagramHandle,
+  };
 
-  const cookie = serialize("session", await encryptedSessionData, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60, // One hour
-    path: "/",
-  });
-  res.setHeader("Set-Cookie", cookie);
-  res.status(200).json({ message: "Successfully set cookie!" });
+  const newUser = await createUser(user);
+
+  await disconnect();
+
+  res.status(200).json(newUser);
+
+  //   return NextResponse.json({ messsage: "Hello World" });
 }
