@@ -15,3 +15,9 @@ export async function createUser(user: UserType) {
 
   return newUser;
 }
+
+export async function findUser(email: String) {
+  // const hashedPassword = await bcrypt.hash(user.password, 10);
+
+  return UserSchema.find({ email }, "email");
+}

@@ -7,9 +7,13 @@ import { SignupButton } from "../SignupButton";
 import Button from "../Button";
 import { UserType } from "../../../common/types";
 import { useRouter } from "next/navigation";
+import Toast from "../Toast";
 
 const CreateAccountComponent = () => {
   const router = useRouter();
+  const [err, setErr] = React.useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = React.useState<string>("");
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -57,18 +61,32 @@ const CreateAccountComponent = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user }),
-    });
-
-    if (response.ok) {
-      router.push("/login");
-    } else {
-      // Handle errors
-    }
+    })
+      .then((res) => {
+        if (res.ok) {
+          router.push("/login");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("eafdefd", data.message);
+        setErrorMessage(data.message);
+        setErr(true);
+      })
+      .catch((err) => {
+        console.log("error", err);
+      });
   }
 
   return (
     <>
       <div className="bg-white">
+        <Toast
+          show={err}
+          setShow={setErr}
+          title={errorMessage}
+          variant="warning"
+        />
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Create your account today!
@@ -85,7 +103,7 @@ const CreateAccountComponent = () => {
                   First name
                 </label>
                 <div className="mt-2">
-                  <Input type="text" name="firstname" id="firstname" />
+                  <Input type="text" name="firstname" id="firstname" required />
                 </div>
               </div>
 
@@ -97,7 +115,7 @@ const CreateAccountComponent = () => {
                   Last name
                 </label>
                 <div className="mt-2">
-                  <Input type="text" name="lastname" id="lastname" />
+                  <Input type="text" name="lastname" id="lastname" required />
                 </div>
               </div>
 
@@ -109,7 +127,7 @@ const CreateAccountComponent = () => {
                   Email address
                 </label>
                 <div className="mt-2">
-                  <Input type="email" name="email" id="email" />
+                  <Input type="email" name="email" id="email" required />
                 </div>
               </div>
 
@@ -121,7 +139,7 @@ const CreateAccountComponent = () => {
                   Password
                 </label>
                 <div className="mt-2">
-                  <Input type="text" name="password" id="password" />
+                  <Input type="text" name="password" id="password" required />
                 </div>
               </div>
 
@@ -190,7 +208,7 @@ const CreateAccountComponent = () => {
                   security reasons.
                 </text>
                 <div className="mt-2">
-                  <Input type="file" id="image" name="image" />
+                  <Input type="file" id="image" name="image" required />
                 </div>
               </div>
             </div>
