@@ -11,7 +11,7 @@ import Toast from "../Toast";
 
 const CreateAccountComponent = () => {
   const router = useRouter();
-  const [err, setErr] = React.useState<boolean>(true);
+  const [err, setErr] = React.useState<boolean>(false);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

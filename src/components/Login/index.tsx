@@ -1,16 +1,15 @@
 "use client";
 
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import * as React from "react";
+import Toast from "../Toast";
 
 const LoginComponent = () => {
+  const router = useRouter();
   const [username, setUsername] = React.useState<String>("");
   const [password, setPassword] = React.useState<String>("");
-
-  const onSubmit = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault();
-    console.log("submitted", event, username, password);
-  };
+  const [err, setErr] = React.useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = React.useState<string>("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,20 +26,33 @@ const LoginComponent = () => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (response.ok) {
-      // redirect("/dresses");
-      console.log("hgello");
-    } else {
-      // Handle errors
-    }
+      body: JSON.stringify({ email, password }),
+    })
+      .then((res) => {
+        if (res.ok) {
+          router.push("/dresses");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("eafdefd", data.message);
+        setErrorMessage(data.message);
+        setErr(true);
+      })
+      .catch((err) => {
+        console.log("error", err);
+      });
   }
 
   return (
     <>
       <div className="bg-white flex min-h-full h-[80vh] flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+        <Toast
+          show={err}
+          setShow={setErr}
+          title={errorMessage}
+          variant="error"
+        />
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Sign in to your account
