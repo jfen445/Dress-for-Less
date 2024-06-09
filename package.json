@@ -14,6 +14,7 @@
     "@sanity/image-url": "^1.0.2",
     "@sanity/vision": "^3.34.0",
     "@types/bcrypt": "^5.0.2",
+    "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
     "cookie": "^0.6.0",
     "heroicons": "^2.1.3",
