@@ -3,9 +3,15 @@
 import { redirect, useRouter } from "next/navigation";
 import * as React from "react";
 import Toast from "../Toast";
+import { getUser, logUserIn } from "@/api/user";
+import { useUserAuth } from "@/context/UserAuthContext";
+import { UserType } from "../../../common/types";
+import { useUserContext } from "@/context/UserContext";
 
 const LoginComponent = () => {
   const router = useRouter();
+  const { user, setUser, login } = useUserAuth();
+  const { userInfo } = useUserContext();
   const [username, setUsername] = React.useState<String>("");
   const [password, setPassword] = React.useState<String>("");
   const [err, setErr] = React.useState<boolean>(false);
@@ -23,26 +29,22 @@ const LoginComponent = () => {
     const email = formElements.email.value;
     const password = formElements.password.value;
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-      .then((res) => {
-        if (res.ok) {
-          router.push("/dresses");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("eafdefd", data.message);
-        setErrorMessage(data.message);
-        setErr(true);
+    await logUserIn(email, password)
+      .then(async () => {
+        await getUser(email).then((res) => {
+          if (res === undefined) return;
+          const r = res.data as unknown as UserType;
+          setUser(r);
+        });
+        // router.push("/dresses");
       })
       .catch((err) => {
-        console.log("error", err);
+        setErrorMessage(err.message);
+        setErr(true);
       });
   }
+
+  console.log("userrrrrr", user);
 
   return (
     <>

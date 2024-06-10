@@ -4,6 +4,8 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
+import UserAuthContextProvider from "@/context/UserAuthContext";
+import UserContextProvider from "@/context/UserContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,10 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className + " bg-white "}>
-        <Navigation />
-        <MobileNav />
-        {children}
-        <Footer />
+        <UserAuthContextProvider>
+          <UserContextProvider>
+            <Navigation />
+            <MobileNav />
+            {children}
+            <Footer />
+          </UserContextProvider>
+        </UserAuthContextProvider>
       </body>
     </html>
   );

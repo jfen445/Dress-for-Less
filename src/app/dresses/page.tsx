@@ -3,7 +3,7 @@ import Navigation from "@/components/Navigation";
 import { Menu, Popover, Transition } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import * as React from "react";
-import { DressType } from "../../../types";
+import { DressType } from "../../../common/types";
 import { getDress } from "../../../sanity/sanity.query";
 import DressGrid from "@/components/DressPage/DressGrid";
 
@@ -146,20 +146,21 @@ const DressPage = async () => {
   // const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
 
   return (
-    <div className="bg-white">
-      <main>
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-          <div className="py-24 text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-              New Arrivals
-            </h1>
-            <p className="mx-auto mt-4 max-w-3xl text-base text-gray-500">
-              Find a dress for any occasion.
-            </p>
-          </div>
+    <>
+      <div className="bg-white">
+        <main>
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
+            <div className="py-24 text-center">
+              <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+                New Arrivals
+              </h1>
+              <p className="mx-auto mt-4 max-w-3xl text-base text-gray-500">
+                Find a dress for any occasion.
+              </p>
+            </div>
 
-          {/* Filters */}
-          {/* <section
+            {/* Filters */}
+            {/* <section
             aria-labelledby="filter-heading"
             className="border-t border-gray-200 pt-6"
           >
@@ -282,87 +283,88 @@ const DressPage = async () => {
             </div>
           </section> */}
 
-          {/* Product grid */}
-          <section aria-labelledby="products-heading" className="mt-8">
-            <h2 id="products-heading" className="sr-only">
-              Products
-            </h2>
-            <DressGrid />
-          </section>
+            {/* Product grid */}
+            <section aria-labelledby="products-heading" className="mt-8">
+              <h2 id="products-heading" className="sr-only">
+                Products
+              </h2>
+              <DressGrid />
+            </section>
 
-          <section
-            aria-labelledby="featured-heading"
-            className="relative mt-16 overflow-hidden rounded-lg lg:h-96"
-          >
-            <div className="absolute inset-0">
-              <img
-                src="https://tailwindui.com/img/ecommerce-images/category-page-01-featured-collection.jpg"
-                alt=""
-                className="h-full w-full object-cover object-center"
-              />
-            </div>
-            <div
-              aria-hidden="true"
-              className="relative h-96 w-full lg:hidden"
-            />
-            <div
-              aria-hidden="true"
-              className="relative h-32 w-full lg:hidden"
-            />
-            <div className="absolute inset-x-0 bottom-0 rounded-bl-lg rounded-br-lg bg-black bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:items-center sm:justify-between lg:inset-x-auto lg:inset-y-0 lg:w-96 lg:flex-col lg:items-start lg:rounded-br-none lg:rounded-tl-lg">
-              <div>
-                <h2
-                  id="featured-heading"
-                  className="text-xl font-bold text-white"
-                >
-                  Workspace Collection
-                </h2>
-                <p className="mt-1 text-sm text-gray-300">
-                  Upgrade your desk with objects that keep you organized and
-                  clear-minded.
-                </p>
+            <section
+              aria-labelledby="featured-heading"
+              className="relative mt-16 overflow-hidden rounded-lg lg:h-96"
+            >
+              <div className="absolute inset-0">
+                <img
+                  src="https://tailwindui.com/img/ecommerce-images/category-page-01-featured-collection.jpg"
+                  alt=""
+                  className="h-full w-full object-cover object-center"
+                />
               </div>
-              <a
-                href="#"
-                className="mt-6 flex flex-shrink-0 items-center justify-center rounded-md border border-white border-opacity-25 bg-white bg-opacity-0 px-4 py-3 text-base font-medium text-white hover:bg-opacity-10 sm:ml-8 sm:mt-0 lg:ml-0 lg:w-full"
-              >
-                View the collection
-              </a>
-            </div>
-          </section>
-
-          <section
-            aria-labelledby="more-products-heading"
-            className="mt-16 pb-24"
-          >
-            <h2 id="more-products-heading" className="sr-only">
-              More products
-            </h2>
-
-            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-              {products2.map((product) => (
-                <a key={product.id} href={product.href} className="group">
-                  <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2">
-                    <img
-                      src={product.imageSrc}
-                      alt={product.imageAlt}
-                      className="h-full w-full object-cover object-center group-hover:opacity-75"
-                    />
-                  </div>
-                  <div className="mt-4 flex items-center justify-between text-base font-medium text-gray-900">
-                    <h3>{product.name}</h3>
-                    <p>{product.price}</p>
-                  </div>
-                  <p className="mt-1 text-sm italic text-gray-500">
-                    {product.description}
+              <div
+                aria-hidden="true"
+                className="relative h-96 w-full lg:hidden"
+              />
+              <div
+                aria-hidden="true"
+                className="relative h-32 w-full lg:hidden"
+              />
+              <div className="absolute inset-x-0 bottom-0 rounded-bl-lg rounded-br-lg bg-black bg-opacity-75 p-6 backdrop-blur backdrop-filter sm:flex sm:items-center sm:justify-between lg:inset-x-auto lg:inset-y-0 lg:w-96 lg:flex-col lg:items-start lg:rounded-br-none lg:rounded-tl-lg">
+                <div>
+                  <h2
+                    id="featured-heading"
+                    className="text-xl font-bold text-white"
+                  >
+                    Workspace Collection
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-300">
+                    Upgrade your desk with objects that keep you organized and
+                    clear-minded.
                   </p>
+                </div>
+                <a
+                  href="#"
+                  className="mt-6 flex flex-shrink-0 items-center justify-center rounded-md border border-white border-opacity-25 bg-white bg-opacity-0 px-4 py-3 text-base font-medium text-white hover:bg-opacity-10 sm:ml-8 sm:mt-0 lg:ml-0 lg:w-full"
+                >
+                  View the collection
                 </a>
-              ))}
-            </div>
-          </section>
-        </div>
-      </main>
-    </div>
+              </div>
+            </section>
+
+            <section
+              aria-labelledby="more-products-heading"
+              className="mt-16 pb-24"
+            >
+              <h2 id="more-products-heading" className="sr-only">
+                More products
+              </h2>
+
+              <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+                {products2.map((product) => (
+                  <a key={product.id} href={product.href} className="group">
+                    <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2">
+                      <img
+                        src={product.imageSrc}
+                        alt={product.imageAlt}
+                        className="h-full w-full object-cover object-center group-hover:opacity-75"
+                      />
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-base font-medium text-gray-900">
+                      <h3>{product.name}</h3>
+                      <p>{product.price}</p>
+                    </div>
+                    <p className="mt-1 text-sm italic text-gray-500">
+                      {product.description}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </>
   );
 };
 

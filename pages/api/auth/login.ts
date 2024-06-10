@@ -31,7 +31,7 @@ export default async function handler(
   const match = await bcrypt.compareSync(password, users[0].password);
 
   if (match) {
-    const cookie = serialize("session", await encryptedSessionData, {
+    const cookie = serialize("currentUser", await encryptedSessionData, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60, // One hour

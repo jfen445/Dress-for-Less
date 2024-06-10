@@ -1,4 +1,7 @@
+"use client";
 import LoginComponent from "@/components/Login";
+import UserAuthContextProvider from "@/context/UserAuthContext";
+import UserContextProvider from "@/context/UserContext";
 import * as React from "react";
 
 const LoginPage = () => {

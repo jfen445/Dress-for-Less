@@ -317,6 +317,7 @@ const Navigation = () => {
                     <>
                       <a
                         id={item.id}
+                        key={item.id}
                         href={item.href}
                         className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                           isCurrentPage(item.href)

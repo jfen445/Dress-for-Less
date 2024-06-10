@@ -2,10 +2,15 @@
 
 import * as React from "react";
 import { getAllDresses } from "../../../../sanity/sanity.query";
-import { DressType } from "../../../../types";
 import Image from "next/image";
+import { useUserContext } from "@/context/UserContext";
+import { DressType } from "../../../../common/types";
+import { useUserAuth } from "@/context/UserAuthContext";
 
 const DressGrid = () => {
+  const { userInfo } = useUserContext();
+  const { user } = useUserAuth();
+  console.log("please work", userInfo, user);
   const [dresses, setDresses] = React.useState<DressType[]>([]);
 
   console.log("dress here ", dresses);
