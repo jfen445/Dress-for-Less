@@ -1,5 +1,5 @@
 import { Tab } from "@headlessui/react";
-import { DressType, ImageType } from "../../../../types";
+import { ImageType } from "../../../../common/types";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");

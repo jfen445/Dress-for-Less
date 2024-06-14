@@ -7,6 +7,7 @@ import {
   ShoppingBagIcon,
   UserIcon,
 } from "@heroicons/react/16/solid";
+import Link from "next/link";
 import { Fragment, useState } from "react";
 
 // const navigation = {
@@ -304,13 +305,13 @@ const Navigation = () => {
             {/* Flyout menus */}
             <Popover.Group className="hidden lg:block lg:flex-1 lg:self-stretch">
               <div className="flex h-full space-x-8">
-                <a href="/" className="flex flex-shrink-0 items-center">
+                <Link href="/" className="flex flex-shrink-0 items-center">
                   <img
                     className="h-8 w-auto"
                     src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
                     alt="Your Company"
                   />
-                </a>
+                </Link>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   {/* Current: "border-indigo-500 text-gray-900", Default: "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" */}
                   {navItems.map((item) => (
@@ -345,26 +346,26 @@ const Navigation = () => {
 
             <div className="flex flex-1 items-center justify-end">
               {/* Search */}
-              <a
+              <Link
                 href="#"
                 className="ml-6 hidden p-2 text-gray-400 hover:text-gray-500 lg:block"
               >
                 <span className="sr-only">Search</span>
                 <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-              </a>
+              </Link>
 
               {/* Account */}
-              <a
+              <Link
                 href="/login"
                 className="p-2 text-gray-400 hover:text-gray-500 lg:ml-4"
               >
                 <span className="sr-only">Account</span>
                 <UserIcon className="h-6 w-6" aria-hidden="true" />
-              </a>
+              </Link>
 
               {/* Cart */}
               <div className="ml-4 flow-root lg:ml-6">
-                <a href="#" className="group -m-2 flex items-center p-2">
+                <Link href="#" className="group -m-2 flex items-center p-2">
                   <ShoppingBagIcon
                     className="h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
                     aria-hidden="true"
@@ -373,7 +374,7 @@ const Navigation = () => {
                     0
                   </span>
                   <span className="sr-only">items in cart, view bag</span>
-                </a>
+                </Link>
               </div>
             </div>
           </div>

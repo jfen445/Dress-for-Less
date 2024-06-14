@@ -3,8 +3,6 @@ import Navigation from "@/components/Navigation";
 import { Menu, Popover, Transition } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import * as React from "react";
-import { DressType } from "../../../common/types";
-import { getDress } from "../../../sanity/sanity.query";
 import DressGrid from "@/components/DressPage/DressGrid";
 
 const sortOptions = [
@@ -141,7 +139,7 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-const DressPage = async () => {
+const DressPage = () => {
   // const [, setMobileMenuOpen] = React.useState(false);
   // const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
 

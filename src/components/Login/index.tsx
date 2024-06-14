@@ -7,6 +7,7 @@ import { getUser, logUserIn } from "@/api/user";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { UserType } from "../../../common/types";
 import { useUserContext } from "@/context/UserContext";
+import Link from "next/link";
 
 const LoginComponent = () => {
   const router = useRouter();
@@ -130,12 +131,12 @@ const LoginComponent = () => {
 
           <p className="mt-10 text-center text-sm text-gray-500">
             Not a member?{" "}
-            <a
+            <Link
               href="/create"
               className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
             >
               Create an account today
-            </a>
+            </Link>
           </p>
         </div>
       </div>

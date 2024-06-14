@@ -24,7 +24,7 @@ import {
 import { RadioGroup } from "@headlessui/react";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { getDress } from "../../../../sanity/sanity.query";
-import { DressType, ImageType } from "../../../../types";
+import { DressType, ImageType } from "../../../../common/types";
 import ImageSelector from "../ImageSelector";
 
 const product = {
