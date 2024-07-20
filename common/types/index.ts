@@ -39,3 +39,8 @@ export type ImageType = {
   src: string;
   alt: string;
 };
+
+export type User = {
+  email: string;
+  name: string;
+};

@@ -8,15 +8,11 @@ type Props = {
   dataStore?: DataStore;
 };
 
-const IndexPage: NextPage = inject("dataStore")(
-  observer((props: Props) => {
-    const dataStore = props.dataStore!;
-
-    return (
-      <main className="bg-white">
-        <HomePage />
-      </main>
-    );
-  })
-);
+const IndexPage = () => {
+  return (
+    <main className="bg-white">
+      <HomePage />
+    </main>
+  );
+};
 export default IndexPage;

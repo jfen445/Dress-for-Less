@@ -12,16 +12,25 @@ type SerializedStore = {
 };
 
 export class DataStore {
-  title: string | undefined;
+  title: string | undefined = "title";
 
   hydrate(serializedStore: SerializedStore) {
     this.title = serializedStore.title != null ? serializedStore.title : "";
   }
 
   changeTitle(newTitle: string) {
+    console.log("new", newTitle);
     this.title = newTitle;
   }
+
+  getTitle() {
+    console.log("gtting", this.title);
+    return this.title;
+  }
 }
+
+const dataStore = new DataStore();
+export default dataStore;
 
 export async function fetchInitialStoreState() {
   // You can do anything to fetch initial store state

@@ -9,6 +9,8 @@ import {
 } from "@heroicons/react/16/solid";
 import Link from "next/link";
 import { Fragment, useState } from "react";
+import LoggedOnIcon from "./userIcon";
+import { useSession } from "next-auth/react";
 
 // const navigation = {
 //   categories: [
@@ -267,6 +269,7 @@ function classNames(...classes: string[]) {
 }
 
 const Navigation = () => {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
 
   const isCurrentPage = (href: string): Boolean => {
@@ -356,12 +359,16 @@ const Navigation = () => {
 
               {/* Account */}
               <Link
-                href="/login"
+                href={session ? "/account" : "/login"}
                 className="p-2 text-gray-400 hover:text-gray-500 lg:ml-4"
               >
                 <span className="sr-only">Account</span>
                 <UserIcon className="h-6 w-6" aria-hidden="true" />
               </Link>
+
+              <div>
+                <LoggedOnIcon />
+              </div>
 
               {/* Cart */}
               <div className="ml-4 flow-root lg:ml-6">

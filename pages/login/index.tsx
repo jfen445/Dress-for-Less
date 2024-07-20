@@ -2,6 +2,9 @@
 import LoginComponent from "@/components/Login";
 import UserAuthContextProvider from "@/context/UserAuthContext";
 import UserContextProvider from "@/context/UserContext";
+import { DataStore } from "@/stores/DataStore";
+import { inject, observer } from "mobx-react";
+import { NextPage } from "next";
 import * as React from "react";
 
 const LoginPage = () => {

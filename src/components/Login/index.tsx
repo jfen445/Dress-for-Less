@@ -1,5 +1,3 @@
-"use client";
-
 import { redirect, useRouter } from "next/navigation";
 import * as React from "react";
 import Toast from "../Toast";
@@ -9,7 +7,12 @@ import { UserType } from "../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import Link from "next/link";
 
+import { dataset } from "../../../sanity/env";
+import { useSession, signIn, signOut } from "next-auth/react";
+import Button from "../Button";
+
 const LoginComponent = () => {
+  const { data: session } = useSession();
   const router = useRouter();
   const { user, setUser, login } = useUserAuth();
   const { userInfo } = useUserContext();
@@ -45,8 +48,7 @@ const LoginComponent = () => {
       });
   }
 
-  console.log("userrrrrr", user);
-
+  console.log("why isthis nor working", session && session.user);
   return (
     <>
       <div className="bg-white flex min-h-full h-[80vh] flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -58,16 +60,14 @@ const LoginComponent = () => {
         />
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            Sign in to your account
+            {session && session.user
+              ? `Welcome ${session && session.user ? session.user.name : ""}`
+              : "Sign in to your account"}
           </h2>
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form
-            className="space-y-6"
-            method="POST"
-            onSubmit={(e) => handleSubmit(e)}
-          >
+          {/* <form className="space-y-6" method="POST" onSubmit={(e) => signIn()}>
             <div>
               <label
                 htmlFor="email"
@@ -127,17 +127,28 @@ const LoginComponent = () => {
                 Sign in
               </button>
             </div>
-          </form>
+          </form> */}
 
-          <p className="mt-10 text-center text-sm text-gray-500">
-            Not a member?{" "}
-            <Link
-              href="/create"
-              className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
-            >
-              Create an account today
+          {session ? (
+            <Link href="/dresses" className="group -m-2 flex items-center p-2">
+              <Button className="mx-auto w-full">Start browsing now!</Button>
             </Link>
-          </p>
+          ) : (
+            <>
+              <Button className="mx-auto w-full" onClick={() => signIn()}>
+                Click here to sign on wtih Google
+              </Button>
+              <p className="mt-10 text-center text-sm text-gray-500">
+                Not a member?{" "}
+                <Link
+                  href="/create"
+                  className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
+                >
+                  Create an account today
+                </Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </>
