@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { createUser, findUser } from "../../lib/db/user-dao";
 import { IUser } from "../../common/interfaces/user";
 import { UserType } from "../../common/types";
+import { UserSchema } from "../../lib/db/schema";
 
 export default async function handler(
   req: NextApiRequest,
@@ -23,8 +24,22 @@ export default async function handler(
     const userInfo = users[0] as UserType;
 
     res.status(200).json(userInfo);
-  } else {
-    // Handle any other HTTP method
+  } else if (req.method == "POST") {
+    const email: string = req.body.user.email;
+
+    let user: IUser = {
+      email: req.body.user.email,
+      name: req.body.user.name,
+      mobileNumber: req.body.user.mobileNumber,
+      instagramHandle: req.body.user.instagramHandle,
+    };
+
+    const filter = { email: email };
+    const options = { upsert: true };
+
+    await UserSchema.updateOne(filter, user, options);
+
+    res.status(200).json({ message: "Account created" });
   }
 
   //   return NextResponse.json({ messsage: "Hello World" });

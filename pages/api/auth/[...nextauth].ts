@@ -1,10 +1,19 @@
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import AppleProvider from "next-auth/providers/apple";
 import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      mobile: number;
+      instagramHandle: string;
+    } & DefaultSession["user"];
+  }
+}
 
 export const authOptions = {
   // Configure one or more authentication providers

@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 // import { decrypt } from "@/app/lib/session";
 import { decrypt } from "./lib";
 import { cookies } from "next/headers";
+import { getToken } from "next-auth/jwt";
 
 // 1. Specify protected and public routes
 const protectedRoutes = ["/dashboard"];
 const publicRoutes = ["/login", "/signup", "/"];
+
+export { default } from "next-auth/middleware";
+
+export const config = { matcher: ["/account"] };
 
 // export default async function middleware(req: NextRequest) {
 //   // 2. Check if the current route is protected or public
@@ -35,13 +40,14 @@ const publicRoutes = ["/login", "/signup", "/"];
 // }
 
 // Routes Middleware should not run on
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
-};
+// export const config = {
+//   matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
+// };
 //
 
-export function middleware(request: NextRequest) {
-  const currentUser = request.cookies.get("currentUser")?.value;
+export function middleware(request: NextRequest, response: NextResponse) {
+  const currentUser = request.cookies.get("next-auth.session-token")?.value;
+  // console.log("curent", currentUser);
 
   // if (currentUser && !request.nextUrl.pathname.startsWith("/")) {
   //   return Response.redirect(new URL("/", request.url));

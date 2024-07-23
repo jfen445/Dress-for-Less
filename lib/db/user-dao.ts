@@ -7,7 +7,6 @@ export async function createUser(user: UserType) {
 
   const newUser = await UserSchema.create({
     email: user.email,
-    password: user.password,
     name: user.name,
     mobileNumber: user.mobileNumber,
     instagramHandle: user.instagramHandle ?? "",
@@ -19,5 +18,5 @@ export async function createUser(user: UserType) {
 export async function findUser(email: String) {
   // const hashedPassword = await bcrypt.hash(user.password, 10);
 
-  return UserSchema.find({ email }, "email password");
+  return UserSchema.find({ email }, "email mobileNumber instagramHandle");
 }

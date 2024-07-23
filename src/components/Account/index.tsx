@@ -1,9 +1,19 @@
 import React from "react";
 import Input from "../Input";
 import { useSession } from "next-auth/react";
+import Button from "../Button";
+import router, { useRouter } from "next/router";
+import { UserType } from "../../../common/types";
+import { getUser } from "@/api/user";
+import Toast from "../Toast";
+import { redirect } from "next/navigation";
 
 const Account = () => {
+  const { push } = useRouter();
   const { data: session } = useSession();
+  const [mobile, setMobile] = React.useState<string>("");
+  const [instagramHandle, setInstagramHandle] = React.useState<string>("");
+  const [alert, setAlert] = React.useState<boolean>(false);
 
   const firstName =
     session && session.user && session.user.name
@@ -18,8 +28,75 @@ const Account = () => {
   const email =
     session && session.user && session.user.email ? session.user.email : "";
 
+  const profileImage =
+    session && session.user && session.user.image ? session.user.image : "";
+
+  React.useEffect(() => {
+    if (!session) {
+      push("/");
+    }
+
+    const getCurrentUser = async () => {
+      getUser(email).then((res) => {
+        console.log("resulttt", res);
+        if (res === undefined) return;
+
+        const user = res.data as unknown as UserType;
+        setMobile(user.mobileNumber);
+        setInstagramHandle(user.instagramHandle ?? "");
+      });
+    };
+
+    getCurrentUser();
+  }, [email]);
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    console.log("faefeawfaew", form);
+    const formElements = form.elements as typeof form.elements & {
+      firstname: { value: string };
+      lastname: { value: string };
+      email: { value: string };
+      mobile: { value: string };
+      instagramHandle: { value: string };
+    };
+
+    const user: UserType = {
+      email: formElements.email.value,
+      name: formElements.firstname.value + " " + formElements.lastname.value,
+      mobileNumber: formElements.mobile.value,
+      instagramHandle: formElements.instagramHandle.value ?? "",
+    };
+
+    await fetch("/api/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user }),
+    })
+      .then((res) => {
+        if (res.ok) {
+          setAlert(true);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("eafdefd", data.message);
+      })
+      .catch((err) => {
+        console.log("error", err);
+      });
+  };
+
   return (
     <main>
+      <Toast
+        show={alert}
+        setShow={setAlert}
+        title="Account saved"
+        variant="success"
+      />
       <div className="bg-white mx-auto grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
         <div>
           <h2 className="text-base font-semibold leading-7">
@@ -30,25 +107,14 @@ const Account = () => {
           </p>
         </div>
 
-        <form className="md:col-span-2">
+        <form className="md:col-span-2" onSubmit={onSubmit}>
           <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:max-w-xl sm:grid-cols-6">
             <div className="col-span-full flex items-center gap-x-8">
               <img
                 alt=""
-                src="https://lh3.googleusercontent.com/a/ACg8ocKvwSGZnZaYCt8LyWKBgeTU_bkz1MpZtimBX3SIey-DQBNukBu0=s96-c"
+                src={profileImage}
                 className="h-24 w-24 flex-none rounded-lg bg-gray-800 object-cover"
               />
-              <div>
-                <button
-                  type="button"
-                  className="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold shadow-sm hover:bg-white/20"
-                >
-                  Change avatar
-                </button>
-                <p className="mt-2 text-xs leading-5 text-gray-400">
-                  JPG, GIF or PNG. 1MB max.
-                </p>
-              </div>
             </div>
 
             <div className="sm:col-span-3">
@@ -61,8 +127,8 @@ const Account = () => {
               <div className="mt-2">
                 <Input
                   value={firstName}
-                  id="first-name"
-                  name="first-name"
+                  id="firstname"
+                  name="firstname"
                   type="text"
                   className="bg-gray-200"
                   readonly
@@ -81,8 +147,8 @@ const Account = () => {
               <div className="mt-2">
                 <Input
                   value={lastName}
-                  id="last-name"
-                  name="last-name"
+                  id="lastname"
+                  name="lastname"
                   type="text"
                   className="bg-gray-200"
                   readonly
@@ -114,17 +180,38 @@ const Account = () => {
             <div className="col-span-full">
               <label
                 htmlFor="username"
-                className="block text-sm font-medium leading-6  "
+                className="block text-sm font-medium leading-6"
               >
-                Username
+                Mobile
               </label>
               <div className="mt-2">
                 <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
                   <Input
-                    id="username"
-                    name="username"
+                    placeholder={mobile}
+                    id="mobile"
+                    name="mobile"
+                    type="number"
+                    className=""
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium leading-6  "
+              >
+                Instagram Handle
+              </label>
+              <div className="mt-2">
+                <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
+                  <Input
+                    placeholder={instagramHandle}
+                    id="instagramHandle"
+                    name="instagramHandle"
                     type="text"
-                    className="flex-1 border-0 bg-transparent py-1.5 pl-1   focus:ring-0 sm:text-sm sm:leading-6"
+                    className=""
                   />
                 </div>
               </div>
@@ -132,12 +219,12 @@ const Account = () => {
           </div>
 
           <div className="mt-8 flex">
-            <button
+            <Button
               type="submit"
               className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold   shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             >
               Save
-            </button>
+            </Button>
           </div>
         </form>
       </div>

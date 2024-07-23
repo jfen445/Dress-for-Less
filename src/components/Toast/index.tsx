@@ -11,7 +11,22 @@ type NotificationProps = {
   text?: string;
 };
 
-const Toast: React.FC<NotificationProps> = ({ show, setShow, title, text }) => {
+const Toast: React.FC<NotificationProps> = ({
+  show,
+  setShow,
+  title,
+  variant,
+  text,
+}) => {
+  const getColour = () => {
+    if (variant == "success") {
+      return "bg-green-500";
+    } else if (variant == "error") {
+      return "bg-red-500";
+    } else {
+      return "bg-orange-400";
+    }
+  };
   return (
     <>
       {/* Global notification live region, render this permanently at the end of the document */}
@@ -31,7 +46,9 @@ const Toast: React.FC<NotificationProps> = ({ show, setShow, title, text }) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="max-w-sm w-full bg-orange-400 shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden">
+            <div
+              className={`${getColour()} max-w-sm w-full shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden`}
+            >
               <div className="p-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -46,7 +63,7 @@ const Toast: React.FC<NotificationProps> = ({ show, setShow, title, text }) => {
                   </div>
                   <div className="ml-4 flex-shrink-0 flex">
                     <button
-                      className="bg-orange-400 rounded-md inline-flex text-white hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      className={`${getColour()} rounded-md inline-flex text-white hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
                       onClick={() => {
                         setShow(false);
                       }}
