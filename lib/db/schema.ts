@@ -13,14 +13,23 @@ const userSchema = new Schema({
 const UserSchema =
   mongoose.models.AllUsers ?? mongoose.model("AllUsers", userSchema);
 
-export { UserSchema };
-
 const bookingSchema = new Schema({
-  dress: { type: String, required: true },
+  dressId: { type: String, required: true },
+  userId: { type: String, required: true },
   datesBooked: { type: [String], required: true },
+  isShipped: { type: Boolean, required: true, default: false },
+  isReturned: { type: Boolean, required: true, default: false },
 });
 
 const BookingSchema =
-  mongoose.models.AllUsers ?? mongoose.model("Bookings", bookingSchema);
+  mongoose.models.Bookings ?? mongoose.model("Bookings", bookingSchema);
 
-export { BookingSchema };
+const cartSchema = new Schema({
+  dressId: { type: String, required: true },
+  userId: { type: String, required: true },
+  dateBooked: { type: String, required: true },
+});
+
+const CartSchema = mongoose.models.Cart ?? mongoose.model("Cart", cartSchema);
+
+export { UserSchema, BookingSchema, CartSchema };

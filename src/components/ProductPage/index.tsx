@@ -1,18 +1,35 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { RadioGroup } from "@headlessui/react";
 import { getDress } from "../../../sanity/sanity.query";
-import { DressType, ImageType } from "../../../common/types";
+import {
+  CartType,
+  DressType,
+  ImageType,
+  UserType,
+} from "../../../common/types";
 import ImageSelector from "./ImageSelector";
 import Button from "@/components/Button";
 import Calendar from "./Calendar";
+import { getUser } from "@/api/user";
+import { useSession } from "next-auth/react";
+import Toast from "../Toast";
+import { addToCart } from "@/api/cart";
 
 const Product = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [dress, setDress] = React.useState<DressType>();
   const [images, setImages] = React.useState<ImageType[]>([]);
+  const [selectedDate, setSelectedDate] = React.useState<string>("");
+  const [err, setErr] = React.useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = React.useState<string>("");
+  const [variant, setVariant] = React.useState<"success" | "error" | "warning">(
+    "warning"
+  );
 
   const params = useParams<{ id: string }>();
 
@@ -37,8 +54,54 @@ const Product = () => {
     }
   }, [params, params?.id]);
 
+  const addDressToCart = async () => {
+    if (!session) {
+      router.push("/login");
+    }
+
+    const user = await getUser(session?.user.email ?? "").then((res) => {
+      if (res === undefined) return;
+      const r = res.data as unknown as UserType;
+      return r;
+    });
+
+    console.log("user", user);
+    if (!params?.id || !user?._id) {
+      return;
+    }
+
+    const cartItem: CartType = {
+      dressId: params?.id,
+      userId: user?._id,
+      dateBooked: selectedDate,
+    };
+
+    console.log("cart tiem", cartItem);
+
+    await addToCart(cartItem).then((data) => {
+      console.log("herrrrrrrrr", data);
+
+      setErrorMessage(data?.data.message);
+      setErr(true);
+
+      if (data?.status === 200) {
+        setVariant("success");
+      }
+
+      if (data?.status === 404) {
+        setVariant("warning");
+      }
+    });
+  };
+
   return (
     <div className="bg-white">
+      <Toast
+        show={err}
+        setShow={setErr}
+        title={errorMessage}
+        variant={variant}
+      />
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
         {/* Product details */}
         <div className="lg:max-w-lg lg:self-end">
@@ -83,10 +146,14 @@ const Product = () => {
               </RadioGroup>
             </div>
 
-            <Calendar></Calendar>
+            <Calendar setSelectedDate={setSelectedDate} />
 
             <div className="mt-10">
-              <Button className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">
+              <Button
+                className="flex w-full items-center justify-center"
+                disabled={selectedDate === ""}
+                onClick={() => addDressToCart()}
+              >
                 Making a booking
               </Button>
             </div>

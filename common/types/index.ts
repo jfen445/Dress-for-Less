@@ -18,7 +18,7 @@ export type ProfileType = {
 };
 
 export type UserType = {
-  mongoID?: string;
+  _id?: string;
   name: string;
   email: string;
   password?: string;
@@ -48,4 +48,10 @@ export type ImageType = {
 export type User = {
   email: string;
   name: string;
+};
+
+export type CartType = {
+  dressId: string;
+  userId: string;
+  dateBooked: string;
 };

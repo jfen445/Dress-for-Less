@@ -1,6 +1,5 @@
 import { UserSchema } from "./schema";
 import { UserType } from "../../common/types";
-import bcrypt from "bcrypt";
 
 export async function createUser(user: UserType) {
   // const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -16,7 +15,8 @@ export async function createUser(user: UserType) {
 }
 
 export async function findUser(email: String) {
-  // const hashedPassword = await bcrypt.hash(user.password, 10);
-
-  return UserSchema.find({ email }, "email mobileNumber instagramHandle");
+  return UserSchema.find(
+    { email },
+    "__id name email mobileNumber instagramHandle"
+  );
 }

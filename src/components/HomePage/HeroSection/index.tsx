@@ -83,7 +83,7 @@ const HeroSection = () => {
 
               <a
                 href="/dresses"
-                className="inline-block rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-center font-medium text-white hover:bg-indigo-700"
+                className="inline-block rounded-md border border-transparent bg-primary-pink px-8 py-3 text-center font-medium text-white hover:bg-secondary-pink"
               >
                 Shop Collection
               </a>

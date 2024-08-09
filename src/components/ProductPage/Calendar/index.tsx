@@ -5,12 +5,15 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import { parseISO } from "date-fns";
 
-const Calendar = () => {
-  const [selectedDay, setSelectedDay] = React.useState<string>("");
+interface ICanlender {
+  setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const Calendar = ({ setSelectedDate }: ICanlender) => {
   const selectDate = (event: Dayjs) => {
     console.log("this is the event", dayjs(event).toJSON());
     console.log("huhhh", dayjs("2024-08-28T14:00:00.000Z"));
-    setSelectedDay(dayjs(event).toJSON());
+    setSelectedDate(dayjs(event).toJSON());
   };
 
   const alldays = [
