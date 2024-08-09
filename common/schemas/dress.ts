@@ -18,6 +18,23 @@ const dress = {
       description: "Give a description for the dress",
     },
     {
+      name: "price",
+      title: "Price",
+      type: "number",
+      description: "Price for the dress",
+    },
+    {
+      name: "rrp",
+      title: "RRP",
+      type: "number",
+      description: "Reatil price for the dress",
+    },
+    {
+      name: "brand",
+      title: "Brand",
+      type: "string",
+    },
+    {
       name: "images",
       title: "Images",
       type: "array",
@@ -33,11 +50,52 @@ const dress = {
       initialValue: "",
       options: {
         list: [
-          { title: "XL", value: "xl" },
-          { title: "L", value: "l" },
-          { title: "M", value: "m" },
-          { title: "S", value: "s" },
-          { title: "XS", value: "xs" },
+          { title: "XL", value: "XL" },
+          { title: "L", value: "L" },
+          { title: "M", value: "M" },
+          { title: "S", value: "S" },
+          { title: "XS", value: "XS" },
+        ],
+      },
+    },
+    {
+      name: "recommended_size",
+      title: "Recommended Size",
+      type: "string",
+      initialValue: "",
+      options: {
+        list: [
+          { title: "XL", value: "XL" },
+          { title: "L", value: "L" },
+          { title: "M", value: "M" },
+          { title: "S", value: "S" },
+          { title: "XS", value: "XS" },
+        ],
+      },
+    },
+    {
+      name: "length",
+      title: "Length",
+      type: "string",
+      initialValue: "",
+      options: {
+        list: [
+          { title: "Maxi", value: "Maxi" },
+          { title: "Mini", value: "Mini" },
+          { title: "Midi", value: "Midi" },
+        ],
+      },
+    },
+    {
+      name: "stretch",
+      title: "Stretch",
+      type: "string",
+      initialValue: "",
+      options: {
+        list: [
+          { title: "1", value: "1" },
+          { title: "2", value: "2" },
+          { title: "3", value: "3" },
         ],
       },
     },

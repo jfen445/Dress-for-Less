@@ -33,6 +33,11 @@ export type DressType = {
   size: string;
   images: string[];
   tags: { _type: string; label: string; _key: string }[];
+  price: string;
+  length: string;
+  brand: string;
+  rrp: string;
+  stretch: string;
 };
 
 export type ImageType = {

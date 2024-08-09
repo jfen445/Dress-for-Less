@@ -10,241 +10,14 @@ import {
 import Link from "next/link";
 import { Fragment, useState } from "react";
 import LoggedOnIcon from "./userIcon";
-import { useSession } from "next-auth/react";
-
-// const navigation = {
-//   categories: [
-//     {
-//       id: "women",
-//       name: "Women",
-//       featured: [
-//         {
-//           name: "New Arrivals",
-//           href: "#",
-//           imageSrc:
-//             "https://tailwindui.com/img/ecommerce-images/mega-menu-category-01.jpg",
-//           imageAlt:
-//             "Models sitting back to back, wearing Basic Tee in black and bone.",
-//         },
-//         {
-//           name: "Basic Tees",
-//           href: "#",
-//           imageSrc:
-//             "https://tailwindui.com/img/ecommerce-images/mega-menu-category-02.jpg",
-//           imageAlt:
-//             "Close up of Basic Tee fall bundle with off-white, ochre, olive, and black tees.",
-//         },
-//       ],
-//       sections: [
-//         {
-//           id: "clothing",
-//           name: "Clothing",
-//           items: [
-//             { name: "Tops", href: "#" },
-//             { name: "Dresses", href: "#" },
-//             { name: "Pants", href: "#" },
-//             { name: "Denim", href: "#" },
-//             { name: "Sweaters", href: "#" },
-//             { name: "T-Shirts", href: "#" },
-//             { name: "Jackets", href: "#" },
-//             { name: "Activewear", href: "#" },
-//             { name: "Browse All", href: "#" },
-//           ],
-//         },
-//         {
-//           id: "accessories",
-//           name: "Accessories",
-//           items: [
-//             { name: "Watches", href: "#" },
-//             { name: "Wallets", href: "#" },
-//             { name: "Bags", href: "#" },
-//             { name: "Sunglasses", href: "#" },
-//             { name: "Hats", href: "#" },
-//             { name: "Belts", href: "#" },
-//           ],
-//         },
-//         {
-//           id: "brands",
-//           name: "Brands",
-//           items: [
-//             { name: "Full Nelson", href: "#" },
-//             { name: "My Way", href: "#" },
-//             { name: "Re-Arranged", href: "#" },
-//             { name: "Counterfeit", href: "#" },
-//             { name: "Significant Other", href: "#" },
-//           ],
-//         },
-//       ],
-//     },
-//     {
-//       id: "men",
-//       name: "Men",
-//       featured: [
-//         {
-//           name: "New Arrivals",
-//           href: "#",
-//           imageSrc:
-//             "https://tailwindui.com/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg",
-//           imageAlt:
-//             "Drawstring top with elastic loop closure and textured interior padding.",
-//         },
-//         {
-//           name: "Artwork Tees",
-//           href: "#",
-//           imageSrc:
-//             "https://tailwindui.com/img/ecommerce-images/category-page-02-image-card-06.jpg",
-//           imageAlt:
-//             "Three shirts in gray, white, and blue arranged on table with same line drawing of hands and shapes overlapping on front of shirt.",
-//         },
-//       ],
-//       sections: [
-//         {
-//           id: "clothing",
-//           name: "Clothing",
-//           items: [
-//             { name: "Tops", href: "#" },
-//             { name: "Pants", href: "#" },
-//             { name: "Sweaters", href: "#" },
-//             { name: "T-Shirts", href: "#" },
-//             { name: "Jackets", href: "#" },
-//             { name: "Activewear", href: "#" },
-//             { name: "Browse All", href: "#" },
-//           ],
-//         },
-//         {
-//           id: "accessories",
-//           name: "Accessories",
-//           items: [
-//             { name: "Watches", href: "#" },
-//             { name: "Wallets", href: "#" },
-//             { name: "Bags", href: "#" },
-//             { name: "Sunglasses", href: "#" },
-//             { name: "Hats", href: "#" },
-//             { name: "Belts", href: "#" },
-//           ],
-//         },
-//         {
-//           id: "brands",
-//           name: "Brands",
-//           items: [
-//             { name: "Re-Arranged", href: "#" },
-//             { name: "Counterfeit", href: "#" },
-//             { name: "Full Nelson", href: "#" },
-//             { name: "My Way", href: "#" },
-//           ],
-//         },
-//       ],
-//     },
-//   ],
-//   pages: [
-//     { name: "Company", href: "#" },
-//     { name: "Stores", href: "#" },
-//   ],
-// };
-const navigation = {
-  categories: [
-    {
-      id: "dresses",
-      name: "Dresses",
-      featured: [
-        {
-          name: "New Arrivals",
-          href: "#",
-          imageSrc:
-            "https://tailwindui.com/img/ecommerce-images/mega-menu-category-01.jpg",
-          imageAlt:
-            "Models sitting back to back, wearing Basic Tee in black and bone.",
-        },
-        {
-          name: "Basic Tees",
-          href: "#",
-          imageSrc:
-            "https://tailwindui.com/img/ecommerce-images/mega-menu-category-02.jpg",
-          imageAlt:
-            "Close up of Basic Tee fall bundle with off-white, ochre, olive, and black tees.",
-        },
-        {
-          name: "Accessories",
-          href: "#",
-          imageSrc:
-            "https://tailwindui.com/img/ecommerce-images/mega-menu-category-03.jpg",
-          imageAlt:
-            "Model wearing minimalist watch with black wristband and white watch face.",
-        },
-      ],
-      sections: [
-        [
-          {
-            id: "shoes",
-            name: "Shoes & Accessories",
-            items: [
-              { name: "Sneakers", href: "#" },
-              { name: "Boots", href: "#" },
-              { name: "Flats", href: "#" },
-              { name: "Sandals", href: "#" },
-              { name: "Heels", href: "#" },
-              { name: "Socks", href: "#" },
-            ],
-          },
-          {
-            id: "collection",
-            name: "Shop Collection",
-            items: [
-              { name: "Everything", href: "#" },
-              { name: "Core", href: "#" },
-              { name: "New Arrivals", href: "#" },
-              { name: "Sale", href: "#" },
-              { name: "Accessories", href: "#" },
-            ],
-          },
-        ],
-        [
-          {
-            id: "clothing",
-            name: "All Clothing",
-            items: [
-              { name: "Basic Tees", href: "#" },
-              { name: "Artwork Tees", href: "#" },
-              { name: "Tops", href: "#" },
-              { name: "Bottoms", href: "#" },
-              { name: "Swimwear", href: "#" },
-              { name: "Underwear", href: "#" },
-            ],
-          },
-          {
-            id: "accessories",
-            name: "All Accessories",
-            items: [
-              { name: "Watches", href: "#" },
-              { name: "Wallets", href: "#" },
-              { name: "Bags", href: "#" },
-              { name: "Sunglasses", href: "#" },
-              { name: "Hats", href: "#" },
-              { name: "Belts", href: "#" },
-            ],
-          },
-        ],
-        [
-          {
-            id: "brands",
-            name: "Brands",
-            items: [
-              { name: "Full Nelson", href: "#" },
-              { name: "My Way", href: "#" },
-              { name: "Re-Arranged", href: "#" },
-              { name: "Counterfeit", href: "#" },
-              { name: "Significant Other", href: "#" },
-            ],
-          },
-        ],
-      ],
-    },
-  ],
-  pages: [
-    { name: "Company", href: "#" },
-    { name: "Stores", href: "#" },
-  ],
-};
+import { useSession, signOut } from "next-auth/react";
+import {
+  Disclosure,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from "@headlessui/react";
 
 const navItems = [
   {
@@ -262,6 +35,11 @@ const navItems = [
     name: "FAQ",
     href: "/faq",
   },
+];
+
+const userNavigation = [
+  { name: "Your Profile", href: "/account" },
+  { name: "Sign out", href: "#" },
 ];
 
 function classNames(...classes: string[]) {
@@ -311,7 +89,7 @@ const Navigation = () => {
                 <Link href="/" className="flex flex-shrink-0 items-center">
                   <img
                     className="h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
+                    src="https://tailwindui.com/img/logos/mark.svg?color=red&shade=200"
                     alt="Your Company"
                   />
                 </Link>
@@ -325,7 +103,7 @@ const Navigation = () => {
                         href={item.href}
                         className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                           isCurrentPage(item.href)
-                            ? "border-indigo-500 text-gray-900"
+                            ? "border-secondary-pink text-gray-900"
                             : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
                         }`}
                       >
@@ -337,38 +115,15 @@ const Navigation = () => {
               </div>
             </Popover.Group>
 
-            {/* Logo */}
-            {/* <a href="/" className="flex">
-              <span className="sr-only">Your Company</span>
-              <img
-                className="h-8 w-auto"
-                src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-                alt=""
-              />
-            </a> */}
-
             <div className="flex flex-1 items-center justify-end">
               {/* Search */}
-              <Link
+              {/* <Link
                 href="#"
                 className="ml-6 hidden p-2 text-gray-400 hover:text-gray-500 lg:block"
               >
                 <span className="sr-only">Search</span>
                 <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-              </Link>
-
-              {/* Account */}
-              <Link
-                href={session ? "/account" : "/login"}
-                className="p-2 text-gray-400 hover:text-gray-500 lg:ml-4"
-              >
-                <span className="sr-only">Account</span>
-                <UserIcon className="h-6 w-6" aria-hidden="true" />
-              </Link>
-
-              <div>
-                <LoggedOnIcon />
-              </div>
+              </Link> */}
 
               {/* Cart */}
               <div className="ml-4 flow-root lg:ml-6">
@@ -383,6 +138,55 @@ const Navigation = () => {
                   <span className="sr-only">items in cart, view bag</span>
                 </Link>
               </div>
+
+              {!session ? (
+                <Link
+                  href={"/login"}
+                  className="p-2 text-gray-400 hover:text-gray-500 lg:ml-4"
+                >
+                  <span className="sr-only">Account</span>
+                  <UserIcon className="h-6 w-6" aria-hidden="true" />
+                </Link>
+              ) : (
+                <Menu as="div" className="relative ml-3">
+                  <div>
+                    <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                      <span className="absolute -inset-1.5" />
+                      <span className="sr-only">Open user menu</span>
+                      <img
+                        alt=""
+                        src={
+                          session && session.user && session.user.image
+                            ? session.user.image
+                            : ""
+                        }
+                        className="h-8 w-8 rounded-full border-2 border-secondary-pink"
+                      />
+                    </MenuButton>
+                  </div>
+                  <MenuItems
+                    transition
+                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                  >
+                    <MenuItem>
+                      <a
+                        href={"/account"}
+                        className="block px-4 py-2 text-sm text-gray-700"
+                      >
+                        Account
+                      </a>
+                    </MenuItem>
+                    <MenuItem>
+                      <a
+                        onClick={() => signOut()}
+                        className="block px-4 py-2 text-sm text-gray-700 cursor-pointer"
+                      >
+                        Sign out
+                      </a>
+                    </MenuItem>
+                  </MenuItems>
+                </Menu>
+              )}
             </div>
           </div>
         </div>

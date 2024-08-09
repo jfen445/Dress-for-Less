@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { decrypt } from "./lib";
 import { cookies } from "next/headers";
 import { getToken } from "next-auth/jwt";
+import { useSession } from "next-auth/react";
 
 // 1. Specify protected and public routes
 const protectedRoutes = ["/dashboard"];
@@ -47,6 +48,8 @@ export const config = { matcher: ["/account"] };
 
 export function middleware(request: NextRequest, response: NextResponse) {
   const currentUser = request.cookies.get("next-auth.session-token")?.value;
+
+  
   // console.log("curent", currentUser);
 
   // if (currentUser && !request.nextUrl.pathname.startsWith("/")) {

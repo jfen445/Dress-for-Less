@@ -32,10 +32,6 @@ const Account = () => {
     session && session.user && session.user.image ? session.user.image : "";
 
   React.useEffect(() => {
-    if (!session) {
-      push("/");
-    }
-
     const getCurrentUser = async () => {
       getUser(email).then((res) => {
         console.log("resulttt", res);
@@ -187,7 +183,10 @@ const Account = () => {
               <div className="mt-2">
                 <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
                   <Input
-                    placeholder={mobile}
+                    value={mobile}
+                    onChange={(e) =>
+                      setMobile((e.target as HTMLInputElement).value)
+                    }
                     id="mobile"
                     name="mobile"
                     type="number"
@@ -207,7 +206,10 @@ const Account = () => {
               <div className="mt-2">
                 <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
                   <Input
-                    placeholder={instagramHandle}
+                    value={instagramHandle}
+                    onChange={(e) =>
+                      setInstagramHandle((e.target as HTMLInputElement).value)
+                    }
                     id="instagramHandle"
                     name="instagramHandle"
                     type="text"

@@ -40,6 +40,12 @@ export async function getDress(id: string) {
       description,
       "images": images[].asset->url,
       size,
+      recommended_size,
+      length,
+      stretch,
+      brand,
+      price,
+      rrp,
       tags
     }`
   );
