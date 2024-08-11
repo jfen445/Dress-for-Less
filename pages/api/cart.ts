@@ -4,7 +4,12 @@ import { createUser, findUser } from "../../lib/db/user-dao";
 import { ICart, IUser } from "../../common/interfaces/user";
 import { CartType, UserType } from "../../common/types";
 import { UserSchema } from "../../lib/db/schema";
-import { addToCart, getCart, getCartItem } from "../../lib/db/cart-dao";
+import {
+  addToCart,
+  getCart,
+  getCartItem,
+  removeItemFromCart,
+} from "../../lib/db/cart-dao";
 
 export default async function handler(
   req: NextApiRequest,
@@ -51,6 +56,18 @@ export default async function handler(
     await addToCart(newCartItem);
 
     res.status(200).json({ message: "Dress added to cart" });
+  } else if (req.method == "DELETE") {
+    const cartItemId = req.query.cartItemId as string;
+
+    if (!cartItemId) {
+      return res.status(404).json({
+        message: "Invalid cart item to delete",
+      });
+    }
+
+    await removeItemFromCart(cartItemId);
+
+    res.status(202).json({ message: "Item removed from cart" });
   }
 
   //   return NextResponse.json({ messsage: "Hello World" });

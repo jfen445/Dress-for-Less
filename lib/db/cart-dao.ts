@@ -14,13 +14,13 @@ export async function addToCart(cart: CartType) {
 }
 
 export async function getCart(userId: String) {
-  // const hashedPassword = await bcrypt.hash(user.password, 10);
-
   return CartSchema.find({ userId }, "dressId userId dateBooked");
 }
 
 export async function getCartItem(userId: String, dressId: string) {
-  // const hashedPassword = await bcrypt.hash(user.password, 10);
-
   return CartSchema.find({ userId, dressId }, "dressId userId dateBooked");
+}
+
+export async function removeItemFromCart(cartId: String) {
+  return CartSchema.findByIdAndDelete(cartId);
 }

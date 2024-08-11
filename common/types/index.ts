@@ -51,7 +51,24 @@ export type User = {
 };
 
 export type CartType = {
+  _id?: string;
   dressId: string;
   userId: string;
   dateBooked: string;
+};
+
+export type CartItemType = {
+  _id: string;
+  name: string;
+  description: string;
+  size: string;
+  images: string[];
+  tags: { _type: string; label: string; _key: string }[];
+  price: string;
+  length: string;
+  brand: string;
+  rrp: string;
+  stretch: string;
+  dateBooked: string;
+  cartItemId: string;
 };

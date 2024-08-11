@@ -65,7 +65,6 @@ const Product = () => {
       return r;
     });
 
-    console.log("user", user);
     if (!params?.id || !user?._id) {
       return;
     }
@@ -76,11 +75,7 @@ const Product = () => {
       dateBooked: selectedDate,
     };
 
-    console.log("cart tiem", cartItem);
-
     await addToCart(cartItem).then((data) => {
-      console.log("herrrrrrrrr", data);
-
       setErrorMessage(data?.data.message);
       setErr(true);
 

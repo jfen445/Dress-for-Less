@@ -2,11 +2,11 @@ import mongoose, { Mongoose } from "mongoose";
 // This approach is taken from https://github.com/vercel/next.js/tree/canary/examples/with-mongodb
 import { MongoClient, ServerApiVersion } from "mongodb";
 
-if (!process.env.NEXT_PUBLIC_MONGODB_URI) {
+if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
 }
 
-const uri = process.env.NEXT_PUBLIC_MONGODB_URI;
+const uri = process.env.MONGODB_URI;
 const options = {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -55,7 +55,7 @@ export async function dbConnect(): Promise<typeof mongoose> {
       console.log("Connected from previous");
       return global.mongoose.conn;
     } else {
-      const conString = process.env.NEXT_PUBLIC_MONGODB_URI || "";
+      const conString = process.env.MONGODB_URI || "";
 
       const promise = mongoose.connect(conString, {
         autoIndex: true,

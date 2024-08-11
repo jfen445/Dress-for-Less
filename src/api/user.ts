@@ -11,7 +11,8 @@ export async function signUp(user: UserType) {
 
     return response;
   } catch (error) {
-    // throw error;
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
   }
 }
 
@@ -29,10 +30,8 @@ export async function logUserIn(email: string, password: string) {
 
     return response;
   } catch (error) {
-    // throw error;
-    console.log(";errororroroororo", error);
     const err = error as AxiosError;
-    return err.response;
+    throw new Error((err?.response?.data as any).message);
   }
 }
 
@@ -45,7 +44,7 @@ export async function getUser(email: string) {
 
     return response;
   } catch (error) {
-    // throw error;
-    console.log(";errororroroororo");
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
   }
 }

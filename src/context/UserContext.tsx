@@ -5,6 +5,7 @@ import { UserType } from "../../common/types";
 import { useUserAuth } from "./UserAuthContext";
 import { getUser } from "@/api/user";
 import { SignJWT, jwtVerify } from "jose";
+import { useSession } from "next-auth/react";
 // import { cookies } from "next/headers";
 // import { setLoginCookie } from "../../lib";
 
@@ -48,19 +49,23 @@ const userContext = React.createContext<UserContextProps>(
 
 const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
-  const { user } = useUserAuth();
-  console.log("redndere user", userInfo);
+  // const { user } = useUserAuth();
+  // const
+  // console.log("redndere user", userInfo);
+
+  const { data: session } = useSession();
+
   React.useEffect(() => {
-    console.log("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", user);
-    if (user != null) {
-      getUser(user.email).then((res) => {
+    // console.log("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", user);
+    if (session != null && session?.user.email) {
+      getUser(session?.user.email).then((res) => {
         if (res === undefined) return;
         const r = res.data as unknown as UserType;
         console.log("RRRRRRRRRRRRRRRRR", r, res.data);
         setUserInfo(r);
       });
     }
-  }, [user]);
+  }, [session]);
 
   return (
     <userContext.Provider value={{ userInfo }}>{children}</userContext.Provider>

@@ -16,8 +16,35 @@ export async function addToCart(cartItem: CartType) {
     return response;
   } catch (error) {
     // throw error;
-    console.log(";errororroroororo", error);
     const err = error as AxiosError;
-    return err.response;
+    throw new Error((err?.response?.data as any).message);
+  }
+}
+
+export async function getCart(userId: string) {
+  try {
+    const response = await axios.request({
+      url: `/api/cart?userId=${userId}`,
+      method: "GET",
+    });
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}
+
+export async function removeFromCart(cartItemId: string) {
+  try {
+    const response = await axios.request({
+      url: `/api/cart?cartItemId=${cartItemId}`,
+      method: "DELETE",
+    });
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
   }
 }
