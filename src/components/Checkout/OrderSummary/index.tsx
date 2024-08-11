@@ -6,24 +6,52 @@ import {
   PopoverPanel,
 } from "@headlessui/react";
 import { ChevronUpIcon } from "@heroicons/react/20/solid";
+import { useUserContext } from "@/context/UserContext";
+import { CartItemType, CartType } from "../../../../common/types";
+import { getCart } from "@/api/cart";
+import { getDress } from "../../../../sanity/sanity.query";
+import dayjs from "dayjs";
 
-const products = [
-  {
-    id: 1,
-    name: "Micro Backpack",
-    href: "#",
-    price: "$70.00",
-    color: "Moss",
-    size: "5L",
-    imageSrc:
-      "https://tailwindui.com/img/ecommerce-images/checkout-page-04-product-01.jpg",
-    imageAlt:
-      "Moss green canvas compact backpack with double top zipper, zipper front pouch, and matching carry handle and backpack straps.",
-  },
-  // More products...
-];
+const OrderSummary = () => {
+  const { userInfo } = useUserContext();
+  const [products, setProducts] = React.useState<CartItemType[]>([]);
 
-const Item = () => {
+  const shippingCost = "15.00";
+
+  React.useEffect(() => {
+    const getUserCart = async () => {
+      if (userInfo && userInfo?._id) {
+        const response = await getCart(userInfo?._id);
+
+        const cartItems = response.data as CartType[];
+        let dresses: CartItemType[] = [];
+        cartItems.forEach(async (item) => {
+          await getDress(item.dressId).then((data) => {
+            data.dateBooked = item.dateBooked;
+            data.cartItemId = item._id;
+            dresses = [...dresses, data];
+          });
+
+          setProducts(dresses);
+        });
+      }
+    };
+
+    getUserCart();
+  }, [userInfo]);
+
+  const formatDate = (date: string) => {
+    return dayjs(date).subtract(1, "day").format("D MMMM YYYY");
+  };
+
+  const sumPrices = (): string => {
+    return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
+  };
+
+  const sumTotalPrices = () => {
+    return (parseInt(sumPrices()) + parseInt(shippingCost)).toFixed(2);
+  };
+
   return (
     <>
       <section
@@ -33,7 +61,7 @@ const Item = () => {
         <div className="mx-auto max-w-lg lg:max-w-none">
           <h2
             id="summary-heading"
-            className="text-lg font-medium text-gray-900"
+            className="text-lg font-medium text-gray-900 mt-10"
           >
             Order summary
           </h2>
@@ -43,16 +71,18 @@ const Item = () => {
             className="divide-y divide-gray-200 text-sm font-medium text-gray-900"
           >
             {products.map((product) => (
-              <li key={product.id} className="flex items-start space-x-4 py-6">
+              <li key={product._id} className="flex items-start space-x-4 py-6">
                 <img
-                  alt={product.imageAlt}
-                  src={product.imageSrc}
+                  alt={product.images[0]}
+                  src={product.images[0]}
                   className="h-20 w-20 flex-none rounded-md object-cover object-center"
                 />
                 <div className="flex-auto space-y-1">
                   <h3>{product.name}</h3>
-                  <p className="text-gray-500">{product.color}</p>
                   <p className="text-gray-500">{product.size}</p>
+                  <p className="text-gray-500">
+                    {formatDate(product.dateBooked)}
+                  </p>
                 </div>
                 <p className="flex-none text-base font-medium">
                   {product.price}
@@ -64,22 +94,17 @@ const Item = () => {
           <dl className="hidden space-y-6 border-t border-gray-200 pt-6 text-sm font-medium text-gray-900 lg:block">
             <div className="flex items-center justify-between">
               <dt className="text-gray-600">Subtotal</dt>
-              <dd>$320.00</dd>
+              <dd>${sumPrices()}</dd>
             </div>
 
             <div className="flex items-center justify-between">
               <dt className="text-gray-600">Shipping</dt>
-              <dd>$15.00</dd>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <dt className="text-gray-600">Taxes</dt>
-              <dd>$26.80</dd>
+              <dd>${shippingCost}</dd>
             </div>
 
             <div className="flex items-center justify-between border-t border-gray-200 pt-6">
               <dt className="text-base">Total</dt>
-              <dd className="text-base">$361.80</dd>
+              <dd className="text-base">${sumTotalPrices()}</dd>
             </div>
           </dl>
 
@@ -130,4 +155,4 @@ const Item = () => {
   );
 };
 
-export default Item;
+export default OrderSummary;
