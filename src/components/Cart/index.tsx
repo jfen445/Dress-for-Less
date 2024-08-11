@@ -11,11 +11,10 @@ import Link from "next/link";
 import CartItems from "../CartItems";
 
 const Cart = () => {
-  const router = useRouter();
   const { userInfo } = useUserContext();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
 
-  const getUserCart = async () => {
+  const getUserCart = React.useCallback(async () => {
     if (userInfo && userInfo?._id) {
       const response = await getCart(userInfo?._id);
 
@@ -31,11 +30,11 @@ const Cart = () => {
         setProducts(dresses);
       });
     }
-  };
+  }, [userInfo]);
 
   React.useEffect(() => {
     getUserCart();
-  }, [userInfo]);
+  }, [getUserCart, userInfo]);
 
   const formatDate = (date: string) => {
     return dayjs(date).subtract(1, "day").format("D MMMM YYYY");

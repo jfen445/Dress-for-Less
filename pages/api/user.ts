@@ -1,6 +1,6 @@
 import { dbConnect, disconnect } from "../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
-import { createUser, findUser } from "../../lib/db/user-dao";
+import { findUser } from "../../lib/db/user-dao";
 import { IUser } from "../../common/interfaces/user";
 import { UserType } from "../../common/types";
 import { UserSchema } from "../../lib/db/schema";

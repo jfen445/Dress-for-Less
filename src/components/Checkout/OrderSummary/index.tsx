@@ -11,10 +11,17 @@ import { CartItemType, CartType } from "../../../../common/types";
 import { getCart } from "@/api/cart";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
+import { ProductContext } from "..";
+
+interface IOrderSummary {
+  products: CartItemType[];
+  setProducts: React.Dispatch<React.SetStateAction<CartItemType[]>>;
+}
 
 const OrderSummary = () => {
   const { userInfo } = useUserContext();
-  const [products, setProducts] = React.useState<CartItemType[]>([]);
+  const { products, setProducts } = React.useContext(ProductContext);
+  // const [products, setProducts] = React.useState<CartItemType[]>([]);
 
   const shippingCost = "15.00";
 
