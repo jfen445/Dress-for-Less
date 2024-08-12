@@ -45,7 +45,7 @@ const OrderSummary = () => {
     };
 
     getUserCart();
-  }, [userInfo]);
+  }, [setProducts, userInfo]);
 
   const formatDate = (date: string) => {
     return dayjs(date).subtract(1, "day").format("D MMMM YYYY");

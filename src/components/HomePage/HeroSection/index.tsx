@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const HeroSection = () => {
   return (
     <header className="relative overflow-hidden">
@@ -81,12 +83,12 @@ const HeroSection = () => {
                 </div>
               </div>
 
-              <a
+              <Link
                 href="/dresses"
                 className="inline-block rounded-md border border-transparent bg-primary-pink px-8 py-3 text-center font-medium text-white hover:bg-secondary-pink"
               >
                 Shop Collection
-              </a>
+              </Link>
             </div>
           </div>
         </div>

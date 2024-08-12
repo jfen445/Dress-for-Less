@@ -25,9 +25,9 @@ const PaymentForm = () => {
   const elements = useElements();
   const [clientSecret, setClientSecret] = React.useState<string>("");
 
-  const sumPrices = (): string => {
+  const sumPrices = React.useCallback(() => {
     return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
-  };
+  }, [products]);
 
   React.useEffect(() => {
     const getSecret = async () => {
@@ -38,7 +38,7 @@ const PaymentForm = () => {
     };
 
     getSecret();
-  }, []);
+  }, [products, sumPrices]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

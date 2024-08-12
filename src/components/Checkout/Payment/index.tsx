@@ -17,12 +17,6 @@ const Payment = async () => {
   const { products, setProducts } = React.useContext(ProductContext);
   // const [intent, setIntent] = React.useState();
 
-  React.useEffect(() => {
-    if (products == null || !userInfo) return;
-    console.log("effff", process.env.STRIPE_SECRET_KEY);
-    // getIntent().then((res) => setIntent(res));
-  }, [products]);
-
   // const getIntent = async (): Promise<any> => {
   //   if (!userInfo) return;
 
