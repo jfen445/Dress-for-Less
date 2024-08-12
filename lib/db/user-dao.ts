@@ -17,6 +17,6 @@ export async function createUser(user: UserType) {
 export async function findUser(email: String) {
   return UserSchema.find(
     { email },
-    "__id name email mobileNumber instagramHandle"
+    "__id name email mobileNumber instagramHandle photo"
   );
 }

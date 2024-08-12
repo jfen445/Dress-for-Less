@@ -8,6 +8,7 @@ const userSchema = new Schema({
   name: { type: String, required: true },
   mobileNumber: { type: String, required: true },
   instagramHandle: { type: String, required: false },
+  photo: { type: String, required: true },
 });
 
 const UserSchema =

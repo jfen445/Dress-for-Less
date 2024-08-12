@@ -59,10 +59,14 @@ const dress = {
       },
     },
     {
-      name: "recommended_size",
+      name: "recommendedSize",
       title: "Recommended Size",
-      type: "string",
-      initialValue: "",
+      type: "array",
+      of: [
+        {
+          type: "string",
+        },
+      ],
       options: {
         list: [
           { title: "XL", value: "XL" },
@@ -71,6 +75,7 @@ const dress = {
           { title: "S", value: "S" },
           { title: "XS", value: "XS" },
         ],
+        layout: "grid",
       },
     },
     {
@@ -107,10 +112,7 @@ const dress = {
         defineArrayMember({
           type: "object",
           name: "tag",
-          fields: [
-            { type: "string", name: "label" },
-            { type: "string", name: "value" },
-          ],
+          fields: [{ type: "string", name: "tag" }],
         }),
       ],
     },

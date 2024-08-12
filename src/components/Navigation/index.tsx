@@ -161,6 +161,7 @@ const Navigation = () => {
                             : ""
                         }
                         className="h-8 w-8 rounded-full border-2 border-secondary-pink"
+                        referrerPolicy="no-referrer"
                       />
                     </MenuButton>
                   </div>

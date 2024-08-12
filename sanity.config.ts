@@ -10,8 +10,12 @@ import { structureTool } from "sanity/structure";
 import { apiVersion } from "./sanity/env";
 import { schema } from "./sanity/schema";
 
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID as string;
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET as string;
+const projectId =
+  process.env.SANITY_STUDIO_SANITY_PROJECT_ID ||
+  (process.env.NEXT_PUBLIC_SANITY_PROJECT_ID as string);
+const dataset =
+  process.env.SANITY_STUDIO_SANITY_DATASET ||
+  (process.env.NEXT_PUBLIC_SANITY_DATASET as string);
 
 export default defineConfig({
   basePath: "/studio",

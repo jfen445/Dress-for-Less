@@ -27,7 +27,8 @@ export async function getAllDresses() {
       description,
       "images": images[].asset->url,
       size,
-      tags
+      tags,
+      price
     }`
   );
 }
@@ -40,7 +41,7 @@ export async function getDress(id: string) {
       description,
       "images": images[].asset->url,
       size,
-      recommended_size,
+      recommendedSize,
       length,
       stretch,
       brand,

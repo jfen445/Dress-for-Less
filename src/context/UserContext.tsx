@@ -58,12 +58,14 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   React.useEffect(() => {
     // console.log("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", user);
     if (session != null && session?.user.email) {
-      getUser(session?.user.email).then((res) => {
-        if (res === undefined) return;
-        const r = res.data as unknown as UserType;
-        console.log("RRRRRRRRRRRRRRRRR", r, res.data);
-        setUserInfo(r);
-      });
+      getUser(session?.user.email)
+        .then((res) => {
+          if (res === undefined) return;
+          const r = res.data as unknown as UserType;
+          console.log("RRRRRRRRRRRRRRRRR", r, res.data);
+          setUserInfo(r);
+        })
+        .catch((err) => console.error(err));
     }
   }, [session]);
 

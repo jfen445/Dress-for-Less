@@ -1,19 +1,18 @@
-import React from "react";
+import React, { ChangeEvent } from "react";
 import Input from "../Input";
 import { useSession } from "next-auth/react";
 import Button from "../Button";
-import router, { useRouter } from "next/router";
 import { UserType } from "../../../common/types";
 import { getUser } from "@/api/user";
 import Toast from "../Toast";
-import { redirect } from "next/navigation";
 
 const Account = () => {
-  const { push } = useRouter();
   const { data: session } = useSession();
   const [mobile, setMobile] = React.useState<string>("");
   const [instagramHandle, setInstagramHandle] = React.useState<string>("");
   const [alert, setAlert] = React.useState<boolean>(false);
+  const [file, setFile] = React.useState<File | null>(null);
+  const [photo, setPhoto] = React.useState<string>("");
 
   const firstName =
     session && session.user && session.user.name
@@ -33,21 +32,54 @@ const Account = () => {
 
   React.useEffect(() => {
     const getCurrentUser = async () => {
-      getUser(email).then((res) => {
-        console.log("resulttt", res);
-        if (res === undefined) return;
+      getUser(email)
+        .then((res) => {
+          if (res === undefined) return;
 
-        const user = res.data as unknown as UserType;
-        setMobile(user.mobileNumber);
-        setInstagramHandle(user.instagramHandle ?? "");
-      });
+          const user = res.data as unknown as UserType;
+          setMobile(user.mobileNumber);
+          setInstagramHandle(user.instagramHandle ?? "");
+          setPhoto(user.photo);
+        })
+        .catch((err) => console.error(err));
     };
 
     getCurrentUser();
   }, [email]);
 
+  const handleChangeFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.currentTarget.files || e.currentTarget.files.length == 0) return;
+
+    const files = e.currentTarget.files;
+    if (files) {
+      const base64 = await convertToBase64(files[0]);
+      setFile(files[0]);
+      setPhoto(base64 as string);
+    }
+  };
+
+  function convertToBase64(file: File) {
+    if (!file) {
+      return;
+    }
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+  }
+
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    console.log("file", file);
+    if (!photo) {
+      return;
+    }
 
     const form = event.currentTarget;
     console.log("faefeawfaew", form);
@@ -55,17 +87,17 @@ const Account = () => {
       firstname: { value: string };
       lastname: { value: string };
       email: { value: string };
-      mobile: { value: string };
-      instagramHandle: { value: string };
     };
 
     const user: UserType = {
       email: formElements.email.value,
       name: formElements.firstname.value + " " + formElements.lastname.value,
-      mobileNumber: formElements.mobile.value,
-      instagramHandle: formElements.instagramHandle.value ?? "",
+      mobileNumber: mobile,
+      instagramHandle: instagramHandle,
+      photo: photo,
     };
 
+    console.log("subbbbbbbbbbbbb", user);
     await fetch("/api/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -110,6 +142,7 @@ const Account = () => {
                 alt=""
                 src={profileImage}
                 className="h-24 w-24 flex-none rounded-lg bg-gray-800 object-cover"
+                referrerPolicy="no-referrer"
               />
             </div>
 
@@ -218,12 +251,40 @@ const Account = () => {
                 </div>
               </div>
             </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium leading-6  "
+              >
+                Photo Identification
+              </label>
+              <div className="mt-2">
+                {photo ? (
+                  <img
+                    src={photo}
+                    alt="photo identification"
+                    className="my-2 h-64 w-full object-cover border-4 border-primary-pink rounded-lg"
+                  />
+                ) : null}
+                <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
+                  <Input
+                    // value={"../Button/index.tsx"}
+                    onChange={handleChangeFile}
+                    id="instagramHandle"
+                    name="instagramHandle"
+                    type="file"
+                    required={true}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 flex">
             <Button
               type="submit"
-              className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold   shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             >
               Save
             </Button>

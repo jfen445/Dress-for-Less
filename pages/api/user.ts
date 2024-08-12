@@ -32,6 +32,7 @@ export default async function handler(
       name: req.body.user.name,
       mobileNumber: req.body.user.mobileNumber,
       instagramHandle: req.body.user.instagramHandle,
+      photo: req.body.user.photo,
     };
 
     const filter = { email: email };

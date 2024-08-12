@@ -24,6 +24,7 @@ export type UserType = {
   password?: string;
   mobileNumber: string;
   instagramHandle?: string;
+  photo: string;
 };
 
 export type DressType = {
@@ -38,6 +39,7 @@ export type DressType = {
   brand: string;
   rrp: string;
   stretch: string;
+  recommendedSize: string[];
 };
 
 export type ImageType = {

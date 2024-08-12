@@ -37,6 +37,7 @@ const Product = () => {
     if (params) {
       getDress(params.id).then((data) => {
         setDress(data);
+        console.log("dress", data);
 
         var obj = data.images.reduce(function (
           acc: { [x: string]: any },
@@ -59,11 +60,13 @@ const Product = () => {
       router.push("/login");
     }
 
-    const user = await getUser(session?.user.email ?? "").then((res) => {
-      if (res === undefined) return;
-      const r = res.data as unknown as UserType;
-      return r;
-    });
+    const user = await getUser(session?.user.email ?? "")
+      .then((res) => {
+        if (res === undefined) return;
+        const r = res.data as unknown as UserType;
+        return r;
+      })
+      .catch((err) => console.error(err));
 
     if (!params?.id || !user?._id) {
       return;
@@ -88,6 +91,8 @@ const Product = () => {
       }
     });
   };
+
+  const formatSize = (size: string) => {};
 
   return (
     <div className="bg-white">
@@ -139,6 +144,11 @@ const Product = () => {
               <RadioGroup className="block text-sm font-medium text-gray-700">
                 Stretch: {dress?.stretch}
               </RadioGroup>
+              {dress && dress.recommendedSize ? (
+                <RadioGroup className="block text-sm font-medium text-gray-700">
+                  Recommended Size: {dress?.recommendedSize.sort().join(", ")}
+                </RadioGroup>
+              ) : null}
             </div>
 
             <Calendar setSelectedDate={setSelectedDate} />

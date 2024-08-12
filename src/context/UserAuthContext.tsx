@@ -8,7 +8,7 @@ import { AxiosResponse } from "axios";
 interface AuthCtx {
   user: UserType | null;
   signup: (user: UserType) => Promise<AxiosResponse<any, any> | undefined>;
-  login: (
+  login?: (
     email: string,
     password: string
   ) => Promise<AxiosResponse<any, any> | undefined>;
@@ -28,16 +28,16 @@ const UserAuthContextProvider = ({ children }: React.PropsWithChildren) => {
     return signUp(user);
   };
 
-  const login = (email: string, password: string) => {
-    return logUserIn(email, password);
-  };
+  // const login = (email: string, password: string) => {
+  //   return logUserIn(email, password);
+  // };
 
   return (
     <userAuthContext.Provider
       value={{
         user,
         signup,
-        login,
+        // login,
         setUser,
       }}
     >
