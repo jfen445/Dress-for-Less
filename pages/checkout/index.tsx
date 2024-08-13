@@ -1,5 +1,4 @@
 import Checkout from "@/components/Checkout";
-import SubscribeComponent from "@/components/Checkout/SubscibeComponent";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);

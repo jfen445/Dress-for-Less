@@ -17,7 +17,13 @@ const UserSchema =
 const bookingSchema = new Schema({
   dressId: { type: String, required: true },
   userId: { type: String, required: true },
-  datesBooked: { type: [String], required: true },
+  dateBooked: { type: String, required: true },
+  blockOutPeriod: { type: [String], required: true },
+  address: { type: String, required: true },
+  city: { type: String, required: true },
+  country: { type: String, required: true },
+  postCode: { type: String, required: true },
+  tracking: { type: String, required: false },
   isShipped: { type: Boolean, required: true, default: false },
   isReturned: { type: Boolean, required: true, default: false },
 });

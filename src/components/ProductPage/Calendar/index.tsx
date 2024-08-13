@@ -23,11 +23,16 @@ const Calendar = ({ setSelectedDate }: ICanlender) => {
   ];
   const formatdays = alldays.map((day) => dayjs(day).subtract(1, "day"));
   const day = new Date("2024-08-28T14:00:00.000Z").getTime();
+
+  function disableWeekdays(date: any) {
+    return !(date.day() === 0 || date.day() === 6);
+  }
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DateCalendar
         onChange={(e) => selectDate(e)}
-        shouldDisableDate={(date) => formatdays.some((day) => date.isSame(day))}
+        shouldDisableDate={(date) => disableWeekdays(date)}
         timezone="system"
         slotProps={{
           day: {

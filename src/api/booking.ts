@@ -1,8 +1,9 @@
 import axios, { AxiosError } from "axios";
+import { Booking } from "../../common/types";
 
-export async function getClientSecret(price: string) {
+export async function createBooking(booking: Booking) {
   try {
-    const response = await axios.post(`/api/payment?price=${price}`, {
+    const response = await axios.post(`/api/booking`, booking, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -10,9 +11,7 @@ export async function getClientSecret(price: string) {
 
     return response;
   } catch (error) {
-    // throw error;
     const err = error as AxiosError;
-    console.log("?????????????", err);
     throw new Error((err?.response?.data as any).message);
   }
 }

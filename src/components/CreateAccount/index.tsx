@@ -55,6 +55,7 @@ const CreateAccountComponent = () => {
       password: formElements.password.value,
       mobileNumber: formElements.mobileNumber.value,
       instagramHandle: formElements.instagramHandle.value ?? "",
+      photo: "",
     };
 
     const response = await fetch("/api/auth/signup", {

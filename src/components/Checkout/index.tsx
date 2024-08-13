@@ -3,24 +3,41 @@
 import React from "react";
 import OrderSummary from "./OrderSummary";
 import Payment from "./Payment";
-import { CartItemType } from "../../../common/types";
+import { CartItemType, CartType } from "../../../common/types";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import PaymentForm from "./PaymentForm";
+import CheckoutForm from "./CheckoutForm";
 
 interface ProductCtx {
   products: CartItemType[];
   setProducts: React.Dispatch<React.SetStateAction<CartItemType[]>>;
+  deliveryOption: string;
+  setDeliveryOption: React.Dispatch<React.SetStateAction<string>>;
+  totalPrice: number;
+  setTotalPrice: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const ProductContext = React.createContext<ProductCtx>({} as ProductCtx);
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
-
 const Checkout = () => {
+  const [deliveryOption, setDeliveryOption] =
+    React.useState<string>("delivery");
+
+  const [totalPrice, setTotalPrice] = React.useState<number>(0);
   const [products, setProducts] = React.useState<CartItemType[]>([]);
+
   return (
-    <ProductContext.Provider value={{ products, setProducts }}>
+    <ProductContext.Provider
+      value={{
+        products,
+        setProducts,
+        deliveryOption,
+        setDeliveryOption,
+        totalPrice,
+        setTotalPrice,
+      }}
+    >
       <div className="bg-white">
         {/* Background color split screen for large screens */}
         <div
@@ -36,9 +53,12 @@ const Checkout = () => {
           <OrderSummary />
 
           {/* <Payment /> */}
-          <Elements stripe={stripePromise}>
+
+          <CheckoutForm />
+
+          {/* <Elements stripe={stripePromise}>
             <PaymentForm />
-          </Elements>
+          </Elements> */}
         </div>
       </div>
     </ProductContext.Provider>

@@ -74,3 +74,24 @@ export type CartItemType = {
   dateBooked: string;
   cartItemId: string;
 };
+
+export type Address = {
+  address: string;
+  city: string;
+  country: string;
+  postCode: string;
+};
+
+export type Booking = {
+  dressId: string;
+  userId: string;
+  dateBooked: string;
+  blockOutPeriod: string[];
+  address: string;
+  city: string;
+  country: string;
+  postCode: string;
+  tracking: string;
+  isShipped: boolean;
+  isReturned: boolean;
+};

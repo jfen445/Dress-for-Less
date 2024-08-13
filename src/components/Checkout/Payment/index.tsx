@@ -1,9 +1,7 @@
 import React from "react";
 import Stripe from "stripe";
 import { CartItemType } from "../../../../common/types";
-import { notFound } from "next/navigation";
 import { useUserContext } from "@/context/UserContext";
-import { CheckoutForm } from "./CheckoutForm";
 import { ProductContext } from "..";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);

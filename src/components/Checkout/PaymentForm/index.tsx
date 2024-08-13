@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  CardElement,
-  Elements,
   LinkAuthenticationElement,
   PaymentElement,
   useElements,
@@ -11,77 +9,23 @@ import {
 import axios from "axios";
 import React, { FormEvent } from "react";
 import { ProductContext } from "..";
-import { getClientSecret } from "@/api/payment";
-import { loadStripe } from "@stripe/stripe-js";
+import { Stripe } from "@stripe/stripe-js";
 import Button from "@/components/Button";
+import { Address, Booking } from "../../../../common/types";
+import { useUserContext } from "@/context/UserContext";
+import { createBooking } from "@/api/booking";
+import dayjs from "dayjs";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY as string
-);
+interface IPaymentForm {
+  clientSecret?: any;
+  stripePromise?: Promise<Stripe | null>;
+  isSubmitted?: boolean;
+  address: Address | null;
+}
 
-const PaymentForm = () => {
-  const { products, setProducts } = React.useContext(ProductContext);
-  const stripe = useStripe();
-  const elements = useElements();
-  const [clientSecret, setClientSecret] = React.useState<string>("");
-
-  const sumPrices = React.useCallback(() => {
-    return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
-  }, [products]);
-
-  React.useEffect(() => {
-    const getSecret = async () => {
-      await getClientSecret(sumPrices()).then((data) => {
-        console.log(":this is the data", data?.data.clientSecret);
-        setClientSecret(data?.data.clientSecret);
-      });
-    };
-
-    getSecret();
-  }, [products, sumPrices]);
-
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const cardElement = elements?.getElement("card");
-
-    try {
-      if (!stripe || !cardElement) return null;
-      const { data } = await axios.post("/api/payment", {
-        data: { amount: 89 },
-      });
-      const clientSecret = data;
-
-      await stripe?.confirmCardPayment(clientSecret, {
-        payment_method: { card: cardElement },
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  console.log("thi sis the secret", clientSecret);
-  return (
-    <form onSubmit={onSubmit}>
-      {/* <CardElement /> */}
-      {clientSecret ? (
-        <Elements options={{ clientSecret }} stripe={stripePromise}>
-          <Form />
-        </Elements>
-      ) : null}
-      <button type="submit">Submit</button>
-    </form>
-  );
-};
-
-export default PaymentForm;
-
-function Form({
-  priceInCents,
-  productId,
-}: {
-  priceInCents?: number;
-  productId?: string;
-}) {
+const PaymentForm = ({ address }: IPaymentForm) => {
+  const { userInfo } = useUserContext();
+  const { products } = React.useContext(ProductContext);
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -91,69 +35,61 @@ function Form({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
-    console.log("hiii", e);
     if (stripe == null || elements == null || email == null) return;
 
     setIsLoading(true);
 
-    // const orderExists = await userOrderExists(email, productId);
+    const date = products[0].dateBooked;
 
-    // if (orderExists) {
-    //   setErrorMessage(
-    //     "You have already purchased this product. Try downloading it from the My Orders page"
-    //   );
-    //   setIsLoading(false);
-    //   return;
-    // }
+    const day = dayjs(date).subtract(1, "day").day();
 
-    stripe
-      .confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/dresses`,
-        },
-      })
-      .then(({ error }) => {
-        if (error.type === "card_error" || error.type === "validation_error") {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage("An unknown error occurred");
-        }
-      })
-      .finally(() => setIsLoading(false));
-  }
+    let dates: string[] = [];
 
-  async function onSubmit() {
-    console.log("hiii");
-    if (stripe == null || elements == null || email == null) return;
+    if (day == 5) {
+      const fri = dayjs(date).toJSON();
+      const sat = dayjs(date).add(1, "day").toJSON();
+      dates = [fri, sat];
+    }
 
-    setIsLoading(true);
+    if (day == 6) {
+      const fri = dayjs(date).subtract(1, "day").toJSON();
+      const sat = dayjs(date).toJSON();
+      dates = [fri, sat];
+    }
 
-    // const orderExists = await userOrderExists(email, productId);
+    const bookingObj: Booking = {
+      userId: userInfo?._id ?? "",
+      dressId: products[0]._id,
+      dateBooked: date,
+      blockOutPeriod: dates,
+      address: address?.address ?? "",
+      city: address?.city ?? "",
+      country: address?.country ?? "",
+      postCode: address?.postCode ?? "",
+      tracking: "",
+      isShipped: false,
+      isReturned: false,
+    };
 
-    // if (orderExists) {
-    //   setErrorMessage(
-    //     "You have already purchased this product. Try downloading it from the My Orders page"
-    //   );
-    //   setIsLoading(false);
-    //   return;
-    // }
+    await createBooking(bookingObj)
+      .then((data) => console.log("comppleted booking", data))
+      .catch((err) => console.error(err));
 
-    stripe
-      .confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/dresses`,
-        },
-      })
-      .then(({ error }) => {
-        if (error.type === "card_error" || error.type === "validation_error") {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage("An unknown error occurred");
-        }
-      })
-      .finally(() => setIsLoading(false));
+    // stripe
+    //   .confirmPayment({
+    //     elements,
+    //     confirmParams: {
+    //       return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/dresses`,
+    //     },
+    //   })
+    //   .then(({ error }) => {
+    //     if (error.type === "card_error" || error.type === "validation_error") {
+    //       setErrorMessage(error.message);
+    //     } else {
+    //       setErrorMessage("An unknown error occurred");
+    //     }
+    //   })
+    //   .finally(() => setIsLoading(false));
   }
 
   return (
@@ -162,13 +98,18 @@ function Form({
       <div className="mt-4">
         <LinkAuthenticationElement onChange={(e) => setEmail(e.value.email)} />
       </div>
-      <Button
-        onClick={() => onSubmit()}
-        className="w-full"
-        disabled={stripe == null || elements == null || isLoading}
-      >
-        button press me
-      </Button>
+
+      <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
+        <Button
+          type="submit"
+          className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
+        >
+          Submit Booking
+        </Button>
+        <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left"></p>
+      </div>
     </form>
   );
-}
+};
+
+export default PaymentForm;

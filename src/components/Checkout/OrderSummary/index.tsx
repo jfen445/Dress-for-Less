@@ -13,17 +13,25 @@ import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
 
-interface IOrderSummary {
-  products: CartItemType[];
-  setProducts: React.Dispatch<React.SetStateAction<CartItemType[]>>;
-}
-
 const OrderSummary = () => {
   const { userInfo } = useUserContext();
-  const { products, setProducts } = React.useContext(ProductContext);
-  // const [products, setProducts] = React.useState<CartItemType[]>([]);
+  const { products, setProducts, deliveryOption, setTotalPrice } =
+    React.useContext(ProductContext);
 
-  const shippingCost = "15.00";
+  const shippingCost = React.useCallback(() => {
+    if (deliveryOption === "delivery") {
+      return "15.00";
+    }
+
+    if (
+      deliveryOption === "pickup/delivery" ||
+      deliveryOption === "delivery/pickup"
+    ) {
+      return "7.00";
+    }
+
+    return "0.00";
+  }, [deliveryOption]);
 
   React.useEffect(() => {
     const getUserCart = async () => {
@@ -56,7 +64,8 @@ const OrderSummary = () => {
   };
 
   const sumTotalPrices = () => {
-    return (parseInt(sumPrices()) + parseInt(shippingCost)).toFixed(2);
+    setTotalPrice((parseInt(sumPrices()) + parseInt(shippingCost())) * 100);
+    return (parseInt(sumPrices()) + parseInt(shippingCost())).toFixed(2);
   };
 
   return (
@@ -68,7 +77,7 @@ const OrderSummary = () => {
         <div className="mx-auto max-w-lg lg:max-w-none">
           <h2
             id="summary-heading"
-            className="text-lg font-medium text-gray-900 mt-10"
+            className="text-lg font-medium text-gray-900"
           >
             Order summary
           </h2>
@@ -106,7 +115,7 @@ const OrderSummary = () => {
 
             <div className="flex items-center justify-between">
               <dt className="text-gray-600">Shipping</dt>
-              <dd>${shippingCost}</dd>
+              <dd>${shippingCost()}</dd>
             </div>
 
             <div className="flex items-center justify-between border-t border-gray-200 pt-6">
@@ -120,7 +129,7 @@ const OrderSummary = () => {
               <div className="mx-auto max-w-lg">
                 <PopoverButton className="flex w-full items-center py-6 font-medium">
                   <span className="mr-auto text-base">Total</span>
-                  <span className="mr-2 text-base">$361.80</span>
+                  <span className="mr-2 text-base">${sumTotalPrices()}</span>
                   <ChevronUpIcon
                     aria-hidden="true"
                     className="h-5 w-5 text-gray-500"
@@ -141,17 +150,12 @@ const OrderSummary = () => {
               <dl className="mx-auto max-w-lg space-y-6">
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-600">Subtotal</dt>
-                  <dd>$320.00</dd>
+                  <dd>${sumPrices()}</dd>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-600">Shipping</dt>
-                  <dd>$15.00</dd>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <dt className="text-gray-600">Taxes</dt>
-                  <dd>$26.80</dd>
+                  <dd>${shippingCost()}</dd>
                 </div>
               </dl>
             </PopoverPanel>
