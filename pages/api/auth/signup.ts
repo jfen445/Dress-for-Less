@@ -34,6 +34,7 @@ export default async function handler(
         password: hash,
         mobileNumber: req.body.user.mobileNumber,
         instagramHandle: req.body.user.instagramHandle,
+        photo: "",
       };
 
       await createUser(user);

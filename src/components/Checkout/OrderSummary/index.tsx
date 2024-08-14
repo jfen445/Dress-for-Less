@@ -36,19 +36,21 @@ const OrderSummary = () => {
   React.useEffect(() => {
     const getUserCart = async () => {
       if (userInfo && userInfo?._id) {
-        const response = await getCart(userInfo?._id);
+        const response = await getCart(userInfo?._id)
+          .then((data) => {
+            const cartItems = data as unknown as CartType[];
+            let dresses: CartItemType[] = [];
+            cartItems.forEach(async (item) => {
+              await getDress(item.dressId).then((data) => {
+                data.dateBooked = item.dateBooked;
+                data.cartItemId = item._id;
+                dresses = [...dresses, data];
+              });
 
-        const cartItems = response.data as CartType[];
-        let dresses: CartItemType[] = [];
-        cartItems.forEach(async (item) => {
-          await getDress(item.dressId).then((data) => {
-            data.dateBooked = item.dateBooked;
-            data.cartItemId = item._id;
-            dresses = [...dresses, data];
-          });
-
-          setProducts(dresses);
-        });
+              setProducts(dresses);
+            });
+          })
+          .catch((err) => console.error(err));
       }
     };
 

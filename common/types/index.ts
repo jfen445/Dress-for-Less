@@ -91,6 +91,7 @@ export type Booking = {
   city: string;
   country: string;
   postCode: string;
+  deliveryType: string;
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;

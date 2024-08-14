@@ -19,6 +19,7 @@ export default async function handler(
       city: req.body.city,
       country: req.body.country,
       postCode: req.body.postCode,
+      deliveryType: req.body.deliveryType,
       tracking: req.body.tracking,
       isShipped: req.body.isShipped,
       isReturned: req.body.isReturned,

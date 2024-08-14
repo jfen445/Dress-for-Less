@@ -15,6 +15,7 @@ import { Address, Booking } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import { createBooking } from "@/api/booking";
 import dayjs from "dayjs";
+import { removeFromCart } from "@/api/cart";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -25,7 +26,7 @@ interface IPaymentForm {
 
 const PaymentForm = ({ address }: IPaymentForm) => {
   const { userInfo } = useUserContext();
-  const { products } = React.useContext(ProductContext);
+  const { products, deliveryOption } = React.useContext(ProductContext);
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -57,23 +58,26 @@ const PaymentForm = ({ address }: IPaymentForm) => {
       dates = [fri, sat];
     }
 
-    const bookingObj: Booking = {
-      userId: userInfo?._id ?? "",
-      dressId: products[0]._id,
-      dateBooked: date,
-      blockOutPeriod: dates,
-      address: address?.address ?? "",
-      city: address?.city ?? "",
-      country: address?.country ?? "",
-      postCode: address?.postCode ?? "",
-      tracking: "",
-      isShipped: false,
-      isReturned: false,
-    };
+    products.forEach(async (item) => {
+      const bookingObj: Booking = {
+        userId: userInfo?._id ?? "",
+        dressId: item._id,
+        dateBooked: date,
+        blockOutPeriod: dates,
+        address: address?.address ?? "",
+        city: address?.city ?? "",
+        country: address?.country ?? "",
+        postCode: address?.postCode ?? "",
+        deliveryType: deliveryOption,
+        tracking: "",
+        isShipped: false,
+        isReturned: false,
+      };
 
-    await createBooking(bookingObj)
-      .then((data) => console.log("comppleted booking", data))
-      .catch((err) => console.error(err));
+      await createBooking(bookingObj)
+        .then(async (data) => await removeFromCart(item.cartItemId))
+        .catch((err) => console.error(err));
+    });
 
     // stripe
     //   .confirmPayment({

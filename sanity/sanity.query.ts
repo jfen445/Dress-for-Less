@@ -51,3 +51,13 @@ export async function getDress(id: string) {
     }`
   );
 }
+
+export async function getFaq() {
+  return client.fetch(
+    groq`*[_type == "faq"]{
+      _id,
+      question,
+      answer,
+    }`
+  );
+}
