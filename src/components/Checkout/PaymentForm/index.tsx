@@ -24,7 +24,7 @@ interface IPaymentForm {
   address: Address | null;
 }
 
-const PaymentForm = ({ address }: IPaymentForm) => {
+const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
   const { userInfo } = useUserContext();
   const { products, deliveryOption } = React.useContext(ProductContext);
   const stripe = useStripe();
@@ -33,6 +33,7 @@ const PaymentForm = ({ address }: IPaymentForm) => {
   const [errorMessage, setErrorMessage] = React.useState<string>();
   const [email, setEmail] = React.useState<string>();
 
+  console.log("serafeaf", clientSecret);
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
@@ -40,30 +41,31 @@ const PaymentForm = ({ address }: IPaymentForm) => {
 
     setIsLoading(true);
 
-    const date = products[0].dateBooked;
-
-    const day = dayjs(date).subtract(1, "day").day();
-
-    let dates: string[] = [];
-
-    if (day == 5) {
-      const fri = dayjs(date).toJSON();
-      const sat = dayjs(date).add(1, "day").toJSON();
-      dates = [fri, sat];
-    }
-
-    if (day == 6) {
-      const fri = dayjs(date).subtract(1, "day").toJSON();
-      const sat = dayjs(date).toJSON();
-      dates = [fri, sat];
-    }
-
     products.forEach(async (item) => {
+      const date = item.dateBooked;
+
+      const day = dayjs(date).subtract(1, "day").day();
+
+      let dates: string[] = [];
+
+      if (day == 5) {
+        const fri = dayjs(date).toJSON();
+        const sat = dayjs(date).add(1, "day").toJSON();
+        dates = [fri, sat];
+      }
+
+      if (day == 6) {
+        const fri = dayjs(date).subtract(1, "day").toJSON();
+        const sat = dayjs(date).toJSON();
+        dates = [fri, sat];
+      }
+
       const bookingObj: Booking = {
         userId: userInfo?._id ?? "",
         dressId: item._id,
         dateBooked: date,
         blockOutPeriod: dates,
+        price: parseInt(item.price),
         address: address?.address ?? "",
         city: address?.city ?? "",
         country: address?.country ?? "",
@@ -72,6 +74,7 @@ const PaymentForm = ({ address }: IPaymentForm) => {
         tracking: "",
         isShipped: false,
         isReturned: false,
+        paymentIntent: clientSecret,
       };
 
       await createBooking(bookingObj)
@@ -79,21 +82,21 @@ const PaymentForm = ({ address }: IPaymentForm) => {
         .catch((err) => console.error(err));
     });
 
-    // stripe
-    //   .confirmPayment({
-    //     elements,
-    //     confirmParams: {
-    //       return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/dresses`,
-    //     },
-    //   })
-    //   .then(({ error }) => {
-    //     if (error.type === "card_error" || error.type === "validation_error") {
-    //       setErrorMessage(error.message);
-    //     } else {
-    //       setErrorMessage("An unknown error occurred");
-    //     }
-    //   })
-    //   .finally(() => setIsLoading(false));
+    stripe
+      .confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
+        },
+      })
+      .then(({ error }) => {
+        if (error.type === "card_error" || error.type === "validation_error") {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage("An unknown error occurred");
+        }
+      })
+      .finally(() => setIsLoading(false));
   }
 
   return (

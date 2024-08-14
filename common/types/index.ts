@@ -87,6 +87,7 @@ export type Booking = {
   userId: string;
   dateBooked: string;
   blockOutPeriod: string[];
+  price: number;
   address: string;
   city: string;
   country: string;
@@ -95,4 +96,5 @@ export type Booking = {
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
+  paymentIntent: string;
 };

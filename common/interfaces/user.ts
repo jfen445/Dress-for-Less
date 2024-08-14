@@ -19,6 +19,7 @@ export interface IBooking {
   userId: string;
   dateBooked: string;
   blockOutPeriod: string[];
+  price: number;
   address: string;
   city: string;
   country: string;
@@ -27,4 +28,6 @@ export interface IBooking {
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
+  paymentIntent: string;
+  paymentSuccess: boolean;
 }

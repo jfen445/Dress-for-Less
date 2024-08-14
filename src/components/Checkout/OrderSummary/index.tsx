@@ -38,7 +38,7 @@ const OrderSummary = () => {
       if (userInfo && userInfo?._id) {
         const response = await getCart(userInfo?._id)
           .then((data) => {
-            const cartItems = data as unknown as CartType[];
+            const cartItems = data.data as unknown as CartType[];
             let dresses: CartItemType[] = [];
             cartItems.forEach(async (item) => {
               await getDress(item.dressId).then((data) => {

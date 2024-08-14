@@ -16,6 +16,7 @@ export default async function handler(
       dateBooked: req.body.dateBooked,
       blockOutPeriod: req.body.blockOutPeriod,
       address: req.body.address,
+      price: req.body.price,
       city: req.body.city,
       country: req.body.country,
       postCode: req.body.postCode,
@@ -23,6 +24,8 @@ export default async function handler(
       tracking: req.body.tracking,
       isShipped: req.body.isShipped,
       isReturned: req.body.isReturned,
+      paymentIntent: req.body.paymentIntent,
+      paymentSuccess: false,
     };
 
     const filter = {

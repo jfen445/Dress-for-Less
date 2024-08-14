@@ -2,7 +2,7 @@ import axios, { AxiosError } from "axios";
 
 export async function getClientSecret(price: string) {
   try {
-    const response = await axios.post(`/api/payment?price=${price}`, {
+    const response = await axios.post(`/api/payment/intent?price=${price}`, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -12,7 +12,6 @@ export async function getClientSecret(price: string) {
   } catch (error) {
     // throw error;
     const err = error as AxiosError;
-    console.log("?????????????", err);
     throw new Error((err?.response?.data as any).message);
   }
 }

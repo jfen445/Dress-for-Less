@@ -1,8 +1,6 @@
 import Checkout from "@/components/Checkout";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-
 const CheckoutPage = () => {
   // const intent = await stripe.paymentIntents.create({
   //   amount: 10,

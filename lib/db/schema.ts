@@ -14,20 +14,24 @@ const userSchema = new Schema({
 const UserSchema =
   mongoose.models.AllUsers ?? mongoose.model("AllUsers", userSchema);
 
-const bookingSchema = new Schema({
-  dressId: { type: String, required: true },
-  userId: { type: String, required: true },
-  dateBooked: { type: String, required: true },
-  blockOutPeriod: { type: [String], required: true },
-  address: { type: String, required: false },
-  city: { type: String, required: false },
-  country: { type: String, required: false },
-  postCode: { type: String, required: false },
-  deliveryType: { type: String, required: true, default: "delivery" },
-  tracking: { type: String, required: false },
-  isShipped: { type: Boolean, required: true, default: false },
-  isReturned: { type: Boolean, required: true, default: false },
-});
+const bookingSchema = new Schema(
+  {
+    dressId: { type: String, required: true },
+    userId: { type: String, required: true },
+    dateBooked: { type: String, required: true },
+    blockOutPeriod: { type: [String], required: true },
+    address: { type: String, required: false },
+    city: { type: String, required: false },
+    country: { type: String, required: false },
+    postCode: { type: String, required: false },
+    deliveryType: { type: String, required: true, default: "delivery" },
+    tracking: { type: String, required: false },
+    isShipped: { type: Boolean, required: true, default: false },
+    isReturned: { type: Boolean, required: true, default: false },
+    paymentSuccess: { type: Boolean, required: true, default: false },
+  },
+  { timestamps: true }
+);
 
 const BookingSchema =
   mongoose.models.Bookings ?? mongoose.model("Bookings", bookingSchema);

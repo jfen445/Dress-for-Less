@@ -20,9 +20,10 @@ const Cart = () => {
     if (userInfo && userInfo?._id) {
       await getCart(userInfo?._id)
         .then((data) => {
-          const cartItems = data as unknown as CartType[];
+          const cartItems = data.data as unknown as CartType[];
+          console.log("cart itmes", cartItems);
           let dresses: CartItemType[] = [];
-          cartItems.forEach(async (item) => {
+          cartItems.map(async (item) => {
             await getDress(item.dressId).then((data) => {
               data.dateBooked = item.dateBooked;
               data.cartItemId = item._id;
@@ -32,7 +33,10 @@ const Cart = () => {
             setProducts(dresses);
           });
         })
-        .catch((err) => setErr(true));
+        .catch((err) => {
+          setErr(true);
+          console.log("error", err);
+        });
     }
   }, [userInfo]);
 
