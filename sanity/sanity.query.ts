@@ -28,7 +28,7 @@ export async function getAllDresses() {
       "images": images[].asset->url,
       size,
       tags,
-      price
+      price,
     }`
   );
 }
@@ -47,7 +47,14 @@ export async function getDress(id: string) {
       brand,
       price,
       rrp,
-      tags
+      tags,
+      xsSize,
+      sSize,
+      mSize,
+      lSize,
+      xlSize,
+      condition,
+      rating
     }`
   );
 }

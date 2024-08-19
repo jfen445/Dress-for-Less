@@ -3,6 +3,9 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
+
 import { RadioGroup } from "@headlessui/react";
 import { getDress } from "../../../sanity/sanity.query";
 import {
@@ -19,10 +22,21 @@ import { useSession } from "next-auth/react";
 import Toast from "../Toast";
 import { addToCart } from "@/api/cart";
 
+type Sizes = {
+  xsSize?: string;
+  sSize?: string;
+  mSize?: string;
+  lSize?: string;
+  xlSize?: string;
+};
+
 const Product = () => {
   const { data: session } = useSession();
   const router = useRouter();
   const [dress, setDress] = React.useState<DressType>();
+  const [sizes, setSizes] = React.useState<Sizes>({});
+  const [size, setSize] = React.useState<string>("");
+
   const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
   const [err, setErr] = React.useState<boolean>(false);
@@ -33,11 +47,33 @@ const Product = () => {
 
   const params = useParams<{ id: string }>();
 
+  const sizeOptions = React.useCallback(() => {
+    const obj = Object.keys(sizes).map((item) =>
+      item.substring(0, item.length - 4).toUpperCase()
+    );
+
+    return obj;
+  }, [sizes]);
+
+  console.log("sizing options", sizeOptions());
+
   React.useEffect(() => {
     if (params) {
       getDress(params.id).then((data) => {
         setDress(data);
         console.log("dress", data);
+        const dressSizes = (({ xsSize, sSize, mSize, lSize, xlSize }) => ({
+          xsSize,
+          sSize,
+          mSize,
+          lSize,
+          xlSize,
+        }))(data);
+
+        let pickedSizes = Object.fromEntries(
+          Object.entries(dressSizes).filter(([_, v]) => v != null)
+        );
+        setSizes(pickedSizes);
 
         var obj = data.images.reduce(function (
           acc: { [x: string]: any },
@@ -76,23 +112,49 @@ const Product = () => {
       dressId: params?.id,
       userId: user?._id,
       dateBooked: selectedDate,
+      size: size,
     };
 
-    await addToCart(cartItem).then((data) => {
-      setErrorMessage(data?.data.message);
-      setErr(true);
+    await addToCart(cartItem)
+      .then((data) => {
+        setErrorMessage(data?.data.message);
+        setErr(true);
 
-      if (data?.status === 200) {
-        setVariant("success");
-      }
-
-      if (data?.status === 404) {
+        if (data?.status === 200) {
+          setVariant("success");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        setErrorMessage(err.message);
         setVariant("warning");
-      }
-    });
+        setErr(true);
+      });
   };
 
-  const formatSize = (size: string) => {};
+  const Dropdown = () => {
+    setSize(sizeOptions()[0]);
+    return (
+      <div>
+        <label
+          htmlFor="location"
+          className="block text-sm font-medium leading-6 text-gray-900 mt-4"
+        >
+          Select a size
+        </label>
+        <select
+          id="location"
+          name="location"
+          onChange={(e) => setSize(e.target.value)}
+          className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+        >
+          {sizeOptions().map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white">
@@ -151,12 +213,14 @@ const Product = () => {
               ) : null}
             </div>
 
+            <Dropdown />
+
             <Calendar setSelectedDate={setSelectedDate} />
 
             <div className="mt-10">
               <Button
                 className="flex w-full items-center justify-center"
-                disabled={selectedDate === ""}
+                disabled={selectedDate === "" || size == ""}
                 onClick={() => addDressToCart()}
               >
                 Making a booking

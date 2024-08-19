@@ -8,6 +8,7 @@ export async function addToCart(cart: CartType) {
     dressId: cart.dressId,
     userId: cart.userId,
     dateBooked: cart.dateBooked,
+    size: cart.size,
   });
 
   return newCartItem;

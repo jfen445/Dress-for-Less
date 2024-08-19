@@ -1,5 +1,23 @@
 import { defineArrayMember, defineField } from "sanity";
 
+const dresssize = {
+  name: "dresssize",
+  title: "Dress Size",
+  type: "document",
+  fields: [
+    {
+      name: "XS",
+      title: "XS",
+      type: "number",
+    },
+    {
+      name: "S",
+      title: "S",
+      type: "number",
+    },
+  ],
+};
+
 const dress = {
   name: "dress",
   title: "Dress",
@@ -27,7 +45,7 @@ const dress = {
       name: "rrp",
       title: "RRP",
       type: "number",
-      description: "Reatil price for the dress",
+      description: "Retail price for the dress",
     },
     {
       name: "brand",
@@ -57,6 +75,41 @@ const dress = {
           { title: "XS", value: "XS" },
         ],
       },
+    },
+    {
+      name: "xsSize",
+      title: "XS",
+      type: "number",
+      description: "Quantity of XS sized dresses",
+      defaultValue: 0,
+    },
+    {
+      name: "sSize",
+      title: "S",
+      type: "number",
+      description: "Quantity of S sized dresses",
+      defaultValue: 0,
+    },
+    {
+      name: "mSize",
+      title: "M",
+      type: "number",
+      description: "Quantity of M sized dresses",
+      defaultValue: 0,
+    },
+    {
+      name: "lSize",
+      title: "L",
+      type: "number",
+      description: "Quantity of L sized dresses",
+      defaultValue: 0,
+    },
+    {
+      name: "xlSize",
+      title: "XL",
+      type: "number",
+      description: "Quantity of XL sized dresses",
+      defaultValue: 0,
     },
     {
       name: "recommendedSize",
@@ -103,6 +156,23 @@ const dress = {
           { title: "3", value: "3" },
         ],
       },
+    },
+    {
+      name: "condition",
+      title: "Condition",
+      type: "string",
+    },
+    {
+      name: "rating",
+      title: "Rating",
+      type: "number",
+      validation: (rule: {
+        min: (arg0: number) => {
+          (): any;
+          new (): any;
+          max: { (arg0: number): any; new (): any };
+        };
+      }) => rule.min(0).max(3),
     },
     {
       name: "tags",

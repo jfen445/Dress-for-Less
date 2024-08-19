@@ -12,6 +12,7 @@ export interface ICart {
   dressId: string;
   userId: string;
   dateBooked: string;
+  size: string;
 }
 
 export interface IBooking {

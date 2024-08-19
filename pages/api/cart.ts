@@ -34,11 +34,9 @@ export default async function handler(
   } else if (req.method == "POST") {
     const cart: CartType = req.body.cartItem;
 
-    console.log("cart", req.body.cartItem);
+    console.log("this is the cart", cart);
 
     const cartItem = await getCartItem(cart.userId, cart.dressId);
-
-    console.log("this i the cart itme", cartItem);
 
     if (cartItem.length > 0) {
       return res.status(404).json({
@@ -46,11 +44,11 @@ export default async function handler(
       });
     }
 
-    console.log("ghettrageg");
     let newCartItem: ICart = {
       dressId: cart.dressId,
       userId: cart.userId,
       dateBooked: cart.dateBooked,
+      size: cart.size,
     };
 
     await addToCart(newCartItem);

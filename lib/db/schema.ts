@@ -40,6 +40,7 @@ const cartSchema = new Schema({
   dressId: { type: String, required: true },
   userId: { type: String, required: true },
   dateBooked: { type: String, required: true },
+  size: { type: String, required: true },
 });
 
 const CartSchema = mongoose.models.Cart ?? mongoose.model("Cart", cartSchema);
