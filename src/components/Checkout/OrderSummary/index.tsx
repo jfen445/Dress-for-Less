@@ -44,6 +44,7 @@ const OrderSummary = () => {
               await getDress(item.dressId).then((data) => {
                 data.dateBooked = item.dateBooked;
                 data.cartItemId = item._id;
+                data.size = item.size;
                 dresses = [...dresses, data];
               });
 
@@ -58,7 +59,7 @@ const OrderSummary = () => {
   }, [setProducts, userInfo]);
 
   const formatDate = (date: string) => {
-    return dayjs(date).subtract(1, "day").format("D MMMM YYYY");
+    return dayjs(date).format("D MMMM YYYY");
   };
 
   const sumPrices = (): string => {

@@ -48,11 +48,11 @@ export async function getDress(id: string) {
       price,
       rrp,
       tags,
-      xsSize,
-      sSize,
-      mSize,
-      lSize,
-      xlSize,
+      xs,
+      s,
+      m,
+      l,
+      xl,
       condition,
       rating
     }`

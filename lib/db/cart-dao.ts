@@ -15,11 +15,18 @@ export async function addToCart(cart: CartType) {
 }
 
 export async function getCart(userId: String) {
-  return CartSchema.find({ userId }, "dressId userId dateBooked");
+  return CartSchema.find({ userId }, "dressId userId dateBooked size");
 }
 
-export async function getCartItem(userId: String, dressId: string) {
-  return CartSchema.find({ userId, dressId }, "dressId userId dateBooked");
+export async function getCartItem(
+  userId: String,
+  dressId: string,
+  size: string
+) {
+  return CartSchema.find(
+    { userId, dressId, size },
+    "dressId userId dateBooked size"
+  );
 }
 
 export async function removeItemFromCart(cartId: String) {

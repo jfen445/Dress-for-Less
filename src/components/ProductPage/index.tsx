@@ -12,6 +12,7 @@ import {
   CartType,
   DressType,
   ImageType,
+  Sizes,
   UserType,
 } from "../../../common/types";
 import ImageSelector from "./ImageSelector";
@@ -21,14 +22,7 @@ import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
 import Toast from "../Toast";
 import { addToCart } from "@/api/cart";
-
-type Sizes = {
-  xsSize?: string;
-  sSize?: string;
-  mSize?: string;
-  lSize?: string;
-  xlSize?: string;
-};
+import { getAllBookingsByDress } from "@/api/booking";
 
 const Product = () => {
   const { data: session } = useSession();
@@ -48,46 +42,51 @@ const Product = () => {
   const params = useParams<{ id: string }>();
 
   const sizeOptions = React.useCallback(() => {
-    const obj = Object.keys(sizes).map((item) =>
-      item.substring(0, item.length - 4).toUpperCase()
-    );
+    const obj = Object.keys(sizes).map((item) => item.toUpperCase());
 
     return obj;
   }, [sizes]);
 
-  console.log("sizing options", sizeOptions());
+  console.log("sizing options", sizeOptions(), size);
 
   React.useEffect(() => {
     if (params) {
-      getDress(params.id).then((data) => {
-        setDress(data);
-        console.log("dress", data);
-        const dressSizes = (({ xsSize, sSize, mSize, lSize, xlSize }) => ({
-          xsSize,
-          sSize,
-          mSize,
-          lSize,
-          xlSize,
-        }))(data);
+      const getProductDetails = async () => {
+        await getDress(params.id).then((data) => {
+          setDress(data);
+          console.log("dress", data);
+          const dressSizes = (({ xs, s, m, l, xl }) => ({
+            xs,
+            s,
+            m,
+            l,
+            xl,
+          }))(data);
 
-        let pickedSizes = Object.fromEntries(
-          Object.entries(dressSizes).filter(([_, v]) => v != null)
-        );
-        setSizes(pickedSizes);
+          console.log("feafa", dressSizes);
+          let pickedSizes = Object.fromEntries(
+            Object.entries(dressSizes).filter(([_, v]) => v != null)
+          );
 
-        var obj = data.images.reduce(function (
-          acc: { [x: string]: any },
-          cur: any,
-          i: string | number
-        ) {
-          var o = { src: cur, alt: data.name + cur };
-          acc[i] = o;
-          return acc;
-        },
-        []);
+          console.log("p[icked siszes", pickedSizes);
+          setSizes(pickedSizes);
 
-        setImages(obj);
-      });
+          var obj = data.images.reduce(function (
+            acc: { [x: string]: any },
+            cur: any,
+            i: string | number
+          ) {
+            var o = { src: cur, alt: data.name + cur };
+            acc[i] = o;
+            return acc;
+          },
+          []);
+
+          setImages(obj);
+        });
+      };
+
+      getProductDetails();
     }
   }, [params, params?.id]);
 
@@ -133,7 +132,10 @@ const Product = () => {
   };
 
   const Dropdown = () => {
-    setSize(sizeOptions()[0]);
+    if (!size) {
+      setSize(sizeOptions()[0]);
+    }
+
     return (
       <div>
         <label
@@ -149,12 +151,16 @@ const Product = () => {
           className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
         >
           {sizeOptions().map((item) => (
-            <option key={item}>{item}</option>
+            <option key={item} selected={item == size}>
+              {item}
+            </option>
           ))}
         </select>
       </div>
     );
   };
+
+  console.log("this is the size,", size);
 
   return (
     <div className="bg-white">
@@ -215,7 +221,11 @@ const Product = () => {
 
             <Dropdown />
 
-            <Calendar setSelectedDate={setSelectedDate} />
+            <Calendar
+              setSelectedDate={setSelectedDate}
+              sizes={sizes}
+              selectedSize={size}
+            />
 
             <div className="mt-10">
               <Button

@@ -57,6 +57,7 @@ export type CartType = {
   dressId: string;
   userId: string;
   dateBooked: string;
+  size: string;
 };
 
 export type CartItemType = {
@@ -97,4 +98,13 @@ export type Booking = {
   isShipped: boolean;
   isReturned: boolean;
   paymentIntent: string;
+  size: String;
+};
+
+export type Sizes = {
+  xs?: string;
+  s?: string;
+  m?: string;
+  l?: string;
+  xl?: string;
 };

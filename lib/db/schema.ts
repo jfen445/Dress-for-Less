@@ -29,6 +29,7 @@ const bookingSchema = new Schema(
     isShipped: { type: Boolean, required: true, default: false },
     isReturned: { type: Boolean, required: true, default: false },
     paymentSuccess: { type: Boolean, required: true, default: false },
+    size: { type: String, required: true },
   },
   { timestamps: true }
 );

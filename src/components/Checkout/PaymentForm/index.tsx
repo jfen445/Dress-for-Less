@@ -75,28 +75,29 @@ const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
         isShipped: false,
         isReturned: false,
         paymentIntent: clientSecret,
+        size: item.size,
       };
 
       await createBooking(bookingObj)
-        .then(async (data) => await removeFromCart(item.cartItemId))
+        // .then(async (data) => await removeFromCart(item.cartItemId))
         .catch((err) => console.error(err));
     });
 
-    stripe
-      .confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
-        },
-      })
-      .then(({ error }) => {
-        if (error.type === "card_error" || error.type === "validation_error") {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage("An unknown error occurred");
-        }
-      })
-      .finally(() => setIsLoading(false));
+    // stripe
+    //   .confirmPayment({
+    //     elements,
+    //     confirmParams: {
+    //       return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
+    //     },
+    //   })
+    //   .then(({ error }) => {
+    //     if (error.type === "card_error" || error.type === "validation_error") {
+    //       setErrorMessage(error.message);
+    //     } else {
+    //       setErrorMessage("An unknown error occurred");
+    //     }
+    //   })
+    //   .finally(() => setIsLoading(false));
   }
 
   return (

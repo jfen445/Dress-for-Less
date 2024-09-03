@@ -31,4 +31,5 @@ export interface IBooking {
   isReturned: boolean;
   paymentIntent: string;
   paymentSuccess: boolean;
+  size: String;
 }

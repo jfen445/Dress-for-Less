@@ -34,3 +34,17 @@ export async function confirmBooking(intent: string) {
     throw new Error((err?.response?.data as any).message);
   }
 }
+
+export async function getAllBookingsByDress(dressId: string) {
+  try {
+    const response = await axios.request({
+      url: `/api/booking?dressId=${dressId}`,
+      method: "GET",
+    });
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}

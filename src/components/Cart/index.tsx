@@ -25,8 +25,10 @@ const Cart = () => {
           let dresses: CartItemType[] = [];
           cartItems.map(async (item) => {
             await getDress(item.dressId).then((data) => {
+              console.log("Hiuhn", item, data);
               data.dateBooked = item.dateBooked;
               data.cartItemId = item._id;
+              data.size = item.size;
               dresses = [...dresses, data];
             });
 
@@ -61,7 +63,7 @@ const Cart = () => {
   };
 
   return (
-    <div className="bg-white h-screen">
+    <div className="bg-white min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-0">
         <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
           Shopping Cart

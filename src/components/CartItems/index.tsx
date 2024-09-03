@@ -15,47 +15,13 @@ interface ICartType {
 }
 
 const CartItems = ({ products, removeItem }: ICartType) => {
-  const router = useRouter();
-  const { userInfo } = useUserContext();
-  // const [products, setProducts] = React.useState<CartItemType[]>([]);
-
-  // const getUserCart = React.useCallback(async () => {
-  //   if (userInfo && userInfo?._id) {
-  //     const response = await getCart(userInfo?._id);
-
-  //     const cartItems = response.data as CartType[];
-  //     let dresses: CartItemType[] = [];
-  //     cartItems.forEach(async (item) => {
-  //       await getDress(item.dressId).then((data) => {
-  //         data.dateBooked = item.dateBooked;
-  //         data.cartItemId = item._id;
-  //         dresses = [...dresses, data];
-  //       });
-
-  //       setProducts(dresses);
-  //     });
-  //   }
-  // }, [userInfo]);
-
-  // React.useEffect(() => {
-  //   getUserCart();
-  // }, [getUserCart, userInfo]);
-
   const formatDate = (date: string) => {
-    return dayjs(date).subtract(1, "day").format("D MMMM YYYY");
+    return dayjs(date).format("D MMMM YYYY");
   };
 
   const sumPrices = () => {
     return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
   };
-
-  // const removeItem = async (cartItemId: string) => {
-  //   await removeFromCart(cartItemId)
-  //     .then((res) => getUserCart())
-  //     .catch((err) => {
-  //       console.log(err);
-  //     });
-  // };
 
   return (
     <form className="mt-12">
