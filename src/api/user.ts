@@ -48,3 +48,17 @@ export async function getUser(email: string) {
     throw new Error((err?.response?.data as any).message);
   }
 }
+
+export async function getAllUsers() {
+  try {
+    const response = await axios.request({
+      url: `/api/user`,
+      method: "GET",
+    });
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}

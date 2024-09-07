@@ -17,7 +17,7 @@ const UserSchema =
 const bookingSchema = new Schema(
   {
     dressId: { type: String, required: true },
-    userId: { type: String, required: true },
+    userId: { type: mongoose.Schema.ObjectId, required: true },
     dateBooked: { type: String, required: true },
     blockOutPeriod: { type: [String], required: true },
     address: { type: String, required: false },

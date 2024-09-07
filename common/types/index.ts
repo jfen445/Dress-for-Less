@@ -99,6 +99,8 @@ export type Booking = {
   isReturned: boolean;
   paymentIntent: string;
   size: String;
+  dress?: DressType;
+  user?: UserType[];
 };
 
 export type Sizes = {

@@ -20,3 +20,10 @@ export async function findUser(email: String) {
     "__id name email mobileNumber instagramHandle photo"
   );
 }
+
+export async function findAllUsers() {
+  return UserSchema.find(
+    {},
+    "__id name email mobileNumber instagramHandle photo"
+  );
+}

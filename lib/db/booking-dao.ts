@@ -1,4 +1,4 @@
-import { BookingSchema } from "./schema";
+import { BookingSchema, UserSchema } from "./schema";
 
 export async function getBookingsByDress(dressId: String) {
   return BookingSchema.find(
@@ -16,4 +16,21 @@ export async function checkDuplicateBooking(
     { dressId: dressId, size: size, dateBooked: date },
     "dressId userId address blockOutPeriod city createdAt dateBooked deliveryType isReturned isShipped paymentSuccess postCode tracking size"
   );
+}
+
+export async function getAllBookings() {
+  return BookingSchema.aggregate([
+    {
+      $lookup: {
+        from: "allusers",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+  ]);
+  // return BookingSchema.find(
+  //   {},
+  //   "dressId userId address blockOutPeriod city createdAt dateBooked deliveryType isReturned isShipped paymentSuccess postCode tracking size"
+  // );
 }

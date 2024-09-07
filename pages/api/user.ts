@@ -1,6 +1,6 @@
 import { dbConnect, disconnect } from "../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
-import { findUser } from "../../lib/db/user-dao";
+import { findAllUsers, findUser } from "../../lib/db/user-dao";
 import { IUser } from "../../common/interfaces/user";
 import { UserType } from "../../common/types";
 import { UserSchema } from "../../lib/db/schema";
@@ -13,6 +13,14 @@ export default async function handler(
   if (req.method === "GET") {
     const email = req.query.email as string;
     console.log("efafgeaf", email, req.query);
+
+    if (!email) {
+      const allUsers = await findAllUsers();
+
+      res.status(200).json(allUsers);
+
+      return;
+    }
 
     const users = await findUser(email);
     if (users.length === 0) {

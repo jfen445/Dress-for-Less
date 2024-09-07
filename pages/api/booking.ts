@@ -4,9 +4,11 @@ import { BookingSchema } from "../../lib/db/schema";
 import { IBooking } from "../../common/interfaces/user";
 import {
   checkDuplicateBooking,
+  getAllBookings,
   getBookingsByDress,
 } from "../../lib/db/booking-dao";
 import { Booking } from "../../common/types";
+import { getDress } from "../../sanity/sanity.query";
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,6 +18,21 @@ export default async function handler(
 
   if (req.method == "GET") {
     const dressId = req.query.dressId as string;
+
+    if (!dressId) {
+      const allBookings = await getAllBookings();
+
+      const allBookingInfo = await Promise.all(
+        allBookings.map(async (booking) => {
+          const dressInfo = await getDress(booking.dressId);
+          return { ...booking, dress: dressInfo };
+        })
+      );
+      console.log("wha tis going on", allBookingInfo);
+      res.status(200).json(allBookingInfo);
+
+      return;
+    }
 
     const bookings = await getBookingsByDress(dressId);
 
