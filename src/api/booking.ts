@@ -48,17 +48,3 @@ export async function getAllBookingsByDress(dressId: string) {
     throw new Error((err?.response?.data as any).message);
   }
 }
-
-export async function getAllBookings() {
-  try {
-    const response = await axios.request({
-      url: `/api/booking`,
-      method: "GET",
-    });
-
-    return response;
-  } catch (error) {
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
-}

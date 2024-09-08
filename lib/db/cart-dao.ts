@@ -21,10 +21,11 @@ export async function getCart(userId: String) {
 export async function getCartItem(
   userId: String,
   dressId: string,
-  size: string
+  size: string,
+  date: string
 ) {
   return CartSchema.find(
-    { userId, dressId, size },
+    { userId, dressId, size, date },
     "dressId userId dateBooked size"
   );
 }

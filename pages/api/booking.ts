@@ -81,6 +81,7 @@ export default async function handler(
       userId: req.body.userId,
       dressId: req.body.dressId,
       size: req.body.size,
+      dateBooked: req.body.dateBooked,
     };
     const options = { upsert: true };
 

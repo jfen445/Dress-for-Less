@@ -36,7 +36,12 @@ export default async function handler(
 
     console.log("this is the cart", cart);
 
-    const cartItem = await getCartItem(cart.userId, cart.dressId, cart.size);
+    const cartItem = await getCartItem(
+      cart.userId,
+      cart.dressId,
+      cart.size,
+      cart.dateBooked
+    );
 
     if (cartItem.length > 0) {
       return res.status(404).json({

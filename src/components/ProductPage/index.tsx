@@ -38,6 +38,7 @@ const Product = () => {
   const [variant, setVariant] = React.useState<"success" | "error" | "warning">(
     "warning"
   );
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const params = useParams<{ id: string }>();
 
@@ -46,8 +47,6 @@ const Product = () => {
 
     return obj;
   }, [sizes]);
-
-  console.log("sizing options", sizeOptions(), size);
 
   React.useEffect(() => {
     if (params) {

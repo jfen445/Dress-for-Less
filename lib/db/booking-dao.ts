@@ -1,4 +1,4 @@
-import { BookingSchema, UserSchema } from "./schema";
+import { BookingSchema } from "./schema";
 
 export async function getBookingsByDress(dressId: String) {
   return BookingSchema.find(

@@ -10,14 +10,17 @@ import dayjs from "dayjs";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import CartItems from "../CartItems";
+import Spinner from "../Spinner";
 
 const Cart = () => {
   const { userInfo } = useUserContext();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
   const [err, setErr] = React.useState<boolean>(false);
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const getUserCart = React.useCallback(async () => {
     if (userInfo && userInfo?._id) {
+      setIsLoading(true);
       await getCart(userInfo?._id)
         .then((data) => {
           const cartItems = data.data as unknown as CartType[];
@@ -38,7 +41,8 @@ const Cart = () => {
         .catch((err) => {
           setErr(true);
           console.log("error", err);
-        });
+        })
+        .finally(() => setIsLoading(false));
     }
   }, [userInfo]);
 
@@ -68,42 +72,49 @@ const Cart = () => {
         <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
           Shopping Cart
         </h1>
-
-        {!err ? (
+        {isLoading ? (
+          <div className="flex justify-center mt-20">
+            <Spinner />
+          </div>
+        ) : (
           <>
-            <CartItems products={products} removeItem={removeItem} />
+            {!err ? (
+              <>
+                <CartItems products={products} removeItem={removeItem} />
 
-            <div className="mt-10">
-              <Link href={"/checkout"}>
-                <Button
-                  type="submit"
-                  className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                <div className="mt-10 flex justify-center">
+                  <Link href={"/checkout"}>
+                    <Button
+                      type="submit"
+                      className="w-full xl mx-auto rounded-md border border-transparent px-20 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                    >
+                      Checkout
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <div className="w-full text-center my-10">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Your rental cart is empty
+                </h3>
+              </div>
+            )}
+
+            <div className="mt-6 text-center text-sm">
+              <p>
+                {!err ? "or " : ""}
+                <a
+                  href={"/dresses"}
+                  className="font-medium text-secondary-pink hover:text-indigo-500"
                 >
-                  Checkout
-                </Button>
-              </Link>
+                  Continue Shopping
+                  <span aria-hidden="true"> &rarr;</span>
+                </a>
+              </p>
             </div>
           </>
-        ) : (
-          <div className="w-full text-center my-10">
-            <h3 className="text-sm font-medium text-yellow-800">
-              Your rental cart is empty
-            </h3>
-          </div>
         )}
-
-        <div className="mt-6 text-center text-sm">
-          <p>
-            {!err ? "or " : ""}
-            <a
-              href={"/dresses"}
-              className="font-medium text-secondary-pink hover:text-indigo-500"
-            >
-              Continue Shopping
-              <span aria-hidden="true"> &rarr;</span>
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   );
