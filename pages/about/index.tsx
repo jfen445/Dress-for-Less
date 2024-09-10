@@ -1,4 +1,4 @@
-import AboutImage from "../../public/aboutimg.jpeg";
+import AboutImage from "../../public/aboutimg.jpg";
 
 const incentives = [
   {
@@ -52,7 +52,7 @@ const AboutPage = () => {
             <div className="aspect-h-2 aspect-w-3 overflow-hidden rounded-lg bg-gray-100">
               <img
                 alt=""
-                src="https://media.licdn.com/dms/image/v2/D4D22AQEG0WH_Z0wj8g/feedshare-shrink_2048_1536/feedshare-shrink_2048_1536/0/1715244457413?e=1726704000&v=beta&t=7nZBK7EPayYbDtZATzmXg57SKE_pq0ID0RjT-HNxWng"
+                src={AboutImage.src}
                 className="object-cover object-center"
               />
             </div>
