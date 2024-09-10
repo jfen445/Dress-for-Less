@@ -49,20 +49,15 @@ const userContext = React.createContext<UserContextProps>(
 
 const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
-  // const { user } = useUserAuth();
-  // const
-  // console.log("redndere user", userInfo);
 
   const { data: session } = useSession();
 
   React.useEffect(() => {
-    // console.log("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", user);
     if (session != null && session?.user.email) {
       getUser(session?.user.email)
         .then((res) => {
           if (res === undefined) return;
           const r = res.data as unknown as UserType;
-          console.log("RRRRRRRRRRRRRRRRR", r, res.data);
           setUserInfo(r);
         })
         .catch((err) => console.error(err));

@@ -7,6 +7,13 @@ export async function getBookingsByDress(dressId: String) {
   );
 }
 
+export async function getBookingsById(bookingId: String) {
+  return BookingSchema.findOne(
+    { _id: bookingId },
+    "dressId userId address blockOutPeriod city createdAt dateBooked deliveryType isReturned isShipped paymentSuccess postCode tracking size"
+  );
+}
+
 export async function checkDuplicateBooking(
   dressId: String,
   size: String,
@@ -29,8 +36,4 @@ export async function getAllBookings() {
       },
     },
   ]);
-  // return BookingSchema.find(
-  //   {},
-  //   "dressId userId address blockOutPeriod city createdAt dateBooked deliveryType isReturned isShipped paymentSuccess postCode tracking size"
-  // );
 }

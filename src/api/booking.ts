@@ -48,3 +48,22 @@ export async function getAllBookingsByDress(dressId: string) {
     throw new Error((err?.response?.data as any).message);
   }
 }
+
+export async function updateBooking(bookingId: string, bookingObj: any) {
+  try {
+    const response = await axios.patch(
+      `/api/booking?bookingId=${bookingId}`,
+      { bookingObj },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}

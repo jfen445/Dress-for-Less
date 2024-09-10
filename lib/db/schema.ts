@@ -9,6 +9,12 @@ const userSchema = new Schema({
   mobileNumber: { type: String, required: true },
   instagramHandle: { type: String, required: false },
   photo: { type: String, required: true },
+  role: {
+    type: String,
+    enum: ["admin", "user"],
+    required: true,
+    default: "user",
+  },
 });
 
 const UserSchema =

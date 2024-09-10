@@ -6,9 +6,12 @@ import {
   checkDuplicateBooking,
   getAllBookings,
   getBookingsByDress,
+  getBookingsById,
 } from "../../lib/db/booking-dao";
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
+
+var ObjectID = require("mongodb").ObjectID;
 
 export default async function handler(
   req: NextApiRequest,
@@ -88,8 +91,28 @@ export default async function handler(
     await BookingSchema.updateOne(filter, booking, options);
 
     res.status(200).json({ message: "Booking successful", booking: booking });
-  }
+  } else if (req.method == "PATCH") {
+    const bookingId = req.query.bookingId as string;
 
-  // res.status(404).json({ message: "Account created" });
-  //   return NextResponse.json({ messsage: "Hello World" });
+    const booking = await getBookingsById(bookingId);
+
+    if (!booking)
+      return res
+        .status(404)
+        .send("The booking with the given ID was not found.");
+
+    for (let key in req.body.bookingObj) {
+      booking[key] = req.body.bookingObj[key];
+    }
+
+    const filter = {
+      _id: bookingId,
+    };
+
+    await BookingSchema.updateOne(filter, booking);
+
+    res
+      .status(200)
+      .json({ message: "Booking updated successfully", booking: booking });
+  }
 }

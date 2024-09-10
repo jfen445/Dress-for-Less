@@ -25,6 +25,7 @@ export type UserType = {
   mobileNumber: string;
   instagramHandle?: string;
   photo: string;
+  role: "admin" | "user";
 };
 
 export type DressType = {
@@ -84,6 +85,7 @@ export type Address = {
 };
 
 export type Booking = {
+  _id?: string;
   dressId: string;
   userId: string;
   dateBooked: string;

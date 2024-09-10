@@ -7,8 +7,9 @@ import Input from "@/components/Input";
 import Button from "@/components/Button";
 import Toggle from "@/components/Toggle";
 import Spinner from "@/components/Spinner";
-import Modal from "@/components/Modal";
 import UserModal from "../UserModal";
+import { updateBooking } from "@/api/booking";
+import { convertFieldResponseIntoMuiTextFieldProps } from "@mui/x-date-pickers/internals";
 
 const AdminBookings = () => {
   const [bookings, setBookings] = React.useState<Booking[]>();
@@ -21,33 +22,39 @@ const AdminBookings = () => {
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
-  React.useEffect(() => {
-    const getBookings = async () => {
-      setIsLoading(true);
-      await getAllBookings().then((data) => {
-        var d = new Date();
-        d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
+  const [currentBookingShipping, setCurrentBookingShipping] =
+    React.useState<boolean>(false);
+  const [currentBookingReturned, setCurrentBookingReturned] =
+    React.useState<boolean>(false);
+  const [currentBookingTracking, setCurrentBookingTracking] =
+    React.useState<string>("");
 
-        const sortedBookings = (data.data as unknown as Booking[]).sort(
-          function (a, b) {
-            return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
-          }
-        );
-        console.log("daaeada", d, dayjs(d));
-        const thisWeek = sortedBookings.filter((booking) =>
-          dayjs(booking.dateBooked).isBefore(dayjs(d))
-        );
-        const allBookings = sortedBookings.filter((booking) =>
-          dayjs(booking.dateBooked).isAfter(dayjs(d))
-        );
+  const getBookings = async () => {
+    setIsLoading(true);
+    const response = await getAllBookings().then((data) => {
+      var d = new Date();
+      d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
 
-        console.log(":this week", thisWeek);
-        setThisWeekBookings(thisWeek);
-        setBookings(allBookings);
+      const sortedBookings = (data.data as unknown as Booking[]).sort(function (
+        a,
+        b
+      ) {
+        return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
       });
-      setIsLoading(false);
-    };
+      const thisWeek = sortedBookings.filter((booking) =>
+        dayjs(booking.dateBooked).isBefore(dayjs(d))
+      );
+      const allBookings = sortedBookings.filter((booking) =>
+        dayjs(booking.dateBooked).isAfter(dayjs(d))
+      );
 
+      setThisWeekBookings(thisWeek);
+      setBookings(allBookings);
+    });
+    setIsLoading(false);
+  };
+
+  React.useEffect(() => {
     getBookings();
   }, []);
 
@@ -55,6 +62,8 @@ const AdminBookings = () => {
     if (selectedBooking) {
       var cloned = JSON.parse(JSON.stringify(selectedBooking));
       cloned[field] = !cloned[field];
+      setCurrentBookingShipping(cloned.isShipped);
+      setCurrentBookingReturned(cloned.isReturned);
       setSelectedBooking(cloned);
     }
   };
@@ -63,13 +72,50 @@ const AdminBookings = () => {
     if (booking.isReturned) {
       return "Completed";
     } else if (!booking.isShipped) {
-      return "Ready to shipped";
+      return "Ready to be shipped";
     } else if (booking.isShipped) {
       return "Active";
     }
   };
 
+  const updateCurrentBooking = async () => {
+    let bookingObj: {
+      isShipped: boolean;
+      isReturned: boolean;
+      tracking?: string;
+    } = {
+      isShipped: selectedBooking?.isShipped ?? false,
+      isReturned: selectedBooking?.isReturned ?? false,
+    };
+
+    if (selectedBooking?.tracking != currentBookingTracking) {
+      bookingObj.tracking = currentBookingTracking;
+    }
+
+    if (selectedBooking && selectedBooking._id) {
+      await updateBooking(selectedBooking._id, bookingObj)
+        .catch((err) => console.log(err))
+        .finally(() => getBookings());
+    }
+  };
+
   const renderBookingRow = (booking: Booking[]) => {
+    const getStatusColour = (booking: Booking) => {
+      let colour = "";
+      switch (getStatus(booking)) {
+        case "Active":
+          colour = "bg-green-50 text-green-700 ring-green-600/20";
+          break;
+        case "Completed":
+          colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
+          break;
+        case "Ready to be shipped":
+          colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
+          break;
+      }
+
+      return colour;
+    };
     return (
       <>
         {booking?.map((currentBooking: any) => (
@@ -79,7 +125,7 @@ const AdminBookings = () => {
                 <div className="h-11 w-11 flex-shrink-0">
                   <img
                     alt=""
-                    src={currentBooking.user[0].photo}
+                    src={currentBooking.dress.images[0]}
                     className="h-11 w-11 rounded-full cursor-pointer"
                     onClick={() => {
                       setUserModalOpen(true);
@@ -88,26 +134,32 @@ const AdminBookings = () => {
                   />
                 </div>
                 <div className="ml-4">
-                  <div className="font-medium text-gray-900">
-                    {currentBooking.user[0].name}
+                  <div className="text-gray-900">
+                    {currentBooking.dress.name}
                   </div>
                   <div className="mt-1 text-gray-500">
-                    {currentBooking.user[0].email}
+                    {currentBooking.dress.brand}
                   </div>
                 </div>
               </div>
             </td>
             <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-              <div className="text-gray-900">{currentBooking.dress.name}</div>
+              <div className="font-medium text-gray-900">
+                {currentBooking.user[0].name}
+              </div>
               <div className="mt-1 text-gray-500">
-                {currentBooking.dress.brand}
+                {currentBooking.user[0].email}
               </div>
             </td>
             <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
               {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
             </td>
             <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-              <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+              <span
+                className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
+                  currentBooking
+                )}`}
+              >
                 {getStatus(currentBooking)}
               </span>
             </td>
@@ -200,7 +252,17 @@ const AdminBookings = () => {
           <div>
             <h3 className="font-medium text-gray-900">Tracking</h3>
             <div className="mt-2 flex items-center justify-between">
-              <Input type="link" name="tracking" id="tracking" />
+              <Input
+                type="link"
+                name="tracking"
+                id="tracking"
+                value={currentBookingTracking}
+                onChange={(e) =>
+                  setCurrentBookingTracking(
+                    (e.target as HTMLInputElement).value
+                  )
+                }
+              />
             </div>
           </div>
 
@@ -227,10 +289,7 @@ const AdminBookings = () => {
           </div>
 
           <div className="flex">
-            <Button
-              type="button"
-              className="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
+            <Button type="button" onClick={() => updateCurrentBooking()}>
               Save
             </Button>
           </div>
@@ -268,13 +327,13 @@ const AdminBookings = () => {
                         scope="col"
                         className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
                       >
-                        User
+                        Dress
                       </th>
                       <th
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
-                        Dress
+                        User
                       </th>
                       <th
                         scope="col"
