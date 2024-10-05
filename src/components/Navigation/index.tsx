@@ -20,6 +20,7 @@ import {
 } from "@headlessui/react";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
 import { useUserContext } from "@/context/UserContext";
+import Marquee from "react-fast-marquee";
 
 const navItems = [
   {
@@ -33,16 +34,28 @@ const navItems = [
     href: "/about",
   },
   {
-    id: "faq",
-    name: "FAQ",
-    href: "/faq",
+    id: "tc",
+    name: "T&C",
+    href: "/tc",
+    sub: [
+      {
+        id: "faq",
+        name: "FAQ",
+        href: "/faq",
+      },
+      {
+        id: "policies",
+        name: "Policies",
+        href: "/policies",
+      },
+    ],
   },
 ];
 
 const Navigation = () => {
   const { userInfo } = useUserContext();
   const { data: session } = useSession();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const isCurrentPage = (href: string): Boolean => {
     if (typeof window !== "undefined") {
@@ -87,9 +100,9 @@ const Navigation = () => {
                     alt="Your Company"
                   />
                 </Link>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <div className="hidden sm:ml-6 sm:flex sm:space-x-8 flex">
                   {/* Current: "border-indigo-500 text-gray-900", Default: "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" */}
-                  {navItems.map((item) => (
+                  {/* {navItems.map((item) => (
                     <>
                       <a
                         id={item.id}
@@ -103,6 +116,67 @@ const Navigation = () => {
                       >
                         {item.name}
                       </a>
+                    </>
+                  ))} */}
+
+                  {navItems.map((item) => (
+                    <>
+                      <Menu
+                        as="div"
+                        className="relative ml-3 inline-flex items-center"
+                      >
+                        <div className="flex min-h-full">
+                          <MenuButton className="relative">
+                            {item?.sub ? (
+                              <div
+                                className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium min-h-full ${
+                                  isCurrentPage(
+                                    item.sub
+                                      .map(function (x) {
+                                        return x.href;
+                                      })
+                                      .join(", ")
+                                  )
+                                    ? "border-secondary-pink text-gray-900"
+                                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                }`}
+                              >
+                                {item.name}
+                              </div>
+                            ) : (
+                              <a
+                                href={item.href}
+                                className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium min-h-full ${
+                                  isCurrentPage(item.href)
+                                    ? "border-secondary-pink text-gray-900"
+                                    : "text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                }`}
+                              >
+                                {item.name}
+                              </a>
+                            )}
+                          </MenuButton>
+                        </div>
+                        {item?.sub && (
+                          <MenuItems
+                            transition
+                            className="absolute left-0 top-14 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                          >
+                            {item.sub.map((subItem) => (
+                              <>
+                                <MenuItem>
+                                  <a
+                                    href={subItem.href}
+                                    className="block px-4 py-2 text-sm text-gray-700"
+                                  >
+                                    {subItem.name}
+                                  </a>
+                                </MenuItem>
+                              </>
+                            ))}
+                          </MenuItems>
+                        )}
+                      </Menu>
                     </>
                   ))}
                 </div>
@@ -196,6 +270,14 @@ const Navigation = () => {
           </div>
         </div>
       </nav>
+      <Marquee
+        style={{ "background-color": "#881337", color: "white" }}
+        speed={30}
+        gradientColor="pink"
+        autoFill={true}
+      >
+        NEW DRESS NOW{"    "}
+      </Marquee>
     </header>
   );
 };

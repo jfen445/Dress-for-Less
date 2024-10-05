@@ -14,7 +14,7 @@ const LoginComponent = () => {
 
   return (
     <>
-      <div className="bg-white flex min-h-full h-[80vh] flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <div className="bg-white flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <Toast
           show={err}
           setShow={setErr}
