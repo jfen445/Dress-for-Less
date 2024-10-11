@@ -99,6 +99,72 @@ const AdminBookings = () => {
     }
   };
 
+  // const downloadToCSV = () => {
+  //   let csvContent = "data:text/csv;charset=utf-8,"
+  //   + thisWeekBookings?.map(e => e..join(",")).join("\n");
+  // }
+  type ObjectArray = Record<string, any>[];
+
+  const convertToCSV = (objArray: ObjectArray): string => {
+    const array =
+      typeof objArray !== "object" ? JSON.parse(objArray) : objArray;
+
+    // Helper function to flatten the object
+    function flattenObject(ob: Record<string, any>): Record<string, any> {
+      const toReturn: Record<string, any> = {};
+
+      for (const i in ob) {
+        if (!ob.hasOwnProperty(i)) continue;
+
+        if (typeof ob[i] === "object" && ob[i] !== null) {
+          const flatObject = flattenObject(ob[i]);
+          for (const x in flatObject) {
+            if (!flatObject.hasOwnProperty(x)) continue;
+            toReturn[`${i}.${x}`] = flatObject[x];
+          }
+        } else {
+          toReturn[i] = ob[i];
+        }
+      }
+      return toReturn;
+    }
+
+    // Extract keys (headers) and rows (values)
+    const headers = Object.keys(flattenObject(array[0]));
+    const csv = [
+      headers.join(","), // Header row
+      ...array.map((item: Record<string, any>) => {
+        const flatItem = flattenObject(item);
+        return headers.map((header) => `"${flatItem[header] || ""}"`).join(",");
+      }),
+    ].join("\r\n");
+
+    return csv;
+  };
+
+  const downloadCSV = (csv: string, filename: string): void => {
+    const csvFile = new Blob([csv], { type: "text/csv" });
+    const downloadLink = document.createElement("a");
+
+    downloadLink.download = filename;
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+
+  const extractObj = () => {
+    return thisWeekBookings?.map((booking) => ({
+      name: booking.user ? booking?.user[0].name : "",
+      email: booking.user ? booking?.user[0].email : "",
+      address: booking.address,
+      deliveryType: booking.deliveryType,
+      dress: booking.dress?.name,
+    }));
+  };
+
+  console.log("here", thisWeekBookings);
   const renderBookingRow = (booking: Booking[]) => {
     const getStatusColour = (booking: Booking) => {
       let colour = "";
@@ -311,6 +377,13 @@ const AdminBookings = () => {
               A list of all the bookings in the system.
             </p>
           </div>
+          <Button
+            onClick={() =>
+              downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
+            }
+          >
+            Download
+          </Button>
         </div>
         {isLoading ? (
           <div className="flex justify-center">
