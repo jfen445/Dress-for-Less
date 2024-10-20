@@ -19,7 +19,9 @@ const Button: React.FC<ButtonProps> = ({
           variant == "primary" || !variant
             ? "bg-primary-pink"
             : "bg-secondary-pink"
-        } bg-primary-pink px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm enabled:hover:bg-secondary-pink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600` +
+        } bg-primary-pink ${
+          props.disabled && "opacity-50"
+        } px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm enabled:hover:bg-secondary-pink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600` +
         className
       }
       {...props}

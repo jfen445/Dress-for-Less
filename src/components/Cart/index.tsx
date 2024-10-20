@@ -1,22 +1,28 @@
-import { CheckIcon, ClockIcon } from "@heroicons/react/20/solid";
 import Button from "../Button";
 import React from "react";
-import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
 import { getCart, removeFromCart } from "@/api/cart";
 import { useUserContext } from "@/context/UserContext";
 import { CartItemType, CartType, DressType } from "../../../common/types";
 import { getDress } from "../../../sanity/sanity.query";
-import dayjs from "dayjs";
-import { useRouter } from "next/router";
 import Link from "next/link";
 import CartItems from "../CartItems";
 import Spinner from "../Spinner";
+import dayjs from "dayjs";
 
 const Cart = () => {
   const { userInfo } = useUserContext();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = React.useState<String[]>(
+    []
+  );
   const [err, setErr] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+
+  const query = React.useCallback(() => {
+    const params = new URLSearchParams();
+    selectedProductIds.forEach((id) => params.append("id", id.toString()));
+    return params;
+  }, [selectedProductIds]);
 
   const getUserCart = React.useCallback(async () => {
     if (userInfo && userInfo?._id) {
@@ -24,11 +30,9 @@ const Cart = () => {
       await getCart(userInfo?._id)
         .then((data) => {
           const cartItems = data.data as unknown as CartType[];
-          console.log("cart itmes", cartItems);
           let dresses: CartItemType[] = [];
           cartItems.map(async (item) => {
             await getDress(item.dressId).then((data) => {
-              console.log("Hiuhn", item, data);
               data.dateBooked = item.dateBooked;
               data.cartItemId = item._id;
               data.size = item.size;
@@ -50,20 +54,31 @@ const Cart = () => {
     getUserCart().catch((err) => setErr(true));
   }, [getUserCart, userInfo]);
 
-  const formatDate = (date: string) => {
-    return dayjs(date).subtract(1, "day").format("D MMMM YYYY");
-  };
-
-  const sumPrices = () => {
-    return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
-  };
-
   const removeItem = async (cartItemId: string) => {
     await removeFromCart(cartItemId)
       .then((res) => getUserCart())
       .catch((err) => {
         console.log(err);
       });
+  };
+
+  const isValidCheckout = () => {
+    const selectedProducts = products.filter((item) =>
+      selectedProductIds.includes(item.cartItemId)
+    );
+
+    const isDatesValid = selectedProducts.some((item) =>
+      isInvalidDate(item.dateBooked)
+    );
+
+    const isEmpty = selectedProductIds.length == 0;
+
+    return isDatesValid || isEmpty;
+  };
+
+  const isInvalidDate = (day: string | number | Date) => {
+    const currentDate = dayjs(new Date());
+    return dayjs(currentDate).isAfter(dayjs(new Date(day)));
   };
 
   return (
@@ -80,13 +95,21 @@ const Cart = () => {
           <>
             {!err ? (
               <>
-                <CartItems products={products} removeItem={removeItem} />
+                <CartItems
+                  products={products}
+                  removeItem={removeItem}
+                  selectedProducts={selectedProductIds}
+                  setSelectedProducts={setSelectedProductIds}
+                />
 
                 <div className="mt-10 flex justify-center">
-                  <Link href={"/checkout"}>
+                  <Link
+                    href={{ pathname: "/checkout", query: query().toString() }}
+                  >
                     <Button
                       type="submit"
-                      className="w-full xl mx-auto rounded-md border border-transparent px-20 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                      disabled={isValidCheckout()}
+                      variant="secondary"
                     >
                       Checkout
                     </Button>
