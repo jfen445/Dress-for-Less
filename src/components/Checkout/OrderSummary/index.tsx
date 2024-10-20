@@ -34,6 +34,8 @@ const OrderSummary = () => {
   }, [deliveryOption]);
 
   React.useEffect(() => {
+    const productIds = new URLSearchParams(window.location.search).getAll("id");
+
     const getUserCart = async () => {
       if (userInfo && userInfo?._id) {
         const response = await getCart(userInfo?._id)
@@ -45,9 +47,11 @@ const OrderSummary = () => {
                 data.dateBooked = item.dateBooked;
                 data.cartItemId = item._id;
                 data.size = item.size;
-                dresses = [...dresses, data];
-              });
 
+                if (productIds.includes(data.cartItemId)) {
+                  dresses = [...dresses, data];
+                }
+              });
               setProducts(dresses);
             });
           })

@@ -18,10 +18,8 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { loadStripe, StripeElementsOptions } from "@stripe/stripe-js";
-import Image from "next/image";
-import { FormEvent, useState } from "react";
-import { Address, CartItemType } from "../../../../common/types";
+import { loadStripe } from "@stripe/stripe-js";
+import { Address } from "../../../../common/types";
 import Input from "@/components/Input";
 import { useSession } from "next-auth/react";
 import PaymentForm from "../PaymentForm";
@@ -29,7 +27,6 @@ import Button from "@/components/Button";
 import React from "react";
 import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
-import client from "../../../../sanity/sanity.client";
 
 const deliveryMethods = [
   { id: "delivery", title: "Full delivery" },
@@ -42,7 +39,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
 const CheckoutForm = () => {
   const { data: session } = useSession();
-  const { deliveryOption, setDeliveryOption, totalPrice } =
+  const { products, deliveryOption, setDeliveryOption, totalPrice } =
     React.useContext(ProductContext);
   const [clientSecret, setClientSecret] = React.useState<string>();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -58,7 +55,6 @@ const CheckoutForm = () => {
   const getSecret = async () => {
     await getClientSecret(totalPrice.toString())
       .then((data) => {
-        console.log(":this is the data", totalPrice.toString(), data?.data);
         setClientSecret(data?.data.clientSecret);
       })
       .catch((err) => setErrorMessage(err.message));
@@ -88,6 +84,41 @@ const CheckoutForm = () => {
     setUserAddress(address);
   };
 
+  const isBeforeWednesdayNoon = () => {
+    const now = new Date(); // Get the current date and time
+
+    // Get the current week’s Wednesday
+    const nextWednesday = new Date();
+    nextWednesday.setDate(now.getDate() + ((3 - now.getDay() + 7) % 7)); // 3 represents Wednesday (0 is Sunday)
+
+    // Set Wednesday to 12 PM (noon)
+    nextWednesday.setHours(12, 0, 0, 0); // 12 PM, 0 minutes, 0 seconds, 0 milliseconds
+
+    // Compare current time to next Wednesday 12 PM
+    return now < nextWednesday;
+  };
+
+  const isThisWeekendBookings = () => {
+    const dates = products.map((item) => item.dateBooked);
+
+    const now = new Date(); // Current date and time
+    const nextWeek = new Date();
+    nextWeek.setDate(now.getDate() + 7); // Date for 7 days from now
+
+    return dates.some((dateStr) => {
+      const date = new Date(dateStr); // Convert string to Date object
+      return date >= now && date <= nextWeek; // Check if the date is within the next 7 days
+    });
+  };
+
+  const isDeliveryInvalid = (id: string) => {
+    return (
+      !isBeforeWednesdayNoon() &&
+      isThisWeekendBookings() &&
+      id.includes("delivery")
+    );
+  };
+
   const RadioGroup = () => {
     return (
       <fieldset>
@@ -96,22 +127,26 @@ const CheckoutForm = () => {
         </p>
         <div className="mt-6 space-y-6">
           {deliveryMethods.map((deliveryMethod) => (
-            <div key={deliveryMethod.id} className="flex items-center">
-              <input
-                checked={deliveryMethod.id === deliveryOption}
-                id={deliveryMethod.id}
-                name="notification-method"
-                type="radio"
-                className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                onChange={(e) => setDeliveryOption(e.target.id)}
-              />
-              <label
-                htmlFor={deliveryMethod.id}
-                className="ml-3 block text-sm font-medium leading-6 text-gray-900"
-              >
-                {deliveryMethod.title}
-              </label>
-            </div>
+            <>
+              {isDeliveryInvalid(deliveryMethod.id) ? null : (
+                <div key={deliveryMethod.id} className="flex items-center">
+                  <input
+                    checked={deliveryMethod.id === deliveryOption}
+                    id={deliveryMethod.id}
+                    name="notification-method"
+                    type="radio"
+                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    onChange={(e) => setDeliveryOption(e.target.id)}
+                  />
+                  <label
+                    htmlFor={deliveryMethod.id}
+                    className="ml-3 block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    {deliveryMethod.title}
+                  </label>
+                </div>
+              )}
+            </>
           ))}
         </div>
       </fieldset>
