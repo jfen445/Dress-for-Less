@@ -206,9 +206,6 @@ const Product = () => {
                 Size: {dress?.size}
               </RadioGroup>
               <RadioGroup className="block text-sm font-medium text-gray-700">
-                Length: {dress?.length}
-              </RadioGroup>
-              <RadioGroup className="block text-sm font-medium text-gray-700">
                 Stretch: {dress?.stretch}
               </RadioGroup>
               {dress && dress.recommendedSize ? (

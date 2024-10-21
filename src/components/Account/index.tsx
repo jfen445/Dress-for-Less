@@ -5,9 +5,11 @@ import Button from "../Button";
 import { UserType } from "../../../common/types";
 import { getUser } from "@/api/user";
 import Toast from "../Toast";
+import { useUserContext } from "@/context/UserContext";
 
 const Account = () => {
   const { data: session } = useSession();
+  const { fetchData } = useUserContext();
   const [mobile, setMobile] = React.useState<string>("");
   const [instagramHandle, setInstagramHandle] = React.useState<string>("");
   const [alert, setAlert] = React.useState<boolean>(false);
@@ -95,9 +97,9 @@ const Account = () => {
       mobileNumber: mobile,
       instagramHandle: instagramHandle,
       photo: photo,
+      role: "user",
     };
 
-    console.log("subbbbbbbbbbbbb", user);
     await fetch("/api/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,6 +108,7 @@ const Account = () => {
       .then((res) => {
         if (res.ok) {
           setAlert(true);
+          fetchData();
         }
         return res.json();
       })
