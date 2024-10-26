@@ -5,6 +5,8 @@ import Link from "next/link";
 
 import { useSession, signIn } from "next-auth/react";
 import Button from "../Button";
+import EmailSignInForm from "./EmailSignInForm";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 const LoginComponent = () => {
   const { data: session } = useSession();
@@ -14,7 +16,7 @@ const LoginComponent = () => {
 
   return (
     <>
-      <div className="bg-white flex min-h-screen flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      <div className="bg-white flex flex-1 flex-col justify-center px-6 lg:px-8">
         <Toast
           show={err}
           setShow={setErr}
@@ -35,9 +37,17 @@ const LoginComponent = () => {
               <Button className="mx-auto w-full">Start browsing now!</Button>
             </Link>
           ) : (
-            <Button className="mx-auto w-full" onClick={() => signIn()}>
-              Click here to sign on wtih Google
-            </Button>
+            // <Button className="mx-auto w-full" onClick={() => signIn()}>
+            //   Click here to sign on wtih Google
+            // </Button>
+
+            <div className="sm:rounded-5xl mt-2 flex-auto bg-white shadow-2xl shadow-gray-900/10 py-8 px-4">
+              <EmailSignInForm />
+              <div className="mx-auto my-10 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400">
+                or
+              </div>
+              <GoogleSignInButton />
+            </div>
           )}
         </div>
       </div>

@@ -12,12 +12,14 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <SessionProvider session={pageProps.session}>
       <UserContextProvider>
-        <Head>
-          <title>Dress for Less</title>
-        </Head>
-        <Navigation />
-        <MobileNav />
-        <Component {...pageProps} />
+        <div className="min-h-screen bg-white">
+          <Head>
+            <title>Dress for Less</title>
+          </Head>
+          <Navigation />
+          <MobileNav />
+          <Component {...pageProps} />
+        </div>
         <Footer />
       </UserContextProvider>
     </SessionProvider>

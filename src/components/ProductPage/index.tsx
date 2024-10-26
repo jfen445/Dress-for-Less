@@ -162,7 +162,7 @@ const Product = () => {
   console.log("this is the size,", size);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white">
       <Toast
         show={err}
         setShow={setErr}

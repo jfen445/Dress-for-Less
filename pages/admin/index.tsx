@@ -13,7 +13,7 @@ const AdminPage = () => {
   return (
     <>
       {userInfo?.role == "admin" ? (
-        <div className="min-h-screen bg-white">
+        <div className="bg-white">
           <div className="min-h-full">
             <div className="bg-rose-200 pb-32">
               <header className="py-10">
