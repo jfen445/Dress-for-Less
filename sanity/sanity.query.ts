@@ -54,7 +54,8 @@ export async function getDress(id: string) {
       l,
       xl,
       condition,
-      rating
+      rating,
+      notes
     }`
   );
 }

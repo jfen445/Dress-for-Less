@@ -2,23 +2,21 @@ import Button from "../Button";
 import React from "react";
 import { getCart, removeFromCart } from "@/api/cart";
 import { useUserContext } from "@/context/UserContext";
-import { CartItemType, CartType, DressType } from "../../../common/types";
+import { CartItemType, CartType } from "../../../common/types";
 import { getDress } from "../../../sanity/sanity.query";
 import Link from "next/link";
 import CartItems from "../CartItems";
 import Spinner from "../Spinner";
 import dayjs from "dayjs";
 import Modal from "../Modal";
-import {
-  Dialog,
-  DialogBackdrop,
-  DialogPanel,
-  DialogTitle,
-} from "@headlessui/react";
+import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import ErrorPage from "../ErrorPage";
 
 const Cart = () => {
   const { userInfo } = useUserContext();
+  const { status } = useSession();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
   const [selectedProductIds, setSelectedProductIds] = React.useState<String[]>(
     []
@@ -26,8 +24,6 @@ const Cart = () => {
   const [err, setErr] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
-
-  console.log("user", userInfo);
 
   const isUserValid: boolean =
     userInfo?.email &&
@@ -99,6 +95,10 @@ const Cart = () => {
     const currentDate = dayjs(new Date());
     return dayjs(currentDate).isAfter(dayjs(new Date(day)));
   };
+
+  if (status === "unauthenticated") {
+    return <ErrorPage />;
+  }
 
   return (
     <>

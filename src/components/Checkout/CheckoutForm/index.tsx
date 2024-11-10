@@ -119,37 +119,54 @@ const CheckoutForm = () => {
     );
   };
 
+  const isBookingValid = () => {
+    const currentDayOfWeek = new Date().getDay();
+
+    const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
+
+    return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
+  };
+
   const RadioGroup = () => {
     return (
-      <fieldset>
+      <div>
         <p className="mt-1 text-sm leading-6 text-gray-600">
           Select a delivery or pick up option
         </p>
         <div className="mt-6 space-y-6">
-          {deliveryMethods.map((deliveryMethod) => (
+          {!isBookingValid() ? (
             <>
-              {isDeliveryInvalid(deliveryMethod.id) ? null : (
-                <div key={deliveryMethod.id} className="flex items-center">
-                  <input
-                    checked={deliveryMethod.id === deliveryOption}
-                    id={deliveryMethod.id}
-                    name="notification-method"
-                    type="radio"
-                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                    onChange={(e) => setDeliveryOption(e.target.id)}
-                  />
-                  <label
-                    htmlFor={deliveryMethod.id}
-                    className="ml-3 block text-sm font-medium leading-6 text-gray-900"
-                  >
-                    {deliveryMethod.title}
-                  </label>
-                </div>
-              )}
+              {deliveryMethods.map((deliveryMethod) => (
+                <>
+                  {isDeliveryInvalid(deliveryMethod.id) ? null : (
+                    <div key={deliveryMethod.id} className="flex items-center">
+                      <input
+                        checked={deliveryMethod.id === deliveryOption}
+                        id={deliveryMethod.id}
+                        name="notification-method"
+                        type="radio"
+                        className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                        onChange={(e) => setDeliveryOption(e.target.id)}
+                      />
+                      <label
+                        htmlFor={deliveryMethod.id}
+                        className="ml-3 block text-sm font-medium leading-6 text-gray-900"
+                      >
+                        {deliveryMethod.title}
+                      </label>
+                    </div>
+                  )}
+                </>
+              ))}
             </>
-          ))}
+          ) : (
+            <div className="bg-red-100 p-2 rounded-md">
+              Unfortunately you are no longer able to book for this weekend.
+              Please select another date or contact us for support
+            </div>
+          )}
         </div>
-      </fieldset>
+      </div>
     );
   };
 
@@ -197,128 +214,132 @@ const CheckoutForm = () => {
               </h2>
               <RadioGroup />
             </section>
-
-            <section aria-labelledby="shipping-heading" className="mt-10">
-              <h2
-                id="shipping-heading"
-                className="text-lg font-medium text-gray-900"
-              >
-                Shipping address
-              </h2>
-
-              <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="address"
-                    className="block text-sm font-medium text-gray-700"
+            {!isBookingValid() && (
+              <>
+                <section aria-labelledby="shipping-heading" className="mt-10">
+                  <h2
+                    id="shipping-heading"
+                    className="text-lg font-medium text-gray-900"
                   >
-                    Address
-                  </label>
-                  <div className="mt-1">
-                    <Input
-                      id="address"
-                      name="address"
-                      type="text"
-                      autoComplete="street-address"
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    />
+                    Shipping address
+                  </h2>
+
+                  <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
+                    <div className="sm:col-span-3">
+                      <label
+                        htmlFor="address"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Address
+                      </label>
+                      <div className="mt-1">
+                        <Input
+                          id="address"
+                          name="address"
+                          type="text"
+                          autoComplete="street-address"
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="city"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        City
+                      </label>
+                      <div className="mt-1">
+                        <Input
+                          id="city"
+                          name="city"
+                          type="text"
+                          autoComplete="address-level2"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="region"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Country
+                      </label>
+                      <div className="mt-1">
+                        <Input
+                          value={"New Zealand"}
+                          id="region"
+                          name="region"
+                          type="text"
+                          autoComplete="address-level1"
+                          disabled
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="postal-code"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Postal code
+                      </label>
+                      <div className="mt-1">
+                        <Input
+                          id="postCode"
+                          name="postCode"
+                          type="text"
+                          autoComplete="postal-code"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </section>
 
-                <div>
-                  <label
-                    htmlFor="city"
-                    className="block text-sm font-medium text-gray-700"
+                <section aria-labelledby="billing-heading" className="mt-10">
+                  <h2
+                    id="billing-heading"
+                    className="text-lg font-medium text-gray-900"
                   >
-                    City
-                  </label>
-                  <div className="mt-1">
-                    <Input
-                      id="city"
-                      name="city"
-                      type="text"
-                      autoComplete="address-level2"
+                    Billing information
+                  </h2>
+
+                  <div className="mt-6 flex items-center">
+                    <input
+                      defaultChecked
+                      id="same-as-shipping"
+                      name="same-as-shipping"
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
+                    <div className="ml-2">
+                      <label
+                        htmlFor="same-as-shipping"
+                        className="text-sm font-medium text-gray-900"
+                      >
+                        Same as shipping information
+                      </label>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="region"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Country
-                  </label>
-                  <div className="mt-1">
-                    <Input
-                      value={"New Zealand"}
-                      id="region"
-                      name="region"
-                      type="text"
-                      autoComplete="address-level1"
-                      disabled
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="postal-code"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Postal code
-                  </label>
-                  <div className="mt-1">
-                    <Input
-                      id="postCode"
-                      name="postCode"
-                      type="text"
-                      autoComplete="postal-code"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section aria-labelledby="billing-heading" className="mt-10">
-              <h2
-                id="billing-heading"
-                className="text-lg font-medium text-gray-900"
-              >
-                Billing information
-              </h2>
-
-              <div className="mt-6 flex items-center">
-                <input
-                  defaultChecked
-                  id="same-as-shipping"
-                  name="same-as-shipping"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div className="ml-2">
-                  <label
-                    htmlFor="same-as-shipping"
-                    className="text-sm font-medium text-gray-900"
-                  >
-                    Same as shipping information
-                  </label>
-                </div>
-              </div>
-            </section>
+                </section>
+              </>
+            )}
           </div>
-
-          <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
-            <Button
-              type="submit"
-              className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
-            >
-              Continue to payment
-            </Button>
-            <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left">
-              You wont be charged until the next step.
-            </p>
-          </div>
+          {!isBookingValid() && (
+            <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
+              <Button
+                type="submit"
+                className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
+              >
+                Continue to payment
+              </Button>
+              <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left">
+                You wont be charged until the next step.
+              </p>
+            </div>
+          )}
         </form>
       ) : (
         <section

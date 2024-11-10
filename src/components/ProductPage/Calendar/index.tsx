@@ -50,7 +50,7 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
     }
 
     return (
-      !(date.day() === 0 || date.day() === 6) ||
+      !(date.day() === 0 || date.day() === 5 || date.day() === 6) ||
       dayjs(Date.now()).diff(date) > 0
     );
   }

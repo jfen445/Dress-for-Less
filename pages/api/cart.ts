@@ -1,20 +1,26 @@
-import { dbConnect, disconnect } from "../../lib/db/db";
+import { dbConnect } from "../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
-import { createUser, findUser } from "../../lib/db/user-dao";
-import { ICart, IUser } from "../../common/interfaces/user";
-import { CartType, UserType } from "../../common/types";
-import { UserSchema } from "../../lib/db/schema";
+import { ICart } from "../../common/interfaces/user";
+import { CartType } from "../../common/types";
 import {
   addToCart,
   getCart,
   getCartItem,
   removeItemFromCart,
 } from "../../lib/db/cart-dao";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const session = await getServerSession(req, res, authOptions);
+
+  if (!session) {
+    return res.status(401);
+  }
+
   await dbConnect();
 
   if (req.method == "GET") {

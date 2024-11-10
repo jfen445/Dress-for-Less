@@ -41,6 +41,7 @@ export type DressType = {
   rrp: string;
   stretch: string;
   recommendedSize: string[];
+  notes?: string;
 };
 
 export type ImageType = {

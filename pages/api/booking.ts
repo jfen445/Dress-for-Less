@@ -11,8 +11,6 @@ import {
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
 
-var ObjectID = require("mongodb").ObjectID;
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -31,7 +29,6 @@ export default async function handler(
           return { ...booking, dress: dressInfo };
         })
       );
-      console.log("wha tis going on", allBookingInfo);
       res.status(200).json(allBookingInfo);
 
       return;
@@ -54,7 +51,7 @@ export default async function handler(
     const dateBooked = req.body.dateBooked as string;
 
     const checkBooking = await checkDuplicateBooking(dressId, size, dateBooked);
-    console.log("thi sis the checked booking", checkBooking);
+
     if (checkBooking.length > 0) {
       res.status(404).json({
         message: "This dressed has already been booked the the selected day. ",

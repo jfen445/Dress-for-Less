@@ -203,7 +203,7 @@ const Product = () => {
 
             <div className="mt-5">
               <RadioGroup className="block text-sm font-medium text-gray-700">
-                Size: {dress?.size}
+                Size on tag: {dress?.size}
               </RadioGroup>
               <RadioGroup className="block text-sm font-medium text-gray-700">
                 Stretch: {dress?.stretch}
@@ -213,6 +213,12 @@ const Product = () => {
                   Recommended Size: {dress?.recommendedSize.sort().join(", ")}
                 </RadioGroup>
               ) : null}
+            </div>
+
+            <div className="mt-5">
+              <RadioGroup className="block text-sm italic text-gray-700">
+                Notes: {dress?.notes}
+              </RadioGroup>
             </div>
 
             <Dropdown />
