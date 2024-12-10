@@ -60,6 +60,43 @@ export async function getDress(id: string) {
   );
 }
 
+export async function getRecentDress() {
+  return client.fetch(
+    groq`*[_type == "dress" && images != null && count(images[].asset->url) > 0] 
+    | order(_createdAt asc)[0..6] 
+    {"images": images[].asset->url}`
+  );
+}
+
+export async function getFavouriteDress() {
+  return client.fetch(
+    groq`*[_type == "dress" && images != null && count(images[].asset->url) > 0] 
+    | order(_createdAt desc)[0..2] 
+    {
+    _id,
+      name,
+      description,
+      "images": images[].asset->url,
+      size,
+      recommendedSize,
+      length,
+      stretch,
+      brand,
+      price,
+      rrp,
+      tags,
+      xs,
+      s,
+      m,
+      l,
+      xl,
+      condition,
+      rating,
+      notes
+    }`
+  );
+}
+
 export async function getFaq() {
   return client.fetch(
     groq`*[_type == "faq"]{

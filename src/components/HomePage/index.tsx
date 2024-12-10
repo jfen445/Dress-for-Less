@@ -1,19 +1,3 @@
-/*
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-      require('@tailwindcss/aspect-ratio'),
-    ],
-  }
-  ```
-*/
-
 "use client";
 
 import { JSX, useState } from "react";
@@ -21,9 +5,18 @@ import HeroSection from "./HeroSection";
 import FeaturedSection from "./FeaturedSection";
 import FavouritesSection from "./FavouritesSection";
 import SaleSection from "./SaleSection";
+import { getRecentDress } from "../../../sanity/sanity.query";
 
 const HomePage: () => JSX.Element = () => {
   const [open, setOpen] = useState(false);
+
+  // const getHomePageDresses = async () => {
+  //   await getRecentDress().then((data) => {
+  //     console.log("deresss", data);
+  //   });
+  // };
+
+  // getHomePageDresses();
 
   return (
     <div>
@@ -37,7 +30,7 @@ const HomePage: () => JSX.Element = () => {
         <FavouritesSection />
 
         {/* CTA section */}
-        <SaleSection />
+        {/* <SaleSection /> */}
       </main>
     </div>
   );

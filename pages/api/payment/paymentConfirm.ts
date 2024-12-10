@@ -1,10 +1,18 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { BookingSchema } from "../../../lib/db/schema";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const session = await getServerSession(req, res, authOptions);
+
+  if (!session) {
+    return res.status(401);
+  }
+
   if (req.method == "POST") {
     const intent = req.query.intent as string;
 
