@@ -33,7 +33,6 @@ const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
   const [errorMessage, setErrorMessage] = React.useState<string>();
   const [email, setEmail] = React.useState<string>();
 
-  console.log("serafeaf", clientSecret);
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
@@ -84,24 +83,28 @@ const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
     });
 
     await createBooking(bookingList)
-      // .then(async (data) => await removeFromCart(item.cartItemId))
+      .then(async (data) => {
+        products.forEach(async (product) => {
+          await removeFromCart(product.cartItemId);
+        });
+      })
       .catch((err) => console.error(err));
 
-    // stripe
-    //   .confirmPayment({
-    //     elements,
-    //     confirmParams: {
-    //       return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
-    //     },
-    //   })
-    //   .then(({ error }) => {
-    //     if (error.type === "card_error" || error.type === "validation_error") {
-    //       setErrorMessage(error.message);
-    //     } else {
-    //       setErrorMessage("An unknown error occurred");
-    //     }
-    //   })
-    //   .finally(() => setIsLoading(false));
+    stripe
+      .confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
+        },
+      })
+      .then(({ error }) => {
+        if (error.type === "card_error" || error.type === "validation_error") {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage("An unknown error occurred");
+        }
+      })
+      .finally(() => setIsLoading(false));
   }
 
   return (

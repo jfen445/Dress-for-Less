@@ -13,8 +13,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // const session = await getServerSession(req, res, authOptions);
-
   await dbConnect();
 
   if (req.method == "GET") {

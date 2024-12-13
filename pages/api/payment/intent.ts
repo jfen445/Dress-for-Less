@@ -12,8 +12,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions);
-
   if (req.method == "POST") {
     const price = req.query.price as string;
     console.log("whatttt", price);

@@ -7,8 +7,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions);
-
   if (req.method == "POST") {
     const intent = req.query.intent as string;
 
@@ -16,7 +14,7 @@ export default async function handler(
     const update = { paymentSuccess: true };
 
     try {
-      const bookngObj = await BookingSchema.findOneAndUpdate(filter, update);
+      const bookngObj = await BookingSchema.updateMany(filter, update);
 
       res
         .status(200)

@@ -10,7 +10,6 @@ import {
 } from "../../lib/db/booking-dao";
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
-import { Body } from "@react-email/components";
 
 export default async function handler(
   req: NextApiRequest,
