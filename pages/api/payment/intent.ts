@@ -14,10 +14,6 @@ export default async function handler(
 ) {
   const session = await getServerSession(req, res, authOptions);
 
-  if (!session) {
-    return res.status(401);
-  }
-
   if (req.method == "POST") {
     const price = req.query.price as string;
     console.log("whatttt", price);

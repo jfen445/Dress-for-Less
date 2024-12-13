@@ -124,6 +124,8 @@ const CheckoutForm = () => {
 
     const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
 
+    console.log("hm", isValid, isThisWeekendBookings());
+
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 
@@ -134,7 +136,7 @@ const CheckoutForm = () => {
           Select a delivery or pick up option
         </p>
         <div className="mt-6 space-y-6">
-          {!isBookingValid() ? (
+          {isBookingValid() ? (
             <>
               {deliveryMethods.map((deliveryMethod) => (
                 <>
@@ -214,7 +216,7 @@ const CheckoutForm = () => {
               </h2>
               <RadioGroup />
             </section>
-            {!isBookingValid() && (
+            {isBookingValid() && (
               <>
                 <section aria-labelledby="shipping-heading" className="mt-10">
                   <h2
@@ -327,7 +329,7 @@ const CheckoutForm = () => {
               </>
             )}
           </div>
-          {!isBookingValid() && (
+          {isBookingValid() && (
             <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
               <Button
                 type="submit"

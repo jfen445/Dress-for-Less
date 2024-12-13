@@ -1,7 +1,7 @@
 import axios, { AxiosError } from "axios";
 import { Booking } from "../../common/types";
 
-export async function createBooking(booking: Booking) {
+export async function createBooking(booking: Booking[]) {
   try {
     const response = await axios.post(`/api/booking`, booking, {
       headers: {

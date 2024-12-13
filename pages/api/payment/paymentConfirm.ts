@@ -9,10 +9,6 @@ export default async function handler(
 ) {
   const session = await getServerSession(req, res, authOptions);
 
-  if (!session) {
-    return res.status(401);
-  }
-
   if (req.method == "POST") {
     const intent = req.query.intent as string;
 

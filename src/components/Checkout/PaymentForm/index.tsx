@@ -41,7 +41,9 @@ const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
 
     setIsLoading(true);
 
-    products.forEach(async (item) => {
+    var bookingList: Booking[] = [];
+
+    products.forEach((item) => {
       const date = item.dateBooked;
 
       const day = dayjs(date).subtract(1, "day").day();
@@ -78,10 +80,12 @@ const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
         size: item.size,
       };
 
-      await createBooking(bookingObj)
-        // .then(async (data) => await removeFromCart(item.cartItemId))
-        .catch((err) => console.error(err));
+      bookingList = bookingList.concat(bookingObj);
     });
+
+    await createBooking(bookingList)
+      // .then(async (data) => await removeFromCart(item.cartItemId))
+      .catch((err) => console.error(err));
 
     // stripe
     //   .confirmPayment({

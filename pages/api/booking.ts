@@ -10,6 +10,7 @@ import {
 } from "../../lib/db/booking-dao";
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
+import { Body } from "@react-email/components";
 
 export default async function handler(
   req: NextApiRequest,
@@ -46,48 +47,65 @@ export default async function handler(
 
     res.status(200).json(bookingItems);
   } else if (req.method == "POST") {
-    const dressId = req.body.dressId as string;
-    const size = req.body.size as string;
-    const dateBooked = req.body.dateBooked as string;
+    const dresses = req.body as Booking[];
+    var errorResponse: String[] = [];
 
-    const checkBooking = await checkDuplicateBooking(dressId, size, dateBooked);
+    for (const dress of dresses) {
+      const checkBooking = await checkDuplicateBooking(
+        dress.dressId,
+        dress.size,
+        dress.dateBooked
+      );
 
-    if (checkBooking.length > 0) {
+      if (checkBooking.length > 0) {
+        errorResponse.push(dress.dressId);
+      }
+    }
+
+    if (errorResponse.length > 0) {
       res.status(404).json({
         message: "This dressed has already been booked the the selected day. ",
+        body: errorResponse,
       });
     }
 
-    let booking: IBooking = {
-      dressId: req.body.dressId,
-      userId: req.body.userId,
-      dateBooked: req.body.dateBooked,
-      blockOutPeriod: req.body.blockOutPeriod,
-      address: req.body.address,
-      price: req.body.price,
-      city: req.body.city,
-      country: req.body.country,
-      postCode: req.body.postCode,
-      deliveryType: req.body.deliveryType,
-      tracking: req.body.tracking,
-      isShipped: req.body.isShipped,
-      isReturned: req.body.isReturned,
-      paymentIntent: req.body.paymentIntent,
-      paymentSuccess: false,
-      size: req.body.size,
-    };
+    var bookedDresses: IBooking[] = [];
+    dresses.forEach(async (dress) => {
+      let booking: IBooking = {
+        dressId: dress.dressId,
+        userId: dress.userId,
+        dateBooked: dress.dateBooked,
+        blockOutPeriod: dress.blockOutPeriod,
+        address: dress.address,
+        price: dress.price,
+        city: dress.city,
+        country: dress.country,
+        postCode: dress.postCode,
+        deliveryType: dress.deliveryType,
+        tracking: dress.tracking,
+        isShipped: dress.isShipped,
+        isReturned: dress.isReturned,
+        paymentIntent: dress.paymentIntent,
+        paymentSuccess: false,
+        size: dress.size,
+      };
 
-    const filter = {
-      userId: req.body.userId,
-      dressId: req.body.dressId,
-      size: req.body.size,
-      dateBooked: req.body.dateBooked,
-    };
-    const options = { upsert: true };
+      bookedDresses = bookedDresses.concat(booking);
 
-    await BookingSchema.updateOne(filter, booking, options);
+      const filter = {
+        userId: dress.userId,
+        dressId: dress.dressId,
+        size: dress.size,
+        dateBooked: dress.dateBooked,
+      };
+      const options = { upsert: true };
 
-    res.status(200).json({ message: "Booking successful", booking: booking });
+      await BookingSchema.updateOne(filter, booking, options);
+    });
+
+    res
+      .status(200)
+      .json({ message: "Booking successful", booking: bookedDresses });
   } else if (req.method == "PATCH") {
     const bookingId = req.query.bookingId as string;
 

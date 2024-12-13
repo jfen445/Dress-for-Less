@@ -59,7 +59,6 @@ const Cart = () => {
         })
         .catch((err) => {
           setErr(true);
-          console.log("error", err);
         })
         .finally(() => setIsLoading(false));
     }

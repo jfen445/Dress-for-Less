@@ -26,7 +26,7 @@ const incentives = [
 
 const AboutPage = () => {
   return (
-    <div className="bg-rose-50">
+    <div className="bg-rose-50 min-h-screen">
       <div className="mx-auto max-w-7xl py-24 sm:px-2 sm:py-32 lg:px-4">
         <div className="mx-auto max-w-2xl px-4 lg:max-w-none">
           <div className="grid grid-cols-1 items-center gap-x-16 gap-y-10 lg:grid-cols-2">

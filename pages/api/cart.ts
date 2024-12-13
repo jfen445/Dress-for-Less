@@ -8,18 +8,12 @@ import {
   getCartItem,
   removeItemFromCart,
 } from "../../lib/db/cart-dao";
-import { getServerSession } from "next-auth";
-import { authOptions } from "./auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions);
-
-  if (!session) {
-    return res.status(401);
-  }
+  // const session = await getServerSession(req, res, authOptions);
 
   await dbConnect();
 
@@ -79,5 +73,6 @@ export default async function handler(
     res.status(202).json({ message: "Item removed from cart" });
   }
 
+  res.end();
   //   return NextResponse.json({ messsage: "Hello World" });
 }
