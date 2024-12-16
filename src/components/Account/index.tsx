@@ -78,13 +78,11 @@ const Account = () => {
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("file", file);
     if (!photo) {
       return;
     }
 
     const form = event.currentTarget;
-    console.log("faefeawfaew", form);
     const formElements = form.elements as typeof form.elements & {
       firstname: { value: string };
       lastname: { value: string };
@@ -111,9 +109,6 @@ const Account = () => {
           fetchData();
         }
         return res.json();
-      })
-      .then((data) => {
-        console.log("eafdefd", data.message);
       })
       .catch((err) => {
         console.log("error", err);

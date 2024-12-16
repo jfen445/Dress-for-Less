@@ -10,14 +10,6 @@ import { getRecentDress } from "../../../sanity/sanity.query";
 const HomePage: () => JSX.Element = () => {
   const [open, setOpen] = useState(false);
 
-  // const getHomePageDresses = async () => {
-  //   await getRecentDress().then((data) => {
-  //     console.log("deresss", data);
-  //   });
-  // };
-
-  // getHomePageDresses();
-
   return (
     <div>
       <HeroSection />

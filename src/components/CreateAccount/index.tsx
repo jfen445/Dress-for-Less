@@ -18,7 +18,6 @@ const CreateAccountComponent = () => {
     event.preventDefault();
 
     const form = event.currentTarget;
-    console.log("faefeawfaew", form);
     const formElements = form.elements as typeof form.elements & {
       firstname: { value: string };
       lastname: { value: string };
@@ -37,17 +36,6 @@ const CreateAccountComponent = () => {
     const mobileNumber = formElements.mobileNumber.value;
     const instagramHandle = formElements.instagramHandle.value;
     const file = formElements.image.value;
-    console.log(
-      "form",
-      email,
-      password,
-
-      lastname,
-      mobileNumber,
-      instagramHandle,
-      file,
-      name
-    );
 
     const user: UserType = {
       email: formElements.email.value,
@@ -56,6 +44,7 @@ const CreateAccountComponent = () => {
       mobileNumber: formElements.mobileNumber.value,
       instagramHandle: formElements.instagramHandle.value ?? "",
       photo: "",
+      role: "user",
     };
 
     const response = await fetch("/api/auth/signup", {
@@ -70,7 +59,6 @@ const CreateAccountComponent = () => {
         return res.json();
       })
       .then((data) => {
-        console.log("eafdefd", data.message);
         setErrorMessage(data.message);
         setErr(true);
       })

@@ -2,11 +2,7 @@
 
 import React from "react";
 import OrderSummary from "./OrderSummary";
-import Payment from "./Payment";
 import { CartItemType, CartType } from "../../../common/types";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import PaymentForm from "./PaymentForm";
 import CheckoutForm from "./CheckoutForm";
 
 interface ProductCtx {

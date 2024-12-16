@@ -15,8 +15,6 @@ export default async function handler(
   const { email, password } = req.body;
   // await signIn('credentials', { email, password })
 
-  console.log("tester", email, password);
-
   const sessionData = req.body;
   const encryptedSessionData = encrypt(sessionData);
 

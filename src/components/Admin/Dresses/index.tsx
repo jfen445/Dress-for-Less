@@ -17,7 +17,6 @@ const AdminDresses = () => {
         (dress) => dress.images !== null
       );
 
-      console.log("dress list", filteredDresses);
       setDressList(filteredDresses);
       setIsLoading(false);
     };

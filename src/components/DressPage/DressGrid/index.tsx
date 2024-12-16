@@ -7,8 +7,6 @@ import { DressType } from "../../../../common/types";
 const DressGrid = () => {
   const [dresses, setDresses] = React.useState<DressType[]>([]);
 
-  console.log("dress here ", dresses);
-
   React.useEffect(() => {
     getAllDresses().then((data) => {
       setDresses(data);

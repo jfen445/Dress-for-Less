@@ -164,7 +164,6 @@ const AdminBookings = () => {
     }));
   };
 
-  console.log("here", thisWeekBookings);
   const renderBookingRow = (booking: Booking[]) => {
     const getStatusColour = (booking: Booking) => {
       let colour = "";

@@ -124,8 +124,6 @@ const CheckoutForm = () => {
 
     const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
 
-    console.log("hm", isValid, isThisWeekendBookings());
-
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 

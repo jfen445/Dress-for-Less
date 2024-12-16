@@ -14,7 +14,6 @@ export default async function handler(
 ) {
   if (req.method == "POST") {
     const price = req.query.price as string;
-    console.log("whatttt", price);
     if (parseInt(price) < 50) {
       res.status(404).json("Price is too low");
     }

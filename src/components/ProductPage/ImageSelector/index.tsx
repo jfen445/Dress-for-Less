@@ -6,7 +6,6 @@ function classNames(...classes: string[]) {
 }
 
 const ImageSelector = (props: { images: ImageType[] }) => {
-  console.log("13214124", props.images);
   return (
     <>
       <div className="my-auto">

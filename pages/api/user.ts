@@ -12,7 +12,6 @@ export default async function handler(
   await dbConnect();
   if (req.method === "GET") {
     const email = req.query.email as string;
-    console.log("efafgeaf", email, req.query);
 
     if (!email) {
       const allUsers = await findAllUsers();

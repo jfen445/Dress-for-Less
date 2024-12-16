@@ -17,10 +17,8 @@ export default async function handler(
     const saltRounds = 10;
 
     const users = await findUser(req.body.user.email);
-    // console.log("here are the users", users);
 
     if (users.length !== 0) {
-      console.log("hereeeeeeeeeeeeeeeee", users);
       res.status(409).json({
         message: "An acount with this email has already been created",
       });
@@ -37,7 +35,7 @@ export default async function handler(
         photo: "",
       };
 
-      await createUser(user);
+      // await createUser(user);
     });
 
     // await disconnect();

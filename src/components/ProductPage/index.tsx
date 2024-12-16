@@ -159,8 +159,6 @@ const Product = () => {
     );
   };
 
-  console.log("this is the size,", size);
-
   return (
     <div className="bg-white">
       <Toast

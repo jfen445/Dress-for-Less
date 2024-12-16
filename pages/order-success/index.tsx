@@ -33,36 +33,16 @@ const OrderSuccess = ({
   // const search = searchParams?.get("paymentIntent");
 
   React.useEffect(() => {
-    const getPaymentIntent = async () => {
-      if (router.query.payment_intent !== undefined) {
-        console.log("this is it", router.query.payment_intent);
-        const paymentIntent = await stripe.paymentIntents.retrieve(
-          "pi_3PnaYEP04u4yuCC318bf8FND"
-        );
-        // console.log("this is the paymenty intent", paymentIntent);
-      }
-    };
-
     const confirm = async () => {
       if (router.query.payment_intent) {
-        console.log("this is it", router.query.payment_intent);
         await confirmBooking(router.query.payment_intent.toString()).catch(
           (err) => console.log(err)
         );
-        // console.log("this is the paymenty intent", paymentIntent);
       }
     };
 
     confirm();
-    console.log(
-      params,
-      router.query.payment_intent?.toString(),
-      searchParams?.payment_intent
-    );
-  }, [params]);
-
-  // console.log("payment intent", paymentIntent);
-  // if (paymentIntent.metadata.productId == null) return <div>hi</div>;
+  }, [params, router.query.payment_intent]);
 
   return (
     <div className="bg-white">
@@ -70,7 +50,7 @@ const OrderSuccess = ({
         <div className="max-w-xl">
           <h1 className="text-base font-medium text-indigo-600">Thank you!</h1>
           <p className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-            It's on the way!
+            {"It's on the way!"}
           </p>
           <p className="mt-2 text-base text-gray-500">
             Your order #14034056 has shipped and will be with you soon.
