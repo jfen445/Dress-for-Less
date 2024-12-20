@@ -74,6 +74,12 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  callbacks: {
+    async redirect({ url, baseUrl }) {
+      console.log("base", baseUrl, url);
+      return baseUrl; // Ensure it dynamically adjusts to your environment
+    },
+  },
   adapter: MongoDBAdapter(clientPromise),
 };
 
