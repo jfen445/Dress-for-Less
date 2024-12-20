@@ -26,11 +26,8 @@ const OrderSuccess = ({
 }: {
   searchParams: { payment_intent: string };
 }) => {
-  // const searchParams = useSearchParams();
   const params = useParams<{ payment_intent: string }>();
   const router = useRouter();
-
-  // const search = searchParams?.get("paymentIntent");
 
   React.useEffect(() => {
     const confirm = async () => {
