@@ -56,7 +56,6 @@ const navItems = [
 const Navigation = () => {
   const { userInfo } = useUserContext();
   const { data: session } = useSession();
-  const [open, setOpen] = useState(true);
   const { setMobileNavOpen } = useNavigationContext();
 
   const isCurrentPage = (href: string): Boolean => {
