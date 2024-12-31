@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { SessionProvider } from "next-auth/react";
 import UserContextProvider from "@/context/UserContext";
 import Head from "next/head";
+import NavigationContextProvider from "@/context/NavigationContext";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -16,8 +17,10 @@ export default function App({ Component, pageProps }: AppProps) {
           <Head>
             <title>Dress for Less</title>
           </Head>
-          <Navigation />
-          <MobileNav />
+          <NavigationContextProvider>
+            <Navigation />
+            <MobileNav />
+          </NavigationContextProvider>
           <Component {...pageProps} />
         </div>
         <Footer />

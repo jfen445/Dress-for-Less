@@ -21,6 +21,7 @@ import {
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
 import { useUserContext } from "@/context/UserContext";
 import Marquee from "react-fast-marquee";
+import { useNavigationContext } from "@/context/NavigationContext";
 
 const navItems = [
   {
@@ -56,6 +57,7 @@ const Navigation = () => {
   const { userInfo } = useUserContext();
   const { data: session } = useSession();
   const [open, setOpen] = useState(true);
+  const { setMobileNavOpen } = useNavigationContext();
 
   const isCurrentPage = (href: string): Boolean => {
     if (typeof window !== "undefined") {
@@ -75,7 +77,7 @@ const Navigation = () => {
               <button
                 type="button"
                 className="-ml-2 rounded-md bg-white p-2 text-gray-400"
-                onClick={() => setOpen(true)}
+                onClick={() => setMobileNavOpen(true)}
               >
                 <span className="sr-only">Open menu</span>
                 <Bars3Icon className="h-6 w-6" aria-hidden="true" />
