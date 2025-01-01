@@ -80,7 +80,6 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      console.log("base", baseUrl, url);
       return baseUrl; // Ensure it dynamically adjusts to your environment
     },
   },

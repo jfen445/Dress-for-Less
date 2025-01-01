@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover, Transition } from "@headlessui/react";
+import { Popover } from "@headlessui/react";
 import {
   Bars3Icon,
   MagnifyingGlassIcon,
@@ -8,19 +8,10 @@ import {
   UserIcon,
 } from "@heroicons/react/16/solid";
 import Link from "next/link";
-import { Fragment, useState } from "react";
-import LoggedOnIcon from "./userIcon";
 import { useSession, signOut } from "next-auth/react";
-import {
-  Disclosure,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/react";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
 import { useUserContext } from "@/context/UserContext";
-import Marquee from "react-fast-marquee";
 import { useNavigationContext } from "@/context/NavigationContext";
 
 const navItems = [
@@ -276,19 +267,6 @@ const Navigation = () => {
           </div>
         </div>
       </nav>
-      <Marquee
-        style={
-          {
-            "background-color": "#881337",
-            color: "white",
-          } as React.CSSProperties
-        }
-        speed={30}
-        gradientColor="pink"
-        autoFill={true}
-      >
-        NEW DRESS NOW{"    "}
-      </Marquee>
     </header>
   );
 };

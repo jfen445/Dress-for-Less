@@ -14,15 +14,13 @@ const ImageSelector = (props: { images: ImageType[] }) => {
           <div className="mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none">
             <Tab.List
               className={`grid ${
-                props.images
-                  ? `grid-cols-${props.images.length}`
-                  : "grid-cols-4"
+                props.images ? `grid-cols-${4}` : "grid-cols-4"
               }  gap-6`}
             >
               {props.images.map((image) => (
                 <Tab
                   key={image.alt}
-                  className="relative flex h-24 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4"
+                  className="relative flex h-24 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none"
                 >
                   {({ selected }) => (
                     <>

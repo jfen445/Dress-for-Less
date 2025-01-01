@@ -23,6 +23,7 @@ import { useSession } from "next-auth/react";
 import Toast from "../Toast";
 import { addToCart } from "@/api/cart";
 import { getAllBookingsByDress } from "@/api/booking";
+import Spinner from "../Spinner";
 
 const Product = () => {
   const { data: session } = useSession();
@@ -38,8 +39,6 @@ const Product = () => {
   const [variant, setVariant] = React.useState<"success" | "error" | "warning">(
     "warning"
   );
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
   const params = useParams<{ id: string }>();
 
   const sizeOptions = React.useCallback(() => {
@@ -53,7 +52,6 @@ const Product = () => {
       const getProductDetails = async () => {
         await getDress(params.id).then((data) => {
           setDress(data);
-          console.log("dress", data);
           const dressSizes = (({ xs, s, m, l, xl }) => ({
             xs,
             s,
@@ -62,12 +60,10 @@ const Product = () => {
             xl,
           }))(data);
 
-          console.log("feafa", dressSizes);
           let pickedSizes = Object.fromEntries(
             Object.entries(dressSizes).filter(([_, v]) => v != null)
           );
 
-          console.log("p[icked siszes", pickedSizes);
           setSizes(pickedSizes);
 
           var obj = data.images.reduce(function (
@@ -167,79 +163,85 @@ const Product = () => {
         title={errorMessage}
         variant={variant}
       />
-      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
-        {/* Product details */}
-        <div className="lg:max-w-lg lg:self-end">
-          <div className="mt-4">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              {dress?.name}
-            </h1>
-          </div>
-
-          <section aria-labelledby="information-heading" className="mt-4">
-            <h2 id="information-heading" className="sr-only">
-              Product information
-            </h2>
-
-            <div className="flex items-center">
-              <p className="text-lg text-gray-900 sm:text-xl">
-                ${dress?.price}{" "}
-                <text className="text-xs text-gray-400">
-                  RRP: ${dress?.rrp}
-                </text>
-              </p>
-            </div>
-
-            <div className="mt-4 space-y-6">
-              <p className="text-base text-gray-500">{dress?.description}</p>
-            </div>
-          </section>
-          <section aria-labelledby="options-heading">
-            <h2 id="options-heading" className="sr-only">
-              Product options
-            </h2>
-
-            <div className="mt-5">
-              <RadioGroup className="block text-sm font-medium text-gray-700">
-                Size on tag: {dress?.size}
-              </RadioGroup>
-              <RadioGroup className="block text-sm font-medium text-gray-700">
-                Stretch: {dress?.stretch}
-              </RadioGroup>
-              {dress && dress.recommendedSize ? (
-                <RadioGroup className="block text-sm font-medium text-gray-700">
-                  Recommended Size: {dress?.recommendedSize.sort().join(", ")}
-                </RadioGroup>
-              ) : null}
-            </div>
-
-            <div className="mt-5">
-              <RadioGroup className="block text-sm italic text-gray-700">
-                Notes: {dress?.notes}
-              </RadioGroup>
-            </div>
-
-            <Dropdown />
-
-            <Calendar
-              setSelectedDate={setSelectedDate}
-              sizes={sizes}
-              selectedSize={size}
-            />
-
-            <div className="mt-10">
-              <Button
-                className="flex w-full items-center justify-center"
-                disabled={selectedDate === "" || size == ""}
-                onClick={() => addDressToCart()}
-              >
-                Making a booking
-              </Button>
-            </div>
-          </section>
+      {!dress ? (
+        <div className="h-screen flex items-center justify-center">
+          <Spinner />
         </div>
-        <ImageSelector images={images} />
-      </div>
+      ) : (
+        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
+          {/* Product details */}
+          <div className="lg:max-w-lg lg:self-end">
+            <div className="mt-4">
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                {dress?.name}
+              </h1>
+            </div>
+
+            <section aria-labelledby="information-heading" className="mt-4">
+              <h2 id="information-heading" className="sr-only">
+                Product information
+              </h2>
+
+              <div className="flex items-center">
+                <p className="text-lg text-gray-900 sm:text-xl">
+                  ${dress?.price}{" "}
+                  <text className="text-xs text-gray-400">
+                    RRP: ${dress?.rrp}
+                  </text>
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-6">
+                <p className="text-base text-gray-500">{dress?.description}</p>
+              </div>
+            </section>
+            <section aria-labelledby="options-heading">
+              <h2 id="options-heading" className="sr-only">
+                Product options
+              </h2>
+
+              <div className="mt-5">
+                <RadioGroup className="block text-sm font-medium text-gray-700">
+                  Size on tag: {dress?.size}
+                </RadioGroup>
+                <RadioGroup className="block text-sm font-medium text-gray-700">
+                  Stretch: {dress?.stretch}
+                </RadioGroup>
+                {dress && dress.recommendedSize ? (
+                  <RadioGroup className="block text-sm font-medium text-gray-700">
+                    Recommended Size: {dress?.recommendedSize.sort().join(", ")}
+                  </RadioGroup>
+                ) : null}
+              </div>
+
+              <div className="mt-5">
+                <RadioGroup className="block text-sm italic text-gray-700">
+                  Notes: {dress?.notes}
+                </RadioGroup>
+              </div>
+
+              <Dropdown />
+
+              <Calendar
+                setSelectedDate={setSelectedDate}
+                sizes={sizes}
+                selectedSize={size}
+              />
+
+              <div className="mt-10">
+                <Button
+                  className="flex w-full items-center justify-center"
+                  disabled={selectedDate === "" || size == ""}
+                  onClick={() => addDressToCart()}
+                >
+                  Making a booking
+                </Button>
+              </div>
+            </section>
+          </div>
+          <ImageSelector images={images} />
+        </div>
+      )}
     </div>
   );
 };

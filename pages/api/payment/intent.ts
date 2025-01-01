@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth";
 import Stripe from "stripe";
-import { authOptions } from "../auth/[...nextauth]";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   typescript: true,
