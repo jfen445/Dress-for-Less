@@ -72,14 +72,13 @@ const Navigation = () => {
                 <span className="sr-only">Open menu</span>
                 <Bars3Icon className="h-6 w-6" aria-hidden="true" />
               </button>
-
-              <a
+              {/* <a
                 href="#"
                 className="ml-2 p-2 text-gray-400 hover:text-gray-500"
               >
                 <span className="sr-only">Search</span>
                 <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-              </a>
+              </a> */}
             </div>
 
             {/* Flyout menus */}
