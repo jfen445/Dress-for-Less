@@ -60,20 +60,22 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <DateCalendar
-        onChange={(e) => selectDate(e)}
-        shouldDisableDate={(date) => disableWeekdays(date)}
-        timezone="system"
-        slotProps={{
-          day: {
-            sx: {
-              "&.Mui-selected": { "background-color": "#fda4af" },
+    <div className="mt-10 ">
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <DateCalendar
+          onChange={(e) => selectDate(e)}
+          shouldDisableDate={(date) => disableWeekdays(date)}
+          timezone="system"
+          slotProps={{
+            day: {
+              sx: {
+                "&.Mui-selected": { "background-color": "#fda4af" },
+              },
             },
-          },
-        }}
-      />
-    </LocalizationProvider>
+          }}
+        />
+      </LocalizationProvider>
+    </div>
   );
 };
 

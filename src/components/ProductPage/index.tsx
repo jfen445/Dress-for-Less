@@ -24,6 +24,7 @@ import Toast from "../Toast";
 import { addToCart } from "@/api/cart";
 import { getAllBookingsByDress } from "@/api/booking";
 import Spinner from "../Spinner";
+import CoverFlow from "../Swiper";
 
 const Product = () => {
   const { data: session } = useSession();
@@ -220,6 +221,9 @@ const Product = () => {
                 </RadioGroup>
               </div>
 
+              {/* <ImageSelector images={images} classname="md:hidden py-10" /> */}
+              <CoverFlow images={images} classname="lg:hidden" />
+
               <Dropdown />
 
               <Calendar
@@ -239,7 +243,7 @@ const Product = () => {
               </div>
             </section>
           </div>
-          <ImageSelector images={images} />
+          <ImageSelector images={images} classname="hidden lg:block" />
         </div>
       )}
     </div>
