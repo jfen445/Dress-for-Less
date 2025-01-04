@@ -1,25 +1,24 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
+  Hr,
   Html,
   Img,
   Link,
   Preview,
+  Section,
   Text,
 } from "@react-email/components";
 import * as React from "react";
-import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
+import DFLLogo from "../../../../public/dfl-logo-transparent.jpeg";
 
 interface MagicLinkEmailProps {
   url?: string;
   host?: string;
 }
-
-const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "";
 
 export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
   <Html>
@@ -27,28 +26,26 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
     <Preview>Log in with this magic link</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Log in to Dress for Less</Heading>
-        <Link
-          href={url}
-          target="_blank"
-          style={{
-            ...link,
-            display: "block",
-            marginBottom: "16px",
-          }}
-        >
-          Click here to log in with this magic link
-        </Link>
-        <Text
-          style={{
-            ...text,
-            color: "#ababab",
-            marginTop: "14px",
-            marginBottom: "16px",
-          }}
-        >
+        <Img
+          src={DFLLogo.src}
+          width="42"
+          height="42"
+          alt="Dress for Less"
+          style={logo}
+        />
+        <Heading style={heading}>Your login link for Dress for Less</Heading>
+        <Section style={buttonContainer}>
+          <Button style={button} href={url}>
+            Login to Dress for Less
+          </Button>
+        </Section>
+        <Text style={paragraph}>
           If you didn&apos;t try to login, you can safely ignore this email.
         </Text>
+        <Hr style={hr} />
+        <Link href={process.env.NEXT_BASE_URL} style={reportLink}>
+          Dress for Less
+        </Link>
       </Container>
     </Body>
   </Html>
@@ -56,58 +53,73 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
 
 export default MagicLinkEmail;
 
+const logo = {
+  borderRadius: 21,
+  width: 42,
+  height: 42,
+};
+
 const main = {
   backgroundColor: "#ffffff",
+  fontFamily:
+    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 };
 
 const container = {
-  paddingLeft: "12px",
-  paddingRight: "12px",
   margin: "0 auto",
+  padding: "20px 0 48px",
+  maxWidth: "560px",
 };
 
-const h1 = {
-  color: "#333",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+const heading = {
   fontSize: "24px",
-  fontWeight: "bold",
-  margin: "40px 0",
-  padding: "0",
+  letterSpacing: "-0.5px",
+  lineHeight: "1.3",
+  fontWeight: "400",
+  color: "#484848",
+  padding: "17px 0 0",
 };
 
-const link = {
-  color: "#2754C5",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+const paragraph = {
+  margin: "0 0 15px",
+  fontSize: "15px",
+  lineHeight: "1.4",
+  color: "#3c4149",
+};
+
+const buttonContainer = {
+  padding: "27px 0 27px",
+};
+
+const button = {
+  backgroundColor: "#fda4af",
+  borderRadius: "3px",
+  fontWeight: "600",
+  color: "#fff",
+  fontSize: "15px",
+  textDecoration: "none",
+  textAlign: "center" as const,
+  display: "block",
+  padding: "11px 23px",
+};
+
+const reportLink = {
   fontSize: "14px",
-  textDecoration: "underline",
+  color: "#b4becc",
 };
 
-const text = {
-  color: "#333",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: "14px",
-  margin: "24px 0",
-};
-
-const footer = {
-  color: "#898989",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-  fontSize: "12px",
-  lineHeight: "22px",
-  marginTop: "12px",
-  marginBottom: "24px",
+const hr = {
+  borderColor: "#dfe1e4",
+  margin: "42px 0 26px",
 };
 
 const code = {
-  display: "inline-block",
-  padding: "16px 4.5%",
-  width: "90.5%",
-  backgroundColor: "#f4f4f4",
-  borderRadius: "5px",
-  border: "1px solid #eee",
-  color: "#333",
+  fontFamily: "monospace",
+  fontWeight: "700",
+  padding: "1px 4px",
+  backgroundColor: "#dfe1e4",
+  letterSpacing: "-0.3px",
+  fontSize: "21px",
+  borderRadius: "4px",
+  color: "#3c4149",
 };

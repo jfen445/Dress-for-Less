@@ -38,8 +38,8 @@ export const sendVerificationRequest = async (
     const resend = new Resend(process.env.RESEND_API_KEY!);
 
     await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
-      to: ["delivered@resend.dev"],
+      from: "Dress for Less <onboarding@resend.dev>",
+      to: ["joshfeng791@gmail.com"],
       subject: "Verify your Dress for Less account",
       text: text(url, host),
       react: MagicLinkEmail({ url, host }),
