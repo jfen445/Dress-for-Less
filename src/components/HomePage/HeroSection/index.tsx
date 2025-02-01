@@ -1,6 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { getRecentDress } from "../../../../sanity/sanity.query";
+import Marquee from "react-fast-marquee";
 
 const HeroSection = () => {
   const [dresses, setDresses] = React.useState<any>();
@@ -18,6 +19,19 @@ const HeroSection = () => {
 
   return (
     <>
+      <Marquee
+        style={
+          {
+            "background-color": "#881337",
+            color: "white",
+          } as React.CSSProperties
+        }
+        speed={30}
+        gradientColor="pink"
+        autoFill={false}
+      >
+        {"DRESS FOR LESS IS HERE ".repeat(100)}
+      </Marquee>
       {dresses && (
         <header className="relative overflow-hidden bg-rose-50">
           {/* Hero section */}

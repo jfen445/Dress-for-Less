@@ -22,11 +22,7 @@ declare module "next-auth" {
 export const sendVerificationRequest = async (
   params: SendVerificationRequestParams
 ) => {
-  let {
-    identifier: email,
-    url,
-    provider: { from },
-  } = params;
+  const { identifier, url, provider, theme } = params;
 
   const { host } = new URL(url);
 
@@ -34,12 +30,14 @@ export const sendVerificationRequest = async (
     return `Sign in to ${host}\n${url}\n\n`;
   };
 
+  console.log("indentier", identifier);
+
   try {
     const resend = new Resend(process.env.RESEND_API_KEY!);
 
     await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
-      to: ["delivered@resend.dev"],
+      from: "Dress for Less <onboarding@resend.dev>",
+      to: [identifier],
       subject: "Verify your Dress for Less account",
       text: text(url, host),
       react: MagicLinkEmail({ url, host }),
@@ -62,15 +60,8 @@ export const authOptions: NextAuthOptions = {
     }),
     EmailProvider({
       from: "noreply@example.com",
-      // Custom sendVerificationRequest() function
       sendVerificationRequest,
     }),
-    // {
-    //   id: "resend",
-    //   type: "email",
-    //   sendVerificationRequest,
-    // },
-    // ...add more providers here
   ],
   pages: {
     signIn: "/login",
@@ -80,7 +71,6 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      console.log("base", baseUrl, url);
       return baseUrl; // Ensure it dynamically adjusts to your environment
     },
   },

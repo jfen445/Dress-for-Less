@@ -18,16 +18,17 @@ const FeaturedSection = () => {
             id="cause-heading"
             className="text-3xl font-bold tracking-tight text-white sm:text-4xl"
           >
-            Long-term thinking
+            Your local dress rental
           </h2>
           <p className="mt-3 text-xl text-white">
-            We are committed to responsible, sustainable, and ethical
-            manufacturing. Our small-scale approach allows us to focus on
-            quality and reduce our impact. We are doing our best to delay the
-            inevitable heat-death of the universe.
+            Based in Auckland, Dress for Less specializes in high-quality dress
+            rentals at affordable prices. Whether you are attending a wedding,
+            formal event, or special occasion, we offer a stunning selection of
+            dresses to suit every style and size. Serving all of New Zealand, we
+            make it easy to rent, look fabulous, and return with confidence
           </p>
           <a
-            href="#"
+            href={"/about"}
             className="mt-8 block w-full rounded-md border border-transparent bg-white px-8 py-3 text-base font-medium text-gray-900 hover:bg-gray-100 sm:w-auto"
           >
             Read our story

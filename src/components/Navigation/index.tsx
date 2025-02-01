@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover, Transition } from "@headlessui/react";
+import { Popover } from "@headlessui/react";
 import {
   Bars3Icon,
   MagnifyingGlassIcon,
@@ -8,19 +8,11 @@ import {
   UserIcon,
 } from "@heroicons/react/16/solid";
 import Link from "next/link";
-import { Fragment, useState } from "react";
-import LoggedOnIcon from "./userIcon";
 import { useSession, signOut } from "next-auth/react";
-import {
-  Disclosure,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/react";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
 import { useUserContext } from "@/context/UserContext";
-import Marquee from "react-fast-marquee";
+import { useNavigationContext } from "@/context/NavigationContext";
 
 const navItems = [
   {
@@ -55,7 +47,7 @@ const navItems = [
 const Navigation = () => {
   const { userInfo } = useUserContext();
   const { data: session } = useSession();
-  const [open, setOpen] = useState(true);
+  const { setMobileNavOpen } = useNavigationContext();
 
   const isCurrentPage = (href: string): Boolean => {
     if (typeof window !== "undefined") {
@@ -75,19 +67,18 @@ const Navigation = () => {
               <button
                 type="button"
                 className="-ml-2 rounded-md bg-white p-2 text-gray-400"
-                onClick={() => setOpen(true)}
+                onClick={() => setMobileNavOpen(true)}
               >
                 <span className="sr-only">Open menu</span>
                 <Bars3Icon className="h-6 w-6" aria-hidden="true" />
               </button>
-
-              <a
+              {/* <a
                 href="#"
                 className="ml-2 p-2 text-gray-400 hover:text-gray-500"
               >
                 <span className="sr-only">Search</span>
                 <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-              </a>
+              </a> */}
             </div>
 
             {/* Flyout menus */}
@@ -275,19 +266,6 @@ const Navigation = () => {
           </div>
         </div>
       </nav>
-      <Marquee
-        style={
-          {
-            "background-color": "#881337",
-            color: "white",
-          } as React.CSSProperties
-        }
-        speed={30}
-        gradientColor="pink"
-        autoFill={true}
-      >
-        NEW DRESS NOW{"    "}
-      </Marquee>
     </header>
   );
 };
