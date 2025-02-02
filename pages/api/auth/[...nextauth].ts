@@ -30,8 +30,6 @@ export const sendVerificationRequest = async (
     return `Sign in to ${host}\n${url}\n\n`;
   };
 
-  console.log("indentier", identifier);
-
   try {
     const resend = new Resend(process.env.RESEND_API_KEY!);
 
