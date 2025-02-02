@@ -340,12 +340,14 @@ const Filters = () => {
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          Workspace sale
+          A dress for any ocassion
         </h1>
         <p className="mt-4 max-w-xl text-sm text-gray-700">
-          Our thoughtfully designed workspace objects are crafted in limited
-          runs. Improve your productivity and organization with these sale items
-          before we run out.
+          Find the perfect dress for any occasion! Whether you are attending a
+          wedding, celebrating a special event, or simply looking to elevate
+          your everyday look, our collection offers a range of stylish dresses
+          designed to fit every moment. From elegant evening gowns to casual
+          chic options, we have something for every occasion and every style.
         </p>
       </div>
 

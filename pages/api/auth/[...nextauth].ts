@@ -8,7 +8,6 @@ import EmailProvider, {
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
 import { Resend } from "resend";
-import { text } from "stream/consumers";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
 declare module "next-auth" {
   interface Session {
