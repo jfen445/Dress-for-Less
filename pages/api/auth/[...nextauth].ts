@@ -8,7 +8,6 @@ import EmailProvider, {
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
 import { Resend } from "resend";
-import { text } from "stream/consumers";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
 declare module "next-auth" {
   interface Session {
@@ -29,8 +28,6 @@ export const sendVerificationRequest = async (
   const text = (url: string, host: string) => {
     return `Sign in to ${host}\n${url}\n\n`;
   };
-
-  console.log("indentier", identifier);
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY!);

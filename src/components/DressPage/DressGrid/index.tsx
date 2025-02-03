@@ -1,23 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { getAllDresses } from "../../../../sanity/sanity.query";
 import { DressType } from "../../../../common/types";
+import { useDressContext } from "@/context/DressContext";
+import Spinner from "@/components/Spinner";
 
 const DressGrid = () => {
-  const [dresses, setDresses] = React.useState<DressType[]>([]);
-
-  React.useEffect(() => {
-    getAllDresses().then((data) => {
-      setDresses(data);
-    });
-  }, []);
+  const { filteredDressList, isLoading } = useDressContext();
 
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-      {dresses?.map((dress) => (
-        <>
-          {dress.images ? (
+    <>
+      {isLoading ? (
+        <div className="flex justify-center mt-20">
+          <Spinner />
+        </div>
+      ) : (
+        <section className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+          {filteredDressList?.map((dress: DressType) => (
             <a
               key={dress._id}
               href={`/dresses/products/${dress._id}`}
@@ -35,10 +34,10 @@ const DressGrid = () => {
                 <p>{dress.price}</p>
               </div>
             </a>
-          ) : null}
-        </>
-      ))}
-    </div>
+          ))}
+        </section>
+      )}
+    </>
   );
 };
 
