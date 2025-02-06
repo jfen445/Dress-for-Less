@@ -33,7 +33,7 @@ export const sendVerificationRequest = async (
     const resend = new Resend(process.env.RESEND_API_KEY!);
 
     await resend.emails.send({
-      from: "Dress for Less <onboarding@resend.dev>",
+      from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [identifier],
       subject: "Verify your Dress for Less account",
       text: text(url, host),
