@@ -5,9 +5,9 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import * as React from "react";
 import DressGrid from "@/components/DressPage/DressGrid";
 import Filters from "@/components/DressPage/Filters";
-import { getAllDresses } from "../../sanity/sanity.query";
 import { DressType } from "../../common/types";
 import DressContextProvider from "@/context/DressContext";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const sortOptions = [
   { name: "Most Popular", href: "#" },
@@ -146,16 +146,11 @@ function classNames(...classes: string[]) {
 const DressPage = () => {
   // const [, setMobileMenuOpen] = React.useState(false);
   // const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
+  const { getDressWithId } = useGlobalContext();
   const [dressList, setDressList] = React.useState<DressType[]>([]);
   const [filteredDressList, setFilteredDressList] = React.useState<DressType[]>(
     []
   );
-
-  React.useEffect(() => {
-    getAllDresses().then((data) => {
-      setDressList(data);
-    });
-  }, []);
 
   return (
     <>

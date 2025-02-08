@@ -1,21 +1,21 @@
 import * as React from "react";
 import Link from "next/link";
-import { getRecentDress } from "../../../../sanity/sanity.query";
 import Marquee from "react-fast-marquee";
+import { useGlobalContext } from "@/context/GlobalContext";
+import { DressType } from "../../../../common/types";
 
 const HeroSection = () => {
-  const [dresses, setDresses] = React.useState<any>();
+  const { allDresses, getHomeScreenDresses } = useGlobalContext();
+  const [dresses, setDresses] = React.useState<DressType[]>(
+    getHomeScreenDresses()
+  );
+
+  console.log("dresses", dresses);
+  console.log("11111", getHomeScreenDresses());
 
   React.useEffect(() => {
-    const getHomePageDresses = async () => {
-      await getRecentDress().then((data) => {
-        console.log("deresss", data);
-        setDresses(data);
-      });
-    };
-
-    getHomePageDresses();
-  }, []);
+    setDresses(getHomeScreenDresses());
+  }, [allDresses, getHomeScreenDresses]);
 
   return (
     <>
@@ -32,7 +32,7 @@ const HeroSection = () => {
       >
         {"DRESS FOR LESS IS HERE ".repeat(100)}
       </Marquee>
-      {dresses && (
+      {dresses && dresses.length != 0 && (
         <header className="relative overflow-hidden bg-rose-50">
           {/* Hero section */}
           <div className="pb-80 pt-16 sm:pb-40 sm:pt-24 lg:pb-48 lg:pt-40">

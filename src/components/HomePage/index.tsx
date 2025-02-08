@@ -4,6 +4,7 @@ import { JSX, useState } from "react";
 import HeroSection from "./HeroSection";
 import FeaturedSection from "./FeaturedSection";
 import FavouritesSection from "./FavouritesSection";
+import { sanityFetch } from "../../../sanity/sanity.client";
 
 const HomePage: () => JSX.Element = () => {
   return (

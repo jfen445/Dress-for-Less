@@ -20,6 +20,7 @@ import {
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { useDressContext } from "@/context/DressContext";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 type Sort = {
   name: string;
@@ -99,7 +100,8 @@ function classNames(...classes: string[]) {
 
 const Filters = () => {
   const [open, setOpen] = React.useState(false);
-  const { dressList, filteredDressList, setFilteredDressList, setIsLoading } =
+  const { allDresses } = useGlobalContext();
+  const { filteredDressList, setFilteredDressList, setIsLoading } =
     useDressContext();
   const [filters, setFilters] = React.useState(defaultFilters);
   const [sortOptions, setSortOptions] =
@@ -198,7 +200,7 @@ const Filters = () => {
         {}
       );
 
-      return dressList.filter((dress) => {
+      return allDresses.filter((dress) => {
         var filteredTags = dress.tags.map(function (item) {
           return item as unknown as string;
         });
@@ -233,7 +235,7 @@ const Filters = () => {
 
     setFilteredDressList(filterDresses());
     setIsLoading(false);
-  }, [dressList, filters, setFilteredDressList, setIsLoading]);
+  }, [allDresses, filters, setFilteredDressList, setIsLoading]);
 
   return (
     <div className="bg-white">

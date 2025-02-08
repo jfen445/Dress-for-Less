@@ -25,8 +25,10 @@ import { addToCart } from "@/api/cart";
 import { getAllBookingsByDress } from "@/api/booking";
 import Spinner from "../Spinner";
 import CoverFlow from "../Swiper";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const Product = () => {
+  const { getDressWithId } = useGlobalContext();
   const { data: session } = useSession();
   const router = useRouter();
   const [dress, setDress] = React.useState<DressType>();
@@ -51,40 +53,77 @@ const Product = () => {
   React.useEffect(() => {
     if (params) {
       const getProductDetails = async () => {
-        await getDress(params.id).then((data) => {
-          setDress(data);
-          const dressSizes = (({ xs, s, m, l, xl }) => ({
-            xs,
-            s,
-            m,
-            l,
-            xl,
-          }))(data);
+        const currentDress = getDressWithId(params.id);
+        console.log("currentD", currentDress);
+        setDress(currentDress);
 
-          let pickedSizes = Object.fromEntries(
-            Object.entries(dressSizes).filter(([_, v]) => v != null)
-          );
+        const dressSizes = (({ xs, s, m, l, xl }) => ({
+          xs,
+          s,
+          m,
+          l,
+          xl,
+        }))(currentDress as any);
 
-          setSizes(pickedSizes);
+        let pickedSizes = Object.fromEntries(
+          Object.entries(dressSizes).filter(([_, v]) => v != null)
+        );
 
-          var obj = data.images.reduce(function (
-            acc: { [x: string]: any },
-            cur: any,
-            i: string | number
-          ) {
-            var o = { src: cur, alt: data.name + cur };
-            acc[i] = o;
-            return acc;
-          },
-          []);
+        console.log("defeafead", dressSizes, pickedSizes);
+        setSizes(pickedSizes);
 
-          setImages(obj);
-        });
+        var obj: ImageType[] = currentDress.images.reduce(function (
+          acc: ImageType[], // Set the accumulator type to an array of ImageType
+          cur: string, // Assuming cur is a string, the image source
+          i: number // Index is a number
+        ): ImageType[] {
+          // The return type should be ImageType[]
+          var o: ImageType = {
+            src: cur,
+            alt: currentDress.name + cur, // Alt text is constructed with the name + image URL
+          };
+          acc.push(o); // Push the new object to the array
+          return acc;
+        }, []);
+
+        console.log("obj", obj);
+
+        setImages(obj);
+
+        // await getDress(params.id).then((data) => {
+        //   setDress(data);
+        //   const dressSizes = (({ xs, s, m, l, xl }) => ({
+        //     xs,
+        //     s,
+        //     m,
+        //     l,
+        //     xl,
+        //   }))(data);
+
+        //   let pickedSizes = Object.fromEntries(
+        //     Object.entries(dressSizes).filter(([_, v]) => v != null)
+        //   );
+
+        //   setSizes(pickedSizes);
+
+        //   var obj = data.images.reduce(function (
+        //     acc: { [x: string]: any },
+        //     cur: any,
+        //     i: string | number
+        //   ) {
+        //     var o = { src: cur, alt: data.name + cur };
+        //     acc[i] = o;
+        //     return acc;
+        //   },
+        //   []);
+
+        //   setImages(obj);
+        // });
       };
 
       getProductDetails();
     }
-  }, [params, params?.id]);
+  }, [getDressWithId, params]);
 
   const addDressToCart = async () => {
     if (!session) {
