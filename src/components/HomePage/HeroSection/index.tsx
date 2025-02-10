@@ -10,9 +10,6 @@ const HeroSection = () => {
     getHomeScreenDresses()
   );
 
-  console.log("dresses", dresses);
-  console.log("11111", getHomeScreenDresses());
-
   React.useEffect(() => {
     setDresses(getHomeScreenDresses());
   }, [allDresses, getHomeScreenDresses]);

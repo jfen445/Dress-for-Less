@@ -37,3 +37,57 @@ export async function getFaq() {
   }`
   );
 }
+
+export async function getDress(id: string) {
+  return client.fetch(
+    groq`*[_type == "dress" && _id == "${id}"][0]{
+      _id,
+      name,
+      description,
+      "images": images[].asset->url,
+      size,
+      recommendedSize,
+      length,
+      stretch,
+      brand,
+      price,
+      rrp,
+      tags,
+      xs,
+      s,
+      m,
+      l,
+      xl,
+      condition,
+      rating,
+      notes
+    }`
+  );
+}
+
+export async function getDresses(ids: string[]) {
+  return client.fetch(
+    groq`*[_type == "dress" && _id in ${JSON.stringify(ids)}]{
+      _id,
+      name,
+      description,
+      "images": images[].asset->url,
+      size,
+      recommendedSize,
+      length,
+      stretch,
+      brand,
+      price,
+      rrp,
+      tags,
+      xs,
+      s,
+      m,
+      l,
+      xl,
+      condition,
+      rating,
+      notes
+    }`
+  );
+}

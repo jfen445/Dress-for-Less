@@ -1,28 +1,9 @@
 import React from "react";
-import { EnvelopeIcon, PhoneIcon } from "@heroicons/react/20/solid";
-import { getAllDresses } from "../../../../sanity/sanity.query";
-import { DressType } from "../../../../common/types";
 import Spinner from "@/components/Spinner";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const AdminDresses = () => {
-  const [dressList, setDressList] = React.useState<DressType[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
-  React.useEffect(() => {
-    const getDresses = async () => {
-      setIsLoading(true);
-      const dressList = await getAllDresses();
-
-      const filteredDresses = (dressList as unknown as DressType[]).filter(
-        (dress) => dress.images !== null
-      );
-
-      setDressList(filteredDresses);
-      setIsLoading(false);
-    };
-
-    getDresses();
-  }, []);
+  const { allDresses } = useGlobalContext();
 
   return (
     <>
@@ -37,7 +18,7 @@ const AdminDresses = () => {
             </p>
           </div>
         </div>
-        {isLoading ? (
+        {allDresses && allDresses.length != 0 ? (
           <div className="flex justify-center">
             <Spinner />
           </div>
@@ -46,7 +27,7 @@ const AdminDresses = () => {
             role="list"
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
           >
-            {dressList.map((dress) => (
+            {allDresses.map((dress) => (
               <li
                 key={dress._id}
                 className="col-span-1 flex flex-col divide-y divide-gray-200 rounded-lg bg-white text-center shadow"

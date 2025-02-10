@@ -2,8 +2,6 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../../lib/db/db";
 import { getAllBookings } from "../../../lib/db/booking-dao";
 import { getDress } from "../../../sanity/sanity.query";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,

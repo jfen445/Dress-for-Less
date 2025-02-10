@@ -9,6 +9,7 @@ import dress from "../../common/schemas/dress";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const deliveryMethods = [
   { id: "delivery", title: "Full delivery" },
@@ -26,6 +27,7 @@ const OrderSuccess = ({
 }) => {
   const params = useParams<{ payment_intent: string }>();
   const router = useRouter();
+  const { getDressWithId } = useGlobalContext();
   const { userInfo } = useUserContext();
   const [bookings, setBookings] = React.useState<Booking[]>([]);
   const [deliveryCost, setDeliveryCost] = React.useState<number>(0);
@@ -86,8 +88,7 @@ const OrderSuccess = ({
       const dressDetails = await Promise.all(
         bookings.map(async (booking) => {
           try {
-            const result = await getDress(booking.dressId);
-            return result;
+            return getDressWithId(booking.dressId);
           } catch (error) {
             console.error(
               `Error fetching dress with ID ${booking.dressId}:`,
@@ -102,9 +103,9 @@ const OrderSuccess = ({
     }
 
     fetchDressDetails(bookings).then((results) => {
-      setBookingDresses(results);
+      setBookingDresses(results as unknown as DressType[]);
     });
-  }, [bookings]);
+  }, [bookings, getDressWithId]);
 
   function getDeliveryMethodTitle() {
     const method = deliveryMethods.find(

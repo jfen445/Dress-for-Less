@@ -54,7 +54,6 @@ const Product = () => {
     if (params) {
       const getProductDetails = async () => {
         const currentDress = getDressWithId(params.id);
-        console.log("currentD", currentDress);
         setDress(currentDress);
 
         const dressSizes = (({ xs, s, m, l, xl }) => ({
@@ -69,7 +68,6 @@ const Product = () => {
           Object.entries(dressSizes).filter(([_, v]) => v != null)
         );
 
-        console.log("defeafead", dressSizes, pickedSizes);
         setSizes(pickedSizes);
 
         var obj: ImageType[] = currentDress.images.reduce(function (
