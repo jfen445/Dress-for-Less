@@ -39,7 +39,7 @@ export default async function handler(
       cart.dateBooked
     );
 
-    if (cartItem.length > 0) {
+    if (cartItem.length == 0) {
       return res.status(404).json({
         message: "Item is already in your cart",
       });

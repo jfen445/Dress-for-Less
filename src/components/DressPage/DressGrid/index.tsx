@@ -7,7 +7,7 @@ import Spinner from "@/components/Spinner";
 
 const DressGrid = () => {
   const { filteredDressList, isLoading } = useDressContext();
-
+  console.log("IUPDATED SORT", filteredDressList);
   return (
     <>
       {isLoading ? (

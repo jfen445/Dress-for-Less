@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Fragment } from "react";
 import { Transition } from "@headlessui/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
@@ -9,6 +10,7 @@ type NotificationProps = {
   title: string;
   variant: "success" | "error" | "warning";
   text?: string;
+  duration?: number;
 };
 
 const Toast: React.FC<NotificationProps> = ({
@@ -17,7 +19,17 @@ const Toast: React.FC<NotificationProps> = ({
   title,
   variant,
   text,
+  duration = 3000,
 }) => {
+  React.useEffect(() => {
+    if (show) {
+      const timer = setTimeout(() => {
+        setShow(false);
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [show, duration, setShow]);
+
   const getColour = () => {
     if (variant == "success") {
       return "bg-green-500";

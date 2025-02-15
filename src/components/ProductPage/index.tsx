@@ -54,39 +54,41 @@ const Product = () => {
     if (params) {
       const getProductDetails = async () => {
         const currentDress = getDressWithId(params.id);
-        setDress(currentDress);
+        if (currentDress) {
+          setDress(currentDress);
+          console.log("current dress", currentDress);
+          const dressSizes = (({ xs, s, m, l, xl }) => ({
+            xs,
+            s,
+            m,
+            l,
+            xl,
+          }))(currentDress as any);
 
-        const dressSizes = (({ xs, s, m, l, xl }) => ({
-          xs,
-          s,
-          m,
-          l,
-          xl,
-        }))(currentDress as any);
+          let pickedSizes = Object.fromEntries(
+            Object.entries(dressSizes).filter(([_, v]) => v != null)
+          );
 
-        let pickedSizes = Object.fromEntries(
-          Object.entries(dressSizes).filter(([_, v]) => v != null)
-        );
+          setSizes(pickedSizes);
 
-        setSizes(pickedSizes);
+          var obj: ImageType[] = currentDress.images.reduce(function (
+            acc: ImageType[], // Set the accumulator type to an array of ImageType
+            cur: string, // Assuming cur is a string, the image source
+            i: number // Index is a number
+          ): ImageType[] {
+            // The return type should be ImageType[]
+            var o: ImageType = {
+              src: cur,
+              alt: currentDress.name + cur, // Alt text is constructed with the name + image URL
+            };
+            acc.push(o); // Push the new object to the array
+            return acc;
+          }, []);
 
-        var obj: ImageType[] = currentDress.images.reduce(function (
-          acc: ImageType[], // Set the accumulator type to an array of ImageType
-          cur: string, // Assuming cur is a string, the image source
-          i: number // Index is a number
-        ): ImageType[] {
-          // The return type should be ImageType[]
-          var o: ImageType = {
-            src: cur,
-            alt: currentDress.name + cur, // Alt text is constructed with the name + image URL
-          };
-          acc.push(o); // Push the new object to the array
-          return acc;
-        }, []);
+          console.log("obj", obj);
 
-        console.log("obj", obj);
-
-        setImages(obj);
+          setImages(obj);
+        }
 
         // await getDress(params.id).then((data) => {
         //   setDress(data);

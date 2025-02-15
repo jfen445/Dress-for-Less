@@ -47,6 +47,7 @@ export type DressType = {
   m: string;
   l: string;
   xl: string;
+  _updatedAt: string;
 };
 
 export type ImageType = {
