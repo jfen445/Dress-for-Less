@@ -52,6 +52,6 @@ const cartSchema = new Schema({
   size: { type: String, required: true },
 });
 
-const CartSchema = mongoose.models.Cart ?? mongoose.model("Cart", cartSchema);
+const CartSchema = mongoose.models.Carts ?? mongoose.model("Carts", cartSchema);
 
 export { UserSchema, BookingSchema, CartSchema };
