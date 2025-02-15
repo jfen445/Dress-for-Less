@@ -1,25 +1,9 @@
 import React from "react";
-import { getFaq } from "../../../sanity/sanity.query";
-
-type FAQ = {
-  _id: string;
-  question: string;
-  answer: string;
-};
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const FaqSection = () => {
-  const [questions, setQuestions] = React.useState<FAQ[]>([]);
+  const { faq } = useGlobalContext();
 
-  React.useEffect(() => {
-    const getQuestions = async () => {
-      await getFaq().then((data) => {
-        const qdata = data as unknown as FAQ[];
-        setQuestions(qdata);
-      });
-    };
-
-    getQuestions();
-  });
   return (
     <div className="bg-white">
       <div className="mx-auto max-w-7xl px-6 py-16 sm:pt-32 lg:px-8 lg:py-16">
@@ -43,13 +27,13 @@ const FaqSection = () => {
           </div>
           <div className="mt-10 lg:col-span-7 lg:mt-0">
             <dl className="space-y-10">
-              {questions.reverse().map((faq) => (
-                <div key={faq.question}>
+              {faq.reverse().map((f) => (
+                <div key={f.question}>
                   <dt className="text-base font-semibold leading-7 text-gray-900">
-                    {faq.question}
+                    {f.question}
                   </dt>
                   <dd className="mt-2 text-base leading-7 text-gray-600">
-                    {faq.answer}
+                    {f.answer}
                   </dd>
                 </div>
               ))}

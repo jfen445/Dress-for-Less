@@ -62,21 +62,6 @@ const dress = {
       },
     },
     {
-      name: "size",
-      title: "Size",
-      type: "string",
-      initialValue: "",
-      options: {
-        list: [
-          { title: "XL", value: "XL" },
-          { title: "L", value: "L" },
-          { title: "M", value: "M" },
-          { title: "S", value: "S" },
-          { title: "XS", value: "XS" },
-        ],
-      },
-    },
-    {
       name: "xs",
       title: "XS",
       type: "number",

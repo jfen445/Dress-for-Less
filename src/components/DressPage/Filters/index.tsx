@@ -20,6 +20,9 @@ import {
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { useDressContext } from "@/context/DressContext";
+import { useGlobalContext } from "@/context/GlobalContext";
+import { DressType } from "../../../../common/types";
+import dayjs from "dayjs";
 
 type Sort = {
   name: string;
@@ -99,12 +102,24 @@ function classNames(...classes: string[]) {
 
 const Filters = () => {
   const [open, setOpen] = React.useState(false);
-  const { dressList, filteredDressList, setFilteredDressList, setIsLoading } =
+  const { allDresses } = useGlobalContext();
+  const { filteredDressList, setFilteredDressList, setIsLoading } =
     useDressContext();
   const [filters, setFilters] = React.useState(defaultFilters);
   const [sortOptions, setSortOptions] =
     React.useState<Sort[]>(defaultSortOptions);
 
+  React.useEffect(() => {
+    const currentSortOption = defaultSortOptions.find(
+      (option) => option.current === true
+    );
+
+    if (currentSortOption) {
+      setSort(currentSortOption?.name);
+    }
+  });
+
+  // update the filters that are shown
   const activeFilters = React.useCallback(() => {
     const areAnyFiltersActive = (
       currentFilters: typeof defaultFilters
@@ -153,21 +168,43 @@ const Filters = () => {
 
     setSortOptions(updatedSortObject);
 
+    setSort(name);
+  };
+
+  const setSort = (name: string) => {
     switch (name) {
       case "Most Popular":
         break;
       case "Newest":
+        const sortedDressesTime = [...filteredDressList].sort(
+          (a: DressType, b: DressType) => {
+            return dayjs(a._updatedAt).isAfter(dayjs(b._updatedAt)) ? -1 : 1;
+          }
+        );
+        setFilteredDressList(sortedDressesTime);
         break;
       case "Price: Low to High":
-        const sortedDressesLH = filteredDressList.sort(
-          (a, b) => Number(a.price) - Number(b.price)
+        const sortedDressesLH = [...filteredDressList].sort(
+          (a: DressType, b: DressType) => {
+            const priceA = a.price ?? 0; // Default to 0 if a.price is null or undefined
+            const priceB = b.price ?? 0;
+            const diff =
+              parseFloat(priceA.toString()) - parseFloat(priceB.toString());
+            return diff > 0 ? 1 : -1;
+          }
         );
         setFilteredDressList(sortedDressesLH);
         break;
       case "Price: High to Low":
-        const sortedDressesHL = filteredDressList.sort((a, b) => {
-          return Number(b.price) - Number(a.price);
-        });
+        const sortedDressesHL = [...filteredDressList].sort(
+          (a: DressType, b: DressType) => {
+            const priceA = a.price ?? 0; // Default to 0 if a.price is null or undefined
+            const priceB = b.price ?? 0;
+            const diff =
+              parseFloat(priceA.toString()) - parseFloat(priceB.toString());
+            return diff > 0 ? -1 : 1;
+          }
+        );
         setFilteredDressList(sortedDressesHL);
         break;
       default:
@@ -198,7 +235,7 @@ const Filters = () => {
         {}
       );
 
-      return dressList.filter((dress) => {
+      return allDresses.filter((dress) => {
         var filteredTags = dress.tags.map(function (item) {
           return item as unknown as string;
         });
@@ -233,7 +270,7 @@ const Filters = () => {
 
     setFilteredDressList(filterDresses());
     setIsLoading(false);
-  }, [dressList, filters, setFilteredDressList, setIsLoading]);
+  }, [allDresses, filters, setFilteredDressList, setIsLoading]);
 
   return (
     <div className="bg-white">
@@ -405,18 +442,19 @@ const Filters = () => {
             <div className="hidden sm:block">
               <div className="flow-root">
                 <PopoverGroup className="-mx-4 flex items-center divide-x divide-gray-200">
-                  {filters.map((section, sectionIdx) => (
+                  {filters.map((section) => (
                     <Popover
                       key={section.name}
                       className="relative inline-block px-4 text-left"
                     >
                       <PopoverButton className="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
                         <span>{section.name}</span>
-                        {sectionIdx === 0 ? (
+                        {/* number of categories filtered */}
+                        {/* {sectionIdx === 0 ? (
                           <span className="ml-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-700">
                             1
                           </span>
-                        ) : null}
+                        ) : null} */}
                         <ChevronDownIcon
                           aria-hidden="true"
                           className="-mr-1 ml-1 size-5 shrink-0 text-gray-400 group-hover:text-gray-500"

@@ -13,8 +13,10 @@ import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import ErrorPage from "../ErrorPage";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const Cart = () => {
+  const { getDressWithId } = useGlobalContext();
   const { userInfo } = useUserContext();
   const { status } = useSession();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
@@ -47,12 +49,31 @@ const Cart = () => {
           const cartItems = data.data as unknown as CartType[];
           let dresses: CartItemType[] = [];
           cartItems.map(async (item) => {
-            await getDress(item.dressId).then((data) => {
-              data.dateBooked = item.dateBooked;
-              data.cartItemId = item._id;
-              data.size = item.size;
-              dresses = [...dresses, data];
-            });
+            const dress = getDressWithId(item.dressId);
+            const cartDress: CartItemType = {
+              _id: dress._id,
+              name: dress.name,
+              description: dress.description,
+              size: dress.size,
+              images: dress.images,
+              tags: dress.tags,
+              price: dress.price,
+              length: dress.length,
+              brand: dress.brand,
+              rrp: dress.rrp,
+              stretch: dress.stretch,
+              dateBooked: item.dateBooked,
+              cartItemId: item._id || "",
+            };
+
+            dresses = [...dresses, cartDress];
+
+            // await getDress(item.dressId).then((data) => {
+            //   data.dateBooked = item.dateBooked;
+            //   data.cartItemId = item._id;
+            //   data.size = item.size;
+            //   dresses = [...dresses, data];
+            // });
 
             setProducts(dresses);
           });
@@ -62,7 +83,7 @@ const Cart = () => {
         })
         .finally(() => setIsLoading(false));
     }
-  }, [userInfo]);
+  }, [getDressWithId, userInfo]);
 
   React.useEffect(() => {
     getUserCart().catch((err) => setErr(true));

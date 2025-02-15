@@ -22,10 +22,10 @@ export async function getCartItem(
   userId: String,
   dressId: string,
   size: string,
-  date: string
+  dateBooked: string
 ) {
-  return CartSchema.find(
-    { userId, dressId, size, date },
+  return CartSchema.findOne(
+    { userId, dressId, size, dateBooked },
     "dressId userId dateBooked size"
   );
 }

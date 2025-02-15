@@ -9,6 +9,7 @@ import dress from "../../common/schemas/dress";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 const deliveryMethods = [
   { id: "delivery", title: "Full delivery" },
@@ -26,6 +27,7 @@ const OrderSuccess = ({
 }) => {
   const params = useParams<{ payment_intent: string }>();
   const router = useRouter();
+  const { getDressWithId } = useGlobalContext();
   const { userInfo } = useUserContext();
   const [bookings, setBookings] = React.useState<Booking[]>([]);
   const [deliveryCost, setDeliveryCost] = React.useState<number>(0);
@@ -58,15 +60,14 @@ const OrderSuccess = ({
           .then(async (data) => {
             const bookingData = data.data.booking as Booking[];
             setBookings(bookingData);
-
             const deliveryStatus = bookingData[0].deliveryType;
 
             if (deliveryStatus == "delivery") {
-              setDeliveryCost(7);
+              setDeliveryCost(15);
             } else if (deliveryStatus == "pickup") {
               setDeliveryCost(0);
             } else {
-              setDeliveryCost(3.5);
+              setDeliveryCost(7.5);
             }
           })
           .catch((err) => console.log(err));
@@ -74,20 +75,14 @@ const OrderSuccess = ({
     };
 
     confirm();
-  }, [
-    bookings,
-    params,
-    router.query,
-    router.query.payment_intent_client_secret,
-  ]);
+  }, [params, router.query, router.query.payment_intent_client_secret]);
 
   React.useEffect(() => {
     async function fetchDressDetails(bookings: Booking[]) {
       const dressDetails = await Promise.all(
         bookings.map(async (booking) => {
           try {
-            const result = await getDress(booking.dressId);
-            return result;
+            return getDressWithId(booking.dressId);
           } catch (error) {
             console.error(
               `Error fetching dress with ID ${booking.dressId}:`,
@@ -102,9 +97,9 @@ const OrderSuccess = ({
     }
 
     fetchDressDetails(bookings).then((results) => {
-      setBookingDresses(results);
+      setBookingDresses(results as unknown as DressType[]);
     });
-  }, [bookings]);
+  }, [bookings, getDressWithId]);
 
   function getDeliveryMethodTitle() {
     const method = deliveryMethods.find(

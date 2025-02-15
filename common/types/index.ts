@@ -42,6 +42,12 @@ export type DressType = {
   stretch: string;
   recommendedSize: string[];
   notes?: string;
+  xs: string;
+  s: string;
+  m: string;
+  l: string;
+  xl: string;
+  _updatedAt: string;
 };
 
 export type ImageType = {
@@ -112,4 +118,9 @@ export type Sizes = {
   m?: string;
   l?: string;
   xl?: string;
+};
+
+export type Faq = {
+  question: string;
+  answer: string;
 };
