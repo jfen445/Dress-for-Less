@@ -61,14 +61,15 @@ const OrderSuccess = ({
             const bookingData = data.data.booking as Booking[];
             setBookings(bookingData);
 
+            console.log("hello", data);
             const deliveryStatus = bookingData[0].deliveryType;
 
             if (deliveryStatus == "delivery") {
-              setDeliveryCost(7);
+              setDeliveryCost(15);
             } else if (deliveryStatus == "pickup") {
               setDeliveryCost(0);
             } else {
-              setDeliveryCost(3.5);
+              setDeliveryCost(7.5);
             }
           })
           .catch((err) => console.log(err));
@@ -76,12 +77,7 @@ const OrderSuccess = ({
     };
 
     confirm();
-  }, [
-    bookings,
-    params,
-    router.query,
-    router.query.payment_intent_client_secret,
-  ]);
+  }, [params, router.query, router.query.payment_intent_client_secret]);
 
   React.useEffect(() => {
     async function fetchDressDetails(bookings: Booking[]) {
