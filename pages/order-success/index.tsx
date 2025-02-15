@@ -60,8 +60,6 @@ const OrderSuccess = ({
           .then(async (data) => {
             const bookingData = data.data.booking as Booking[];
             setBookings(bookingData);
-
-            console.log("hello", data);
             const deliveryStatus = bookingData[0].deliveryType;
 
             if (deliveryStatus == "delivery") {
