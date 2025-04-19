@@ -9,8 +9,11 @@ import UserContextProvider from "@/context/UserContext";
 import Head from "next/head";
 import NavigationContextProvider from "@/context/NavigationContext";
 import GlobalContextProvider from "@/context/GlobalContext";
+import ComingSoon from "@/components/ComingSoon";
 
 export default function App({ Component, pageProps }: AppProps) {
+  const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON;
+
   return (
     <SessionProvider session={pageProps.session}>
       <GlobalContextProvider>
@@ -19,11 +22,17 @@ export default function App({ Component, pageProps }: AppProps) {
             <Head>
               <title>Dress for Less</title>
             </Head>
-            <NavigationContextProvider>
-              <Navigation />
-              <MobileNav />
-            </NavigationContextProvider>
-            <Component {...pageProps} />
+            {isComingSoon === "true" ? (
+              <ComingSoon />
+            ) : (
+              <>
+                <NavigationContextProvider>
+                  <Navigation />
+                  <MobileNav />
+                </NavigationContextProvider>
+                <Component {...pageProps} />
+              </>
+            )}
           </div>
           <Footer />
         </UserContextProvider>

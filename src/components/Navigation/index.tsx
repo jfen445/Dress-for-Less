@@ -1,6 +1,13 @@
 "use client";
 
-import { Popover } from "@headlessui/react";
+import {
+  Popover,
+  Tab,
+  TabGroup,
+  TabList,
+  TabPanel,
+  TabPanels,
+} from "@headlessui/react";
 import {
   Bars3Icon,
   MagnifyingGlassIcon,
@@ -13,6 +20,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
 import { useUserContext } from "@/context/UserContext";
 import { useNavigationContext } from "@/context/NavigationContext";
+import { Fragment } from "react";
 
 const navItems = [
   {
@@ -43,6 +51,72 @@ const navItems = [
     ],
   },
 ];
+
+const currencies = ["CAD", "USD", "AUD", "EUR", "GBP"];
+const navigation = {
+  categories: [
+    {
+      name: "Women",
+      featured: [
+        { name: "Sleep", href: "#" },
+        { name: "Swimwear", href: "#" },
+        { name: "Underwear", href: "#" },
+      ],
+      collection: [
+        { name: "Everything", href: "#" },
+        { name: "Core", href: "#" },
+        { name: "New Arrivals", href: "#" },
+        { name: "Sale", href: "#" },
+      ],
+      categories: [
+        { name: "Basic Tees", href: "#" },
+        { name: "Artwork Tees", href: "#" },
+        { name: "Bottoms", href: "#" },
+        { name: "Underwear", href: "#" },
+        { name: "Accessories", href: "#" },
+      ],
+      brands: [
+        { name: "Full Nelson", href: "#" },
+        { name: "My Way", href: "#" },
+        { name: "Re-Arranged", href: "#" },
+        { name: "Counterfeit", href: "#" },
+        { name: "Significant Other", href: "#" },
+      ],
+    },
+    {
+      name: "Men",
+      featured: [
+        { name: "Casual", href: "#" },
+        { name: "Boxers", href: "#" },
+        { name: "Outdoor", href: "#" },
+      ],
+      collection: [
+        { name: "Everything", href: "#" },
+        { name: "Core", href: "#" },
+        { name: "New Arrivals", href: "#" },
+        { name: "Sale", href: "#" },
+      ],
+      categories: [
+        { name: "Artwork Tees", href: "#" },
+        { name: "Pants", href: "#" },
+        { name: "Accessories", href: "#" },
+        { name: "Boxers", href: "#" },
+        { name: "Basic Tees", href: "#" },
+      ],
+      brands: [
+        { name: "Significant Other", href: "#" },
+        { name: "My Way", href: "#" },
+        { name: "Counterfeit", href: "#" },
+        { name: "Re-Arranged", href: "#" },
+        { name: "Full Nelson", href: "#" },
+      ],
+    },
+  ],
+  pages: [
+    { name: "Company", href: "#" },
+    { name: "Stores", href: "#" },
+  ],
+};
 
 const Navigation = () => {
   const { userInfo } = useUserContext();
@@ -174,6 +248,121 @@ const Navigation = () => {
                 </div>
               </div>
             </Popover.Group>
+
+            <TabGroup className="mt-2">
+              <div className="border-b border-gray-200">
+                <TabList className="-mb-px flex space-x-8 px-4">
+                  {navigation.categories.map((category) => (
+                    <Tab
+                      key={category.name}
+                      className="flex-1 whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-base font-medium text-gray-900 data-[selected]:border-indigo-600 data-[selected]:text-indigo-600"
+                    >
+                      {category.name}
+                    </Tab>
+                  ))}
+                </TabList>
+              </div>
+              <TabPanels as={Fragment}>
+                {navigation.categories.map((category, categoryIdx) => (
+                  <TabPanel
+                    key={category.name}
+                    className="space-y-12 px-4 pb-6 pt-10"
+                  >
+                    <div className="grid grid-cols-1 items-start gap-x-6 gap-y-10">
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-10">
+                        <div>
+                          <p
+                            id={`mobile-featured-heading-${categoryIdx}`}
+                            className="font-medium text-gray-900"
+                          >
+                            Featured
+                          </p>
+                          <ul
+                            role="list"
+                            aria-labelledby={`mobile-featured-heading-${categoryIdx}`}
+                            className="mt-6 space-y-6"
+                          >
+                            {category.featured.map((item) => (
+                              <li key={item.name} className="flex">
+                                <a href={item.href} className="text-gray-500">
+                                  {item.name}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p
+                            id="mobile-categories-heading"
+                            className="font-medium text-gray-900"
+                          >
+                            Categories
+                          </p>
+                          <ul
+                            role="list"
+                            aria-labelledby="mobile-categories-heading"
+                            className="mt-6 space-y-6"
+                          >
+                            {category.categories.map((item) => (
+                              <li key={item.name} className="flex">
+                                <a href={item.href} className="text-gray-500">
+                                  {item.name}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-10">
+                        <div>
+                          <p
+                            id="mobile-collection-heading"
+                            className="font-medium text-gray-900"
+                          >
+                            Collection
+                          </p>
+                          <ul
+                            role="list"
+                            aria-labelledby="mobile-collection-heading"
+                            className="mt-6 space-y-6"
+                          >
+                            {category.collection.map((item) => (
+                              <li key={item.name} className="flex">
+                                <a href={item.href} className="text-gray-500">
+                                  {item.name}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <p
+                            id="mobile-brand-heading"
+                            className="font-medium text-gray-900"
+                          >
+                            Brands
+                          </p>
+                          <ul
+                            role="list"
+                            aria-labelledby="mobile-brand-heading"
+                            className="mt-6 space-y-6"
+                          >
+                            {category.brands.map((item) => (
+                              <li key={item.name} className="flex">
+                                <a href={item.href} className="text-gray-500">
+                                  {item.name}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </TabPanel>
+                ))}
+              </TabPanels>
+            </TabGroup>
 
             <div className="flex flex-1 items-center justify-end">
               {/* Search */}
