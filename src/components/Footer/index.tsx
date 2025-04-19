@@ -7,7 +7,7 @@ const Footer = () => {
         Footer
       </h2>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="py-4 flex gap-4">
+        <div className="py-4 flex gap-4 items-center">
           <Link
             href={"https://www.instagram.com/dressforlessnz"}
             target="_blank"
