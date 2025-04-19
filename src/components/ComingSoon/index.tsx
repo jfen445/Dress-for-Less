@@ -40,9 +40,10 @@ const ComingSoon = () => {
                 Dress for Less is coming soon
               </h1>
               <p className="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
-                Stay tuned to explore New Zealand's leading range of rental
+                Stay tuned to explore New Zealand&apos;s leading range of rental
                 dresses
               </p>
+
               <div className="mt-10 flex items-center justify-center gap-x-6">
                 <a
                   href="https://www.instagram.com/dressforlessnz"
