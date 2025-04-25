@@ -1,5 +1,5 @@
 import Footer from "@/components/Footer";
-import Navigation from "@/components/Navigation";
+import NavigationBar from "@/components/Navigation";
 import { Menu, Popover, Transition } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import * as React from "react";

@@ -23,6 +23,7 @@ import { useDressContext } from "@/context/DressContext";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
 import dayjs from "dayjs";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Sort = {
   name: string;
@@ -101,23 +102,18 @@ function classNames(...classes: string[]) {
 }
 
 const Filters = () => {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const { allDresses } = useGlobalContext();
   const { filteredDressList, setFilteredDressList, setIsLoading } =
     useDressContext();
   const [filters, setFilters] = React.useState(defaultFilters);
+  const [filtersLoaded, setFiltersLoaded] = React.useState(false); //use to check if filters are loaded from URL and prevent re-rendering
   const [sortOptions, setSortOptions] =
     React.useState<Sort[]>(defaultSortOptions);
 
-  React.useEffect(() => {
-    const currentSortOption = defaultSortOptions.find(
-      (option) => option.current === true
-    );
-
-    if (currentSortOption) {
-      setSort(currentSortOption?.name);
-    }
-  });
+  const searchParams = useSearchParams();
+  const filterQuery = searchParams.getAll("filter");
 
   // update the filters that are shown
   const activeFilters = React.useCallback(() => {
@@ -141,20 +137,48 @@ const Filters = () => {
     e: React.MouseEvent<HTMLInputElement, MouseEvent>
   ) => {
     const event = e.target as HTMLInputElement;
-    updateFilter(event.value, event.checked);
+    updateFilters([event.value], event.checked);
+
+    // if the filter is checked, add it to the query params
+    if (event.checked) {
+      addFilterToQueryParams(event.value);
+    } else {
+      removeFilterFromQueryParams(event.value);
+    }
   };
 
-  const updateFilter = (value: string, checked: boolean) => {
-    setIsLoading(true);
-    const newFilterObject = filters.map((filter) => ({
-      ...filter,
-      options: filter.options.map((option) =>
-        option.value === value ? { ...option, checked } : option
-      ),
-    }));
+  const updateFilters = React.useCallback(
+    (values: string[], checked: boolean) => {
+      setIsLoading(true);
+      const newFilterObject = filters.map((filter) => ({
+        ...filter,
+        options: filter.options.map((option) =>
+          values.includes(option.value) ? { ...option, checked } : option
+        ),
+      }));
+      setFilters(newFilterObject);
+      setIsLoading(false);
+    },
+    [filters, setIsLoading]
+  );
 
-    setFilters(newFilterObject);
-    setIsLoading(false);
+  const addFilterToQueryParams = (newFilter: string) => {
+    const currentFilters = searchParams.getAll("filter");
+    const updatedFilters = [...new Set([...currentFilters, newFilter])];
+
+    const params = new URLSearchParams();
+    updatedFilters.forEach((f) => params.append("filter", f));
+
+    router.push(`/dresses?${params.toString()}`);
+  };
+
+  const removeFilterFromQueryParams = (filterToRemove: string) => {
+    const currentFilters = searchParams.getAll("filter");
+    const updatedFilters = currentFilters.filter((f) => f !== filterToRemove);
+    const params = new URLSearchParams();
+    updatedFilters.forEach((f) => params.append("filter", f));
+
+    router.push(`/dresses?${params.toString()}`);
   };
 
   const updateSortOption = (name: string, isCurrent: boolean): void => {
@@ -171,45 +195,66 @@ const Filters = () => {
     setSort(name);
   };
 
-  const setSort = (name: string) => {
-    switch (name) {
-      case "Most Popular":
-        break;
-      case "Newest":
-        const sortedDressesTime = [...filteredDressList].sort(
-          (a: DressType, b: DressType) => {
-            return dayjs(a._updatedAt).isAfter(dayjs(b._updatedAt)) ? -1 : 1;
-          }
-        );
-        setFilteredDressList(sortedDressesTime);
-        break;
-      case "Price: Low to High":
-        const sortedDressesLH = [...filteredDressList].sort(
-          (a: DressType, b: DressType) => {
-            const priceA = a.price ?? 0; // Default to 0 if a.price is null or undefined
-            const priceB = b.price ?? 0;
-            const diff =
-              parseFloat(priceA.toString()) - parseFloat(priceB.toString());
-            return diff > 0 ? 1 : -1;
-          }
-        );
-        setFilteredDressList(sortedDressesLH);
-        break;
-      case "Price: High to Low":
-        const sortedDressesHL = [...filteredDressList].sort(
-          (a: DressType, b: DressType) => {
-            const priceA = a.price ?? 0; // Default to 0 if a.price is null or undefined
-            const priceB = b.price ?? 0;
-            const diff =
-              parseFloat(priceA.toString()) - parseFloat(priceB.toString());
-            return diff > 0 ? -1 : 1;
-          }
-        );
-        setFilteredDressList(sortedDressesHL);
-        break;
-      default:
+  console.log("filteredDressList", filteredDressList);
+
+  const setSort = React.useCallback(
+    (name: string) => {
+      switch (name) {
+        case "Most Popular":
+          break;
+        case "Newest":
+          const sortedDressesTime = [...filteredDressList].sort(
+            (a: DressType, b: DressType) => {
+              return dayjs(a._updatedAt).isAfter(dayjs(b._updatedAt)) ? -1 : 1;
+            }
+          );
+          setFilteredDressList(sortedDressesTime);
+          break;
+        case "Price: Low to High":
+          const sortedDressesLH = [...filteredDressList].sort(
+            (a: DressType, b: DressType) => {
+              const priceA = a.price ?? 0; // Default to 0 if a.price is null or undefined
+              const priceB = b.price ?? 0;
+              const diff =
+                parseFloat(priceA.toString()) - parseFloat(priceB.toString());
+              return diff > 0 ? 1 : -1;
+            }
+          );
+          setFilteredDressList(sortedDressesLH);
+          break;
+        case "Price: High to Low":
+          const sortedDressesHL = [...filteredDressList].sort(
+            (a: DressType, b: DressType) => {
+              const priceA = a.price ?? 0; // Default to 0 if a.price is null or undefined
+              const priceB = b.price ?? 0;
+              const diff =
+                parseFloat(priceA.toString()) - parseFloat(priceB.toString());
+              return diff > 0 ? -1 : 1;
+            }
+          );
+          setFilteredDressList(sortedDressesHL);
+          break;
+        default:
+      }
+    },
+    [filteredDressList, setFilteredDressList]
+  );
+
+  React.useEffect(() => {
+    const currentSortOption = defaultSortOptions.find(
+      (option) => option.current === true
+    );
+
+    if (currentSortOption) {
+      setSort(currentSortOption?.name);
     }
-  };
+
+    // Check if there are any filters in the URL
+    if (!filtersLoaded && filterQuery.length > 0) {
+      updateFilters(filterQuery, true); // your function to set filters
+      setFiltersLoaded(true); // prevents duplicate applying on re-renders
+    }
+  }, [searchParams, filtersLoaded, filterQuery, setSort, updateFilters]);
 
   React.useEffect(() => {
     const filterDresses = () => {
@@ -259,7 +304,7 @@ const Filters = () => {
 
         // Check size
         if (selectedFilters.sizes) {
-          if (!selectedFilters.sizes.includes(dress.size)) {
+          if (!hasAvailableSize(dress, selectedFilters.sizes)) {
             return false;
           }
         }
@@ -271,6 +316,13 @@ const Filters = () => {
     setFilteredDressList(filterDresses());
     setIsLoading(false);
   }, [allDresses, filters, setFilteredDressList, setIsLoading]);
+
+  const hasAvailableSize = (item: any, sizes: string[]): boolean => {
+    return sizes.some((size) => {
+      const key = size.toLowerCase(); // convert to lowercase to match the object's keys
+      return item[key] && item[key] >= 1;
+    });
+  };
 
   return (
     <div className="bg-white">
@@ -546,9 +598,10 @@ const Filters = () => {
                           <span>{activeFilter.label}</span>
                           <button
                             type="button"
-                            onClick={() =>
-                              updateFilter(activeFilter.value, false)
-                            }
+                            onClick={() => {
+                              updateFilters([activeFilter.value], false);
+                              removeFilterFromQueryParams(activeFilter.value);
+                            }}
                             className="ml-1 inline-flex size-4 shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-500"
                           >
                             <span className="sr-only">

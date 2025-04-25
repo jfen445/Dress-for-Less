@@ -33,72 +33,79 @@ const navigation = {
           id: "dresses",
           name: "Dresses",
           items: [
-            { name: "Tops", href: "#" },
-            { name: "Dresses", href: "#" },
-            { name: "Pants", href: "#" },
+            {
+              name: "Our favourites",
+              href: "/dresses?filter=customer_faves&filter=trending_now",
+            },
           ],
         },
       ],
     },
-    // {
-    //   id: "men",
-    //   name: "Men",
-    //   featured: [
-    //     {
-    //       name: "New Arrivals",
-    //       href: "#",
-    //       imageSrc:
-    //         "https://tailwindui.com/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg",
-    //       imageAlt:
-    //         "Drawstring top with elastic loop closure and textured interior padding.",
-    //     },
-    //     {
-    //       name: "Artwork Tees",
-    //       href: "#",
-    //       imageSrc:
-    //         "https://tailwindui.com/img/ecommerce-images/category-page-02-image-card-06.jpg",
-    //       imageAlt:
-    //         "Three shirts in gray, white, and blue arranged on table with same line drawing of hands and shapes overlapping on front of shirt.",
-    //     },
-    //   ],
-    //   sections: [
-    //     {
-    //       id: "clothing",
-    //       name: "Clothing",
-    //       items: [
-    //         { name: "Tops", href: "#" },
-    //         { name: "Pants", href: "#" },
-    //         { name: "Sweaters", href: "#" },
-    //         { name: "T-Shirts", href: "#" },
-    //         { name: "Jackets", href: "#" },
-    //         { name: "Activewear", href: "#" },
-    //         { name: "Browse All", href: "#" },
-    //       ],
-    //     },
-    //     {
-    //       id: "accessories",
-    //       name: "Accessories",
-    //       items: [
-    //         { name: "Watches", href: "#" },
-    //         { name: "Wallets", href: "#" },
-    //         { name: "Bags", href: "#" },
-    //         { name: "Sunglasses", href: "#" },
-    //         { name: "Hats", href: "#" },
-    //         { name: "Belts", href: "#" },
-    //       ],
-    //     },
-    //     {
-    //       id: "brands",
-    //       name: "Brands",
-    //       items: [
-    //         { name: "Re-Arranged", href: "#" },
-    //         { name: "Counterfeit", href: "#" },
-    //         { name: "Full Nelson", href: "#" },
-    //         { name: "My Way", href: "#" },
-    //       ],
-    //     },
-    //   ],
-    // },
+    {
+      id: "filters",
+      name: "Filters",
+      featured: [],
+      sections: [
+        {
+          id: "trends",
+          name: "Our Favourites",
+          items: [
+            { name: "Trending Now", href: "trending_now" },
+            { name: "New Arrivals", href: "new_arrivals" },
+            { name: "Customer Faves", href: "customer_faves" },
+          ],
+        },
+        {
+          id: "style",
+          name: "Styles",
+          items: [
+            { name: "Mini", href: "mini" },
+            { name: "Midi", href: "midi" },
+            { name: "Maxi", href: "maxi" },
+            { name: "Sets", href: "sets" },
+            { name: "Off-the-Shoulder", href: "off_the_shoulder" },
+            { name: "Sleeveless", href: "sleeveless" },
+            { name: "Short sleeve", href: "short_sleeve" },
+            { name: "Long sleeve", href: "long_sleeve" },
+            { name: "Strapless", href: "strapless" },
+          ],
+        },
+        {
+          id: "occasion",
+          name: "Occasion",
+          items: [
+            { name: "Birthday", href: "birthday" },
+            { name: "Wedding Guest", href: "wedding_guest" },
+            { name: "Cocktail", href: "cocktail" },
+            { name: "Day Events", href: "day_events" },
+            { name: "Ball", href: "ball" },
+            { name: "Graduation", href: "graduation" },
+            { name: "Black Tie", href: "black_tie" },
+            { name: "Festival", href: "festival" },
+            { name: "Holiday", href: "holiday" },
+            { name: "Race Day", href: "race_day" },
+          ],
+        },
+        {
+          id: "color",
+          name: "Color",
+          items: [
+            { name: "Black", href: "black" },
+            { name: "White", href: "white" },
+            { name: "Red", href: "red" },
+            { name: "Orange", href: "orange" },
+            { name: "Yellow", href: "yellow" },
+            { name: "Green", href: "green" },
+            { name: "Blue", href: "blue" },
+            { name: "Purple", href: "purple" },
+            { name: "Pink", href: "pink" },
+            { name: "Grey", href: "grey" },
+            { name: "Brown", href: "brown" },
+            { name: "Multicolour", href: "multicolour" },
+          ],
+        },
+      ],
+    },
   ],
   pages: [
     { name: "FAQ", href: "/faq" },
