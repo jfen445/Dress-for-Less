@@ -17,7 +17,7 @@ interface ICartType {
   products: CartItemType[];
   selectedProducts: String[];
   setSelectedProducts: React.Dispatch<React.SetStateAction<String[]>>;
-  removeItem: (cartItemId: string) => void;
+  removeItem: (cartItemId: CartItemType) => void;
 }
 
 const CartItems = ({
@@ -26,6 +26,7 @@ const CartItems = ({
   selectedProducts,
   setSelectedProducts,
 }: ICartType) => {
+  console.log("products", products);
   const getWeekNumber = (date: Date): number => {
     const copiedDate = new Date(date.getTime());
 
@@ -107,6 +108,7 @@ const CartItems = ({
     id: String[],
     groupId: String[]
   ) => {
+    console.log("selected", selected, id, groupId);
     if (selected) {
       const filteredArray = selectedProducts
         .filter((item) => groupId.includes(item))
@@ -126,6 +128,7 @@ const CartItems = ({
     return dayjs(currentDate).isAfter(dayjs(new Date(day)));
   };
 
+  console.log("selectedProducts", selectedProducts);
   return (
     <form className="mt-12">
       <section aria-labelledby="cart-heading">
@@ -228,7 +231,7 @@ const CartItems = ({
                             <button
                               type="button"
                               className="text-sm font-medium text-secondary-pink hover:text-indigo-500"
-                              onClick={() => removeItem(product.cartItemId)}
+                              onClick={() => removeItem(product)}
                             >
                               <span>Remove</span>
                             </button>

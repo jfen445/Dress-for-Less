@@ -63,7 +63,7 @@ export type User = {
 export type CartType = {
   _id?: string;
   dressId: string;
-  userId: string;
+  userId?: string;
   dateBooked: string;
   size: string;
 };

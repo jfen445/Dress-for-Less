@@ -1,19 +1,7 @@
-"use client";
-
-import { useState } from "react";
 import AboutImage from "../../../public/aboutimg.jpg";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
 
-const navigation = [
-  { name: "Product", href: "#" },
-  { name: "Features", href: "#" },
-  { name: "Marketplace", href: "#" },
-  { name: "Company", href: "#" },
-];
-
 const ComingSoon = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
     <div className="bg-white">
       <header className="absolute inset-x-0 top-0 z-50 flex justify-center">

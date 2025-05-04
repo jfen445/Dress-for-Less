@@ -5,35 +5,43 @@ import { CheckCircleIcon } from "@heroicons/react/24/solid";
 // import { XIcon } from "@heroicons/react/24/outline";
 
 type NotificationProps = {
-  show: boolean;
-  setShow: (val: boolean) => void;
+  toast: ToastType;
+  setToast: (toast: ToastType) => void;
   title: string;
-  variant: "success" | "error" | "warning";
   text?: string;
   duration?: number;
 };
 
+export type ToastType = {
+  message: string;
+  variant: "success" | "error" | "warning";
+  show: boolean;
+};
+
 const Toast: React.FC<NotificationProps> = ({
-  show,
-  setShow,
+  toast,
+  setToast,
   title,
-  variant,
   text,
   duration = 3000,
 }) => {
   React.useEffect(() => {
-    if (show) {
+    if (toast?.show) {
       const timer = setTimeout(() => {
-        setShow(false);
+        setToast({ ...toast, show: false });
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [show, duration, setShow]);
+  }, [toast, duration, setToast]);
+
+  if (!toast) {
+    return null; // Return null instead of undefined to avoid rendering issues
+  }
 
   const getColour = () => {
-    if (variant == "success") {
+    if (toast.variant == "success") {
       return "bg-green-500";
-    } else if (variant == "error") {
+    } else if (toast.variant == "error") {
       return "bg-red-500";
     } else {
       return "bg-orange-400";
@@ -49,9 +57,9 @@ const Toast: React.FC<NotificationProps> = ({
         <div className="w-full flex flex-col items-center space-y-4 sm:items-end">
           {/* Notification panel, dynamically insert this into the live region when it needs to be displayed */}
           <Transition
-            show={show}
+            show={toast.show}
             as={Fragment}
-            enter="transform ease-out duration-300 transition"
+            enter="transform ease-out duration-3f00 transition"
             enterFrom="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
             enterTo="translate-y-0 opacity-100 sm:translate-x-0"
             leave="transition ease-in duration-100"
@@ -77,7 +85,7 @@ const Toast: React.FC<NotificationProps> = ({
                     <button
                       className={`${getColour()} rounded-md inline-flex text-white hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
                       onClick={() => {
-                        setShow(false);
+                        setToast({ ...toast, show: false });
                       }}
                     >
                       <span className="sr-only">Close</span>

@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
-
 import { RadioGroup } from "@headlessui/react";
-import { getDress } from "../../../sanity/sanity.query";
 import {
   CartType,
   DressType,
@@ -20,28 +15,29 @@ import Button from "@/components/Button";
 import Calendar from "./Calendar";
 import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
-import Toast from "../Toast";
+import Toast, { ToastType } from "../Toast";
 import { addToCart } from "@/api/cart";
-import { getAllBookingsByDress } from "@/api/booking";
 import Spinner from "../Spinner";
 import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
   const { data: session } = useSession();
-  const router = useRouter();
+  const { getItems, setItems, clearItems } =
+    useLocalStorage<CartType[]>("localCart");
   const [dress, setDress] = React.useState<DressType>();
   const [sizes, setSizes] = React.useState<Sizes>({});
   const [size, setSize] = React.useState<string>("");
 
   const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
-  const [err, setErr] = React.useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = React.useState<string>("");
-  const [variant, setVariant] = React.useState<"success" | "error" | "warning">(
-    "warning"
-  );
+  const [toast, setToast] = React.useState<ToastType>({
+    message: "",
+    variant: "success",
+    show: false,
+  });
   const params = useParams<{ id: string }>();
 
   const sizeOptions = React.useCallback(() => {
@@ -56,7 +52,6 @@ const Product = () => {
         const currentDress = getDressWithId(params.id);
         if (currentDress) {
           setDress(currentDress);
-          console.log("current dress", currentDress);
           const dressSizes = (({ xs, s, m, l, xl }) => ({
             xs,
             s,
@@ -84,8 +79,6 @@ const Product = () => {
             acc.push(o); // Push the new object to the array
             return acc;
           }, []);
-
-          console.log("obj", obj);
 
           setImages(obj);
         }
@@ -126,10 +119,6 @@ const Product = () => {
   }, [getDressWithId, params]);
 
   const addDressToCart = async () => {
-    if (!session) {
-      router.push("/login");
-    }
-
     const user = await getUser(session?.user.email ?? "")
       .then((res) => {
         if (res === undefined) return;
@@ -138,7 +127,12 @@ const Product = () => {
       })
       .catch((err) => console.error(err));
 
-    if (!params?.id || !user?._id) {
+    if (!params?.id) {
+      setToast({
+        message: "An error occurred while adding to cart",
+        variant: "error",
+        show: true,
+      });
       return;
     }
 
@@ -149,21 +143,45 @@ const Product = () => {
       size: size,
     };
 
-    await addToCart(cartItem)
-      .then((data) => {
-        setErrorMessage(data?.data.message);
-        setErr(true);
+    if (!session || !user) {
+      const localCart = getItems() || ([] as CartType[]);
 
-        if (data?.status === 200) {
-          setVariant("success");
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        setErrorMessage(err.message);
-        setVariant("warning");
-        setErr(true);
-      });
+      const itemAlreadyInCart = localCart.some(
+        (item) => JSON.stringify(item) === JSON.stringify(cartItem)
+      );
+
+      if (itemAlreadyInCart) {
+        setToast({
+          message: "Item already in cart",
+          variant: "warning",
+          show: true,
+        });
+      } else {
+        setItems([...localCart, cartItem]);
+        setToast({
+          message: "Added to cart",
+          variant: "success",
+          show: true,
+        });
+      }
+    } else {
+      await addToCart(cartItem)
+        .then((data) => {
+          setToast({
+            message: data?.data.message,
+            variant: "success",
+            show: true,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          setToast({
+            message: err?.data.message,
+            variant: "warning",
+            show: true,
+          });
+        });
+    }
   };
 
   const Dropdown = () => {
@@ -197,12 +215,7 @@ const Product = () => {
 
   return (
     <div className="bg-white">
-      <Toast
-        show={err}
-        setShow={setErr}
-        title={errorMessage}
-        variant={variant}
-      />
+      <Toast toast={toast} setToast={setToast} title={toast.message} />
       {!dress ? (
         <div className="h-screen flex items-center justify-center">
           <Spinner />

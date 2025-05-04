@@ -195,8 +195,6 @@ const Filters = () => {
     setSort(name);
   };
 
-  console.log("filteredDressList", filteredDressList);
-
   const setSort = React.useCallback(
     (name: string) => {
       switch (name) {
