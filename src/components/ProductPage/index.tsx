@@ -25,8 +25,7 @@ import useLocalStorage from "@/hooks/useLocalStorage";
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
   const { data: session } = useSession();
-  const { getItems, setItems, clearItems } =
-    useLocalStorage<CartType[]>("localCart");
+  const { getItems, setItems } = useLocalStorage<CartType[]>("localCart");
   const [dress, setDress] = React.useState<DressType>();
   const [sizes, setSizes] = React.useState<Sizes>({});
   const [size, setSize] = React.useState<string>("");

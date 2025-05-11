@@ -48,3 +48,23 @@ export async function removeFromCart(cartItemId: string) {
     throw new Error((err?.response?.data as any).message);
   }
 }
+
+export async function syncCart(cart: CartType[]) {
+  try {
+    const response = await axios.post(
+      "/api/syncCart",
+      { cart },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    // throw error;
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}
