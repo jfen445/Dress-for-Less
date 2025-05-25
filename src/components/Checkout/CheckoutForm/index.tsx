@@ -109,7 +109,6 @@ const CheckoutForm = () => {
     }
     currentSunday.setHours(23, 59, 59, 999);
 
-    console.log("Current Sunday:", currentSunday);
     return dates.some((dateStr) => {
       const date = new Date(dateStr);
       return date >= now && date <= currentSunday;
@@ -128,8 +127,6 @@ const CheckoutForm = () => {
     const currentDayOfWeek = new Date().getDay();
 
     const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
-
-    console.log("feafaef", isThisWeekendBookings(), isValid);
 
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
