@@ -4,7 +4,6 @@ import Image from "next/image";
 const LoggedOnIcon = () => {
   const { data: session } = useSession();
 
-  console.log("this is the session", session);
   if (session && session.user) {
     return (
       <>

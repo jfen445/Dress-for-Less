@@ -15,7 +15,6 @@ function useLocalStorage<T>(key: string) {
 
   const setItems = useCallback(
     (value: T): void => {
-      console.log("ffff", typeof window, value);
       if (typeof window === "undefined") return;
 
       try {
