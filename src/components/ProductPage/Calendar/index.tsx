@@ -24,7 +24,7 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
           .then((data) => {
             setBookings(data.data);
           })
-          .catch((err) => console.error(err));
+          .catch(() => {});
       }
     };
 

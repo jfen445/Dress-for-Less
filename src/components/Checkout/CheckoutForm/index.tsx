@@ -100,14 +100,19 @@ const CheckoutForm = () => {
 
   const isThisWeekendBookings = () => {
     const dates = products.map((item) => item.dateBooked);
+    const now = new Date();
 
-    const now = new Date(); // Current date and time
-    const nextWeek = new Date();
-    nextWeek.setDate(now.getDate() + 7); // Date for 7 days from now
+    // Get current week's Sunday at 11:59:59.999 PM
+    const currentSunday = new Date(now);
+    if (now.getDay() !== 0) {
+      currentSunday.setDate(now.getDate() + (7 - now.getDay()));
+    }
+    currentSunday.setHours(23, 59, 59, 999);
 
+    console.log("Current Sunday:", currentSunday);
     return dates.some((dateStr) => {
-      const date = new Date(dateStr); // Convert string to Date object
-      return date >= now && date <= nextWeek; // Check if the date is within the next 7 days
+      const date = new Date(dateStr);
+      return date >= now && date <= currentSunday;
     });
   };
 
@@ -123,6 +128,8 @@ const CheckoutForm = () => {
     const currentDayOfWeek = new Date().getDay();
 
     const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
+
+    console.log("feafaef", isThisWeekendBookings(), isValid);
 
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
