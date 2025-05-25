@@ -10,19 +10,10 @@ import GoogleSignInButton from "./GoogleSignInButton";
 
 const LoginComponent = () => {
   const { data: session } = useSession();
-  const router = useRouter();
-  const [err, setErr] = React.useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = React.useState<string>("");
 
   return (
     <>
       <div className="bg-white flex flex-1 flex-col justify-center px-6 lg:px-8">
-        <Toast
-          show={err}
-          setShow={setErr}
-          title={errorMessage}
-          variant="error"
-        />
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             {session && session.user

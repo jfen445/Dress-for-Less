@@ -2,8 +2,6 @@ import { CartType } from "../../common/types";
 import { CartSchema } from "./schema";
 
 export async function addToCart(cart: CartType) {
-  // const hashedPassword = await bcrypt.hash(user.password, 10);
-
   const newCartItem = await CartSchema.create({
     dressId: cart.dressId,
     userId: cart.userId,

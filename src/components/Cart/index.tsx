@@ -14,9 +14,12 @@ import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import ErrorPage from "../ErrorPage";
 import { useGlobalContext } from "@/context/GlobalContext";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 const Cart = () => {
   const { getDressWithId } = useGlobalContext();
+  const { getItems, setItems, clearItems } =
+    useLocalStorage<CartType[]>("localCart");
   const { userInfo } = useUserContext();
   const { status } = useSession();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
@@ -26,6 +29,11 @@ const Cart = () => {
   const [err, setErr] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
+  const [forceUpdate, setForceUpdate] = React.useState(0);
+
+  const triggerUpdate = () => {
+    setForceUpdate((prev) => prev + 1); // Increment the state to force a re-render
+  };
 
   const isUserValid: boolean =
     userInfo?.email &&
@@ -82,15 +90,69 @@ const Cart = () => {
           setErr(true);
         })
         .finally(() => setIsLoading(false));
+    } else {
+      const cartItems = getItems();
+
+      if (!cartItems) {
+        setErr(true);
+        return;
+      }
+
+      let dresses: CartItemType[] = [];
+      cartItems.map(async (item) => {
+        const dress = await getDressWithId(item.dressId);
+        const cartDress: CartItemType = {
+          _id: dress._id,
+          name: dress.name,
+          description: dress.description,
+          size: dress.size,
+          images: dress.images,
+          tags: dress.tags,
+          price: dress.price,
+          length: dress.length,
+          brand: dress.brand,
+          rrp: dress.rrp,
+          stretch: dress.stretch,
+          dateBooked: item.dateBooked,
+          cartItemId:
+            item._id || (Math.floor(Math.random() * 1000) + 1).toString(),
+        };
+
+        dresses = [...dresses, cartDress];
+
+        setProducts(dresses);
+      });
     }
-  }, [getDressWithId, userInfo]);
+  }, [getDressWithId, userInfo, getItems]);
 
   React.useEffect(() => {
     getUserCart().catch((err) => setErr(true));
   }, [getUserCart, userInfo]);
 
-  const removeItem = async (cartItemId: string) => {
-    await removeFromCart(cartItemId)
+  const removeItem = async (cartItemId: CartItemType) => {
+    if (status === "unauthenticated") {
+      const localCart = getItems() || ([] as CartType[]);
+
+      const updatedCart = localCart.filter(
+        (item) =>
+          item.dressId !== cartItemId._id &&
+          item.dateBooked !== cartItemId.dateBooked &&
+          item.size !== cartItemId.size
+      ) as CartType[];
+
+      if (updatedCart.length === 0) {
+        clearItems();
+        setProducts([]);
+        setErr(true);
+      } else {
+        setItems(updatedCart);
+        getUserCart();
+      }
+      triggerUpdate();
+      return;
+    }
+
+    await removeFromCart(cartItemId._id)
       .then((res) => getUserCart())
       .catch((err) => {
         console.log(err);
@@ -116,9 +178,9 @@ const Cart = () => {
     return dayjs(currentDate).isAfter(dayjs(new Date(day)));
   };
 
-  if (status === "unauthenticated") {
-    return <ErrorPage />;
-  }
+  const checkoutWithoutLogin = () => {
+    setIsOpen(true);
+  };
 
   return (
     <>
@@ -135,26 +197,39 @@ const Cart = () => {
               as="h3"
               className="text-base font-semibold leading-6 text-gray-900"
             >
-              Profile Incomplete
+              {userInfo ? "Profile Incomplete" : "Login Required"}
             </DialogTitle>
             <div className="mt-2">
               <p className="text-sm text-gray-500">
-                To checkout, you must update your profile with your mobile
-                number and ID photo
+                {userInfo
+                  ? "To checkout, you must update your profile with your mobile number and ID photo"
+                  : "To checkout, you must login to your account"}
               </p>
             </div>
           </div>
         </div>
         <div className="mt-5 sm:mt-6">
-          <Link href={"/account"}>
-            <Button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="inline-flex w-full justify-center"
-            >
-              Go to Account Settings
-            </Button>
-          </Link>
+          {userInfo ? (
+            <Link href={"/account"}>
+              <Button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="inline-flex w-full justify-center"
+              >
+                Go to Account Settings
+              </Button>
+            </Link>
+          ) : (
+            <Link href={"/login"}>
+              <Button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="inline-flex w-full justify-center"
+              >
+                Create an account
+              </Button>
+            </Link>
+          )}
         </div>
       </Modal>
       <div className="bg-white">
@@ -196,7 +271,7 @@ const Cart = () => {
                     ) : (
                       <Button
                         type="submit"
-                        disabled={isValidCheckout()}
+                        disabled={false}
                         variant="secondary"
                         onClick={() => setIsOpen(true)}
                       >

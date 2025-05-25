@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { UserType } from "../../common/types";
-import { useUserAuth } from "./UserAuthContext";
+import { CartType, UserType } from "../../common/types";
 import { getUser } from "@/api/user";
-import { SignJWT, jwtVerify } from "jose";
 import { useSession } from "next-auth/react";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { addToCart, syncCart } from "@/api/cart";
 // import { cookies } from "next/headers";
 // import { setLoginCookie } from "../../lib";
 
@@ -23,6 +23,7 @@ const userContext = React.createContext<UserContextProps>(
 
 const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
+  const { getItems, clearItems } = useLocalStorage<CartType[]>("localCart");
 
   const { data: session } = useSession();
 
@@ -37,6 +38,27 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
         .catch((err) => console.error(err));
     }
   }, [session]);
+
+  React.useEffect(() => {
+    const cartItems = getItems();
+
+    if (!cartItems || !session || cartItems?.length == 0) {
+      return;
+    }
+
+    const updatedCart = cartItems.map((item) => ({
+      ...item,
+      userId: userInfo?._id,
+    }));
+
+    syncCart(updatedCart)
+      .then(() => {
+        clearItems();
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [userInfo]);
 
   React.useEffect(() => {
     fetchData();

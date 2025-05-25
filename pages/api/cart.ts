@@ -32,6 +32,12 @@ export default async function handler(
   } else if (req.method == "POST") {
     const cart: CartType = req.body.cartItem;
 
+    if (!cart.dressId || !cart.userId) {
+      return res.status(404).json({
+        message: "Invalid cart item",
+      });
+    }
+
     const cartItem = await getCartItem(
       cart.userId,
       cart.dressId,

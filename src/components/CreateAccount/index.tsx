@@ -7,11 +7,15 @@ import { SignupButton } from "../SignupButton";
 import Button from "../Button";
 import { UserType } from "../../../common/types";
 import { useRouter } from "next/navigation";
-import Toast from "../Toast";
+import Toast, { ToastType } from "../Toast";
 
 const CreateAccountComponent = () => {
   const router = useRouter();
-  const [err, setErr] = React.useState<boolean>(false);
+  const [toast, setToast] = React.useState<ToastType>({
+    message: "",
+    variant: "success",
+    show: false,
+  });
   const [errorMessage, setErrorMessage] = React.useState<string>("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -59,8 +63,12 @@ const CreateAccountComponent = () => {
         return res.json();
       })
       .then((data) => {
-        setErrorMessage(data.message);
-        setErr(true);
+        setToast({
+          ...toast,
+          show: true,
+          message: data.message,
+          variant: "warning",
+        });
       })
       .catch((err) => {
         console.log("error", err);
@@ -70,12 +78,7 @@ const CreateAccountComponent = () => {
   return (
     <>
       <div className="bg-white">
-        <Toast
-          show={err}
-          setShow={setErr}
-          title={errorMessage}
-          variant="warning"
-        />
+        <Toast toast={toast} setToast={setToast} title={toast.message} />
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Create your account today!

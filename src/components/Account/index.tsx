@@ -4,15 +4,20 @@ import { useSession } from "next-auth/react";
 import Button from "../Button";
 import { UserType } from "../../../common/types";
 import { getUser } from "@/api/user";
-import Toast from "../Toast";
+import Toast, { ToastType } from "../Toast";
 import { useUserContext } from "@/context/UserContext";
+import { set } from "mongoose";
 
 const Account = () => {
   const { data: session } = useSession();
   const { fetchData } = useUserContext();
   const [mobile, setMobile] = React.useState<string>("");
   const [instagramHandle, setInstagramHandle] = React.useState<string>("");
-  const [alert, setAlert] = React.useState<boolean>(false);
+  const [toast, setToast] = React.useState<ToastType>({
+    message: "Account saved",
+    variant: "success",
+    show: false,
+  });
   const [file, setFile] = React.useState<File | null>(null);
   const [photo, setPhoto] = React.useState<string>("");
 
@@ -105,7 +110,7 @@ const Account = () => {
     })
       .then((res) => {
         if (res.ok) {
-          setAlert(true);
+          setToast({ ...toast, show: true });
           fetchData();
         }
         return res.json();
@@ -117,12 +122,7 @@ const Account = () => {
 
   return (
     <main>
-      <Toast
-        show={alert}
-        setShow={setAlert}
-        title="Account saved"
-        variant="success"
-      />
+      <Toast toast={toast} setToast={setToast} title={toast.message} />
       <div className="bg-white mx-auto grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
         <div>
           <h2 className="text-base font-semibold leading-7">
