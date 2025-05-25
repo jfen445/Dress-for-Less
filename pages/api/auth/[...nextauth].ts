@@ -9,6 +9,7 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
 import { Resend } from "resend";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -21,7 +22,7 @@ declare module "next-auth" {
 export const sendVerificationRequest = async (
   params: SendVerificationRequestParams
 ) => {
-  const { identifier, url, provider, theme } = params;
+  const { identifier, url } = params;
 
   const { host } = new URL(url);
 
@@ -30,10 +31,11 @@ export const sendVerificationRequest = async (
   };
 
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY!);
+    const resend = new Resend(process.env.RESEND_API_KEY as string);
 
+    console.log("Sending verification email to:", identifier);
     await resend.emails.send({
-      from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
+      from: "Dress for Less <onboarding@resend.dev>",
       to: [identifier],
       subject: "Verify your Dress for Less account",
       text: text(url, host),
@@ -46,6 +48,7 @@ export const sendVerificationRequest = async (
 
 export const authOptions: NextAuthOptions = {
   // Configure one or more authentication providers
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -56,8 +59,16 @@ export const authOptions: NextAuthOptions = {
       checks: ["none"],
     }),
     EmailProvider({
-      from: "noreply@example.com",
-      sendVerificationRequest,
+      server: {
+        host: process.env.EMAIL_SERVER_HOST,
+        port: process.env.EMAIL_SERVER_PORT,
+        auth: {
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
+        },
+      },
+      from: process.env.EMAIL_FROM,
+      sendVerificationRequest: sendVerificationRequest,
     }),
   ],
   pages: {
