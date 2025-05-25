@@ -33,11 +33,10 @@ export const sendVerificationRequest = async (
   try {
     const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-    console.log("Sending verification email to:", identifier);
     await resend.emails.send({
-      from: "Dress for Less <onboarding@resend.dev>",
+      from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [identifier],
-      subject: "Verify your Dress for Less account",
+      subject: "Log into your Dress for Less account",
       text: text(url, host),
       react: MagicLinkEmail({ url, host }),
     });
