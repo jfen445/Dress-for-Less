@@ -173,9 +173,8 @@ const Product = () => {
           });
         })
         .catch((err) => {
-          console.log(err);
           setToast({
-            message: err?.data.message,
+            message: err.message,
             variant: "warning",
             show: true,
           });

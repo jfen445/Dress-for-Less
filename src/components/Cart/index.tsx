@@ -126,7 +126,7 @@ const Cart = () => {
   }, [getDressWithId, userInfo, getItems]);
 
   React.useEffect(() => {
-    getUserCart().catch((err) => setErr(true));
+    getUserCart().catch(() => setErr(true));
   }, [getUserCart, userInfo]);
 
   const removeItem = async (cartItemId: CartItemType) => {
@@ -152,8 +152,8 @@ const Cart = () => {
       return;
     }
 
-    await removeFromCart(cartItemId._id)
-      .then((res) => getUserCart())
+    await removeFromCart(cartItemId.cartItemId)
+      .then(() => getUserCart())
       .catch((err) => {
         console.log(err);
       });

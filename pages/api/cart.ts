@@ -62,6 +62,7 @@ export default async function handler(
 
     res.status(200).json({ message: "Dress added to cart" });
   } else if (req.method == "DELETE") {
+    console.log("Deleting item from cart");
     const cartItemId = req.query.cartItemId as string;
 
     if (!cartItemId) {
