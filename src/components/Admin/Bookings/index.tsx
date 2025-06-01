@@ -9,7 +9,6 @@ import Toggle from "@/components/Toggle";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import { updateBooking } from "@/api/booking";
-import { convertFieldResponseIntoMuiTextFieldProps } from "@mui/x-date-pickers/internals";
 
 const AdminBookings = () => {
   const [bookings, setBookings] = React.useState<Booking[]>();
@@ -34,6 +33,13 @@ const AdminBookings = () => {
     const response = await getAllBookings().then((data) => {
       var d = new Date();
       d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
+      const now = new Date();
+
+      const currentSunday = new Date(now);
+      if (now.getDay() !== 0) {
+        currentSunday.setDate(now.getDate() + (7 - now.getDay()));
+      }
+      currentSunday.setHours(23, 59, 59, 999);
 
       const sortedBookings = (data.data as unknown as Booking[]).sort(function (
         a,
@@ -42,10 +48,10 @@ const AdminBookings = () => {
         return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
       });
       const thisWeek = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isBefore(dayjs(d))
+        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday))
       );
       const allBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isAfter(dayjs(d))
+        dayjs(booking.dateBooked).isBefore(dayjs(currentSunday))
       );
 
       setThisWeekBookings(thisWeek);

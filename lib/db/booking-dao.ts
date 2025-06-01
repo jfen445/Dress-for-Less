@@ -7,6 +7,13 @@ export async function getBookingsByDress(dressId: String) {
   );
 }
 
+export async function getBookingsByUser(userId: String) {
+  return BookingSchema.find(
+    { userId },
+    "dressId userId address blockOutPeriod city createdAt dateBooked deliveryType isReturned isShipped paymentSuccess postCode tracking size"
+  );
+}
+
 export async function getBookingsById(bookingId: String) {
   return BookingSchema.findOne(
     { _id: bookingId },

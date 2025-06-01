@@ -124,3 +124,25 @@ export type Faq = {
   question: string;
   answer: string;
 };
+
+export type OrderHistory = {
+  _id?: string;
+  dressId: string;
+  userId: string;
+  dateBooked: string;
+  blockOutPeriod: string[];
+  price: number;
+  address: string;
+  city: string;
+  country: string;
+  postCode: string;
+  deliveryType: string;
+  tracking: string;
+  isShipped: boolean;
+  isReturned: boolean;
+  paymentIntent?: string;
+  size: String;
+  dressName: string;
+  dressDescription: string;
+  dressImages: string;
+};

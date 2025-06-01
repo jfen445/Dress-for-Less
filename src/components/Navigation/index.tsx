@@ -363,6 +363,16 @@ const NavigationBar = () => {
                         Account
                       </a>
                     </MenuItem>
+                    {userInfo && (
+                      <MenuItem>
+                        <a
+                          href={"/order-history"}
+                          className="block px-4 py-2 text-sm text-gray-700"
+                        >
+                          Order History
+                        </a>
+                      </MenuItem>
+                    )}
                     <MenuItem>
                       <a
                         onClick={() => signOut()}
