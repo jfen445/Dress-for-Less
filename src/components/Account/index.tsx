@@ -10,7 +10,17 @@ import { set } from "mongoose";
 
 const Account = () => {
   const { data: session } = useSession();
-  const { fetchData } = useUserContext();
+  const { fetchData, getUserProfleImage } = useUserContext();
+  const [firstName, setFirstName] = React.useState<string>(
+    session && session.user && session.user.name
+      ? session.user.name.split(" ")[0]
+      : ""
+  );
+  const [lastName, setLastName] = React.useState<string>(
+    session && session.user && session.user.name
+      ? session.user.name.split(" ")[1]
+      : ""
+  );
   const [mobile, setMobile] = React.useState<string>("");
   const [instagramHandle, setInstagramHandle] = React.useState<string>("");
   const [toast, setToast] = React.useState<ToastType>({
@@ -21,29 +31,19 @@ const Account = () => {
   const [file, setFile] = React.useState<File | null>(null);
   const [photo, setPhoto] = React.useState<string>("");
 
-  const firstName =
-    session && session.user && session.user.name
-      ? session.user.name.split(" ")[0]
-      : "";
-
-  const lastName =
-    session && session.user && session.user.name
-      ? session.user.name.split(" ")[1]
-      : "";
-
   const email =
     session && session.user && session.user.email ? session.user.email : "";
 
-  const profileImage =
-    session && session.user && session.user.image ? session.user.image : "";
+  const profileImage = getUserProfleImage();
 
   React.useEffect(() => {
     const getCurrentUser = async () => {
       getUser(email)
         .then((res) => {
           if (res === undefined) return;
-
           const user = res.data as unknown as UserType;
+          setFirstName(user.name.split(" ")[0]);
+          setLastName(user.name.split(" ")[1]);
           setMobile(user.mobileNumber);
           setInstagramHandle(user.instagramHandle ?? "");
           setPhoto(user.photo);
@@ -137,7 +137,7 @@ const Account = () => {
           <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:max-w-xl sm:grid-cols-6">
             <div className="col-span-full flex items-center gap-x-8">
               <img
-                alt=""
+                alt="Profile image"
                 src={profileImage}
                 className="h-24 w-24 flex-none rounded-lg bg-gray-800 object-cover"
                 referrerPolicy="no-referrer"
@@ -154,12 +154,13 @@ const Account = () => {
               <div className="mt-2">
                 <Input
                   value={firstName}
+                  onChange={(e) =>
+                    setFirstName((e.target as HTMLInputElement).value)
+                  }
                   id="firstname"
                   name="firstname"
                   type="text"
-                  className="bg-gray-200"
-                  readonly
-                  disabled
+                  className=""
                 />
               </div>
             </div>
@@ -174,12 +175,13 @@ const Account = () => {
               <div className="mt-2">
                 <Input
                   value={lastName}
+                  onChange={(e) =>
+                    setLastName((e.target as HTMLInputElement).value)
+                  }
                   id="lastname"
                   name="lastname"
                   type="text"
-                  className="bg-gray-200"
-                  readonly
-                  disabled
+                  className=""
                 />
               </div>
             </div>
@@ -272,7 +274,6 @@ const Account = () => {
                     id="instagramHandle"
                     name="instagramHandle"
                     type="file"
-                    required={true}
                   />
                 </div>
               </div>

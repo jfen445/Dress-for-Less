@@ -36,6 +36,7 @@ const Cart = () => {
   };
 
   const isUserValid: boolean =
+    userInfo?.name &&
     userInfo?.email &&
     userInfo.instagramHandle &&
     userInfo.mobileNumber &&
@@ -182,6 +183,8 @@ const Cart = () => {
     setIsOpen(true);
   };
 
+  const isAuthenticated = status === "authenticated";
+
   return (
     <>
       <Modal isOpen={isOpen} setOpen={setIsOpen}>
@@ -197,11 +200,11 @@ const Cart = () => {
               as="h3"
               className="text-base font-semibold leading-6 text-gray-900"
             >
-              {userInfo ? "Profile Incomplete" : "Login Required"}
+              {isAuthenticated ? "Profile Incomplete" : "Login Required"}
             </DialogTitle>
             <div className="mt-2">
               <p className="text-sm text-gray-500">
-                {userInfo
+                {isAuthenticated
                   ? "To checkout, you must update your profile with your mobile number and ID photo"
                   : "To checkout, you must login to your account"}
               </p>
@@ -209,7 +212,7 @@ const Cart = () => {
           </div>
         </div>
         <div className="mt-5 sm:mt-6">
-          {userInfo ? (
+          {isAuthenticated ? (
             <Link href={"/account"}>
               <Button
                 type="button"

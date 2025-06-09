@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
-
 import { RadioGroup } from "@headlessui/react";
-import { getDress } from "../../../sanity/sanity.query";
 import {
   CartType,
   DressType,
@@ -22,28 +17,27 @@ import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
 import Toast, { ToastType } from "../Toast";
 import { addToCart } from "@/api/cart";
-import { getAllBookingsByDress } from "@/api/booking";
 import Spinner from "../Spinner";
 import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
   const { data: session } = useSession();
-  const router = useRouter();
+  const { getItems, setItems } = useLocalStorage<CartType[]>("localCart");
   const [dress, setDress] = React.useState<DressType>();
   const [sizes, setSizes] = React.useState<Sizes>({});
   const [size, setSize] = React.useState<string>("");
 
   const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
-  const params = useParams<{ id: string }>();
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
     variant: "success",
     show: false,
   });
-  const [isAddingToCart, setIsAddingToCart] = React.useState<boolean>(false);
+  const params = useParams<{ id: string }>();
 
   const sizeOptions = React.useCallback(() => {
     const obj = Object.keys(sizes).map((item) => item.toUpperCase());
@@ -87,36 +81,6 @@ const Product = () => {
 
           setImages(obj);
         }
-
-        // await getDress(params.id).then((data) => {
-        //   setDress(data);
-        //   const dressSizes = (({ xs, s, m, l, xl }) => ({
-        //     xs,
-        //     s,
-        //     m,
-        //     l,
-        //     xl,
-        //   }))(data);
-
-        //   let pickedSizes = Object.fromEntries(
-        //     Object.entries(dressSizes).filter(([_, v]) => v != null)
-        //   );
-
-        //   setSizes(pickedSizes);
-
-        //   var obj = data.images.reduce(function (
-        //     acc: { [x: string]: any },
-        //     cur: any,
-        //     i: string | number
-        //   ) {
-        //     var o = { src: cur, alt: data.name + cur };
-        //     acc[i] = o;
-        //     return acc;
-        //   },
-        //   []);
-
-        //   setImages(obj);
-        // });
       };
 
       getProductDetails();
@@ -126,13 +90,18 @@ const Product = () => {
   const addDressToCart = async () => {
     const user = await getUser(session?.user.email ?? "")
       .then((res) => {
-        if (res === undefined) return;
+        if (res === undefined) return null;
         const r = res.data as unknown as UserType;
         return r;
       })
       .catch((err) => console.error(err));
 
-    if (!params?.id || !user?._id) {
+    if (!params?.id) {
+      setToast({
+        message: "An error occurred while adding to cart",
+        variant: "error",
+        show: true,
+      });
       return;
     }
 
@@ -143,30 +112,44 @@ const Product = () => {
       size: size,
     };
 
-    setIsAddingToCart(true);
-    await addToCart(cartItem)
-      .then((data) => {
-        if (data?.status === 200) {
+    if (!session || !user) {
+      const localCart = getItems() || ([] as CartType[]);
+
+      const itemAlreadyInCart = localCart.some(
+        (item) => JSON.stringify(item) === JSON.stringify(cartItem)
+      );
+
+      if (itemAlreadyInCart) {
+        setToast({
+          message: "Item already in cart",
+          variant: "warning",
+          show: true,
+        });
+      } else {
+        setItems([...localCart, cartItem]);
+        setToast({
+          message: "Added to cart",
+          variant: "success",
+          show: true,
+        });
+      }
+    } else {
+      await addToCart(cartItem)
+        .then((data) => {
           setToast({
-            ...toast,
-            show: true,
             message: data?.data.message,
             variant: "success",
+            show: true,
           });
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        setToast({
-          ...toast,
-          show: true,
-          message: err.message,
-          variant: "warning",
+        })
+        .catch((err) => {
+          setToast({
+            message: err.message,
+            variant: "warning",
+            show: true,
+          });
         });
-      })
-      .finally(() => {
-        setIsAddingToCart(false);
-      });
+    }
   };
 
   const Dropdown = () => {
@@ -272,10 +255,10 @@ const Product = () => {
               <div className="mt-10">
                 <Button
                   className="flex w-full items-center justify-center"
-                  disabled={selectedDate === "" || size == "" || isAddingToCart}
+                  disabled={selectedDate === "" || size == ""}
                   onClick={() => addDressToCart()}
                 >
-                  {isAddingToCart ? "Adding to cart..." : "Making a booking"}
+                  Making a booking
                 </Button>
               </div>
             </section>

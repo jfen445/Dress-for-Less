@@ -15,6 +15,7 @@ const key = new TextEncoder().encode(secretKey);
 interface UserContextProps {
   userInfo: UserType | null;
   fetchData: () => void;
+  getUserProfleImage: () => string;
 }
 
 const userContext = React.createContext<UserContextProps>(
@@ -38,6 +39,16 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
         .catch((err) => console.error(err));
     }
   }, [session]);
+
+  const getUserProfleImage = () => {
+    if (session && session.user && session.user.image) {
+      return session.user.image;
+    } else if (userInfo && userInfo.photo) {
+      return userInfo.photo;
+    } else {
+      return "https://www.gravatar.com/avatar/";
+    }
+  };
 
   React.useEffect(() => {
     const cartItems = getItems();
@@ -65,7 +76,7 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   }, [fetchData, session]);
 
   return (
-    <userContext.Provider value={{ userInfo, fetchData }}>
+    <userContext.Provider value={{ userInfo, fetchData, getUserProfleImage }}>
       {children}
     </userContext.Provider>
   );
