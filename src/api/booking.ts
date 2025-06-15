@@ -67,3 +67,17 @@ export async function updateBooking(bookingId: string, bookingObj: any) {
     throw new Error((err?.response?.data as any).message);
   }
 }
+
+export async function getAllBookingsByUserId(userId: string) {
+  try {
+    const response = await axios.request({
+      url: `/api/history?userId=${userId}`,
+      method: "GET",
+    });
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}

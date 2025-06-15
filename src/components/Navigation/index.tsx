@@ -89,7 +89,7 @@ function classNames(...classes: string[]) {
 }
 
 const NavigationBar = () => {
-  const { userInfo } = useUserContext();
+  const { userInfo, getUserProfleImage } = useUserContext();
   const { data: session } = useSession();
   const { setMobileNavOpen } = useNavigationContext();
 
@@ -331,11 +331,7 @@ const NavigationBar = () => {
                       <span className="sr-only">Open user menu</span>
                       <img
                         alt=""
-                        src={
-                          session && session.user && session.user.image
-                            ? session.user.image
-                            : ""
-                        }
+                        src={getUserProfleImage()}
                         className="h-8 w-8 rounded-full border-2 border-secondary-pink"
                         referrerPolicy="no-referrer"
                       />
@@ -363,6 +359,16 @@ const NavigationBar = () => {
                         Account
                       </a>
                     </MenuItem>
+                    {userInfo && (
+                      <MenuItem>
+                        <a
+                          href={"/order-history"}
+                          className="block px-4 py-2 text-sm text-gray-700"
+                        >
+                          Order History
+                        </a>
+                      </MenuItem>
+                    )}
                     <MenuItem>
                       <a
                         onClick={() => signOut()}

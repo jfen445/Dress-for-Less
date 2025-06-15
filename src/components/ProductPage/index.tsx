@@ -81,36 +81,6 @@ const Product = () => {
 
           setImages(obj);
         }
-
-        // await getDress(params.id).then((data) => {
-        //   setDress(data);
-        //   const dressSizes = (({ xs, s, m, l, xl }) => ({
-        //     xs,
-        //     s,
-        //     m,
-        //     l,
-        //     xl,
-        //   }))(data);
-
-        //   let pickedSizes = Object.fromEntries(
-        //     Object.entries(dressSizes).filter(([_, v]) => v != null)
-        //   );
-
-        //   setSizes(pickedSizes);
-
-        //   var obj = data.images.reduce(function (
-        //     acc: { [x: string]: any },
-        //     cur: any,
-        //     i: string | number
-        //   ) {
-        //     var o = { src: cur, alt: data.name + cur };
-        //     acc[i] = o;
-        //     return acc;
-        //   },
-        //   []);
-
-        //   setImages(obj);
-        // });
       };
 
       getProductDetails();
@@ -120,7 +90,7 @@ const Product = () => {
   const addDressToCart = async () => {
     const user = await getUser(session?.user.email ?? "")
       .then((res) => {
-        if (res === undefined) return;
+        if (res === undefined) return null;
         const r = res.data as unknown as UserType;
         return r;
       })
@@ -213,7 +183,7 @@ const Product = () => {
 
   return (
     <div className="bg-white">
-      <Toast toast={toast} setToast={setToast} title={toast.message} />
+      <Toast toast={toast} setToast={setToast} />
       {!dress ? (
         <div className="h-screen flex items-center justify-center">
           <Spinner />
