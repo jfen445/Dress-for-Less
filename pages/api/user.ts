@@ -10,6 +10,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   await dbConnect();
+
   if (req.method === "GET") {
     const email = req.query.email as string;
 
@@ -49,6 +50,4 @@ export default async function handler(
 
     res.status(200).json({ message: "Account created" });
   }
-
-  //   return NextResponse.json({ messsage: "Hello World" });
 }

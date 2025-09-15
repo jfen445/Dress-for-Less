@@ -62,3 +62,16 @@ export async function getAllUsers() {
     throw new Error((err?.response?.data as any).message);
   }
 }
+
+export async function updateUserAccount(userAccountDetails: UserType) {
+  try {
+    const response = await axios.post("/api/user", {
+      user: userAccountDetails,
+    });
+
+    return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}
