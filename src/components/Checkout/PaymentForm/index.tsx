@@ -22,9 +22,14 @@ interface IPaymentForm {
   stripePromise?: Promise<Stripe | null>;
   isSubmitted?: boolean;
   address: Address | null;
+  billingAddress: Address | null;
 }
 
-const PaymentForm = ({ address, clientSecret }: IPaymentForm) => {
+const PaymentForm = ({
+  address,
+  clientSecret,
+  billingAddress,
+}: IPaymentForm) => {
   const { userInfo } = useUserContext();
   const { products, deliveryOption } = React.useContext(ProductContext);
   const stripe = useStripe();
