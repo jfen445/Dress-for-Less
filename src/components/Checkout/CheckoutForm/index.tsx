@@ -1,23 +1,6 @@
 "use client";
 
-// import { userOrderExists } from "@/app/actions/orders";
-// import { Button } from "@/components/ui/button";
-// import {
-//   Card,
-//   CardContent,
-//   CardDescription,
-//   CardFooter,
-//   CardHeader,
-//   CardTitle,
-// } from "@/components/ui/card";
-// import { formatCurrency } from "@/lib/formatters";
-import {
-  Elements,
-  LinkAuthenticationElement,
-  PaymentElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Address } from "../../../../common/types";
 import Input from "@/components/Input";
@@ -27,12 +10,14 @@ import Button from "@/components/Button";
 import React from "react";
 import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
+import AddressForm from "./AddressForm";
+import BillingForm from "./BillingForm";
 
 const deliveryMethods = [
-  { id: "delivery", title: "Full delivery" },
-  { id: "pickup", title: "Full pick up" },
-  { id: "pickup/delivery", title: "Pick up and delivery return" },
-  { id: "delivery/pickup", title: "Delivery and drop off" },
+  { id: "delivery", title: "Full delivery ($15)" },
+  { id: "pickup", title: "Full pick up (Free)" },
+  { id: "pickup/delivery", title: "Pick up and delivery return ($7.50)" },
+  { id: "delivery/pickup", title: "Delivery and drop off ($7.50)" },
 ];
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
@@ -48,6 +33,11 @@ const CheckoutForm = () => {
   const [isSubmitted, setIsSubmitted] = React.useState(false);
   const [payment, setPayment] = React.useState(false);
   const [userAddress, setUserAddress] = React.useState<Address | null>(null);
+  const [sameAsShipping, setSameAsShipping] = React.useState(true);
+  const [billingAddress, setBillingAddress] = React.useState<Address | null>(
+    null
+  );
+  const [addressError, setAddressError] = React.useState<boolean>(false);
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
@@ -62,26 +52,60 @@ const CheckoutForm = () => {
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setPayment(true);
-    getSecret();
 
     const form = event.currentTarget;
 
     const formElements = form.elements as typeof form.elements & {
       address: { value: string };
+      suburb: { value: string };
       city: { value: string };
       region: { value: string };
       postCode: { value: string };
     };
 
+    if (
+      !formElements.address.value ||
+      !formElements.suburb.value ||
+      !formElements.city.value ||
+      !formElements.region.value ||
+      !formElements.postCode.value
+    ) {
+      setAddressError(true);
+      return;
+    }
+
     const address: Address = {
       address: formElements.address.value,
+      suburb: formElements.suburb.value,
       city: formElements.city.value,
       country: formElements.region.value,
       postCode: formElements.postCode.value,
     };
 
+    const billingFormElements = form.elements as typeof form.elements & {
+      billingAddress: { value: string };
+      billingSuburb: { value: string };
+      billingCity: { value: string };
+      billingRegion: { value: string };
+      billingPostCode: { value: string };
+    };
+
+    const billingAddress: Address = !sameAsShipping
+      ? {
+          address: billingFormElements.billingAddress.value,
+          suburb: billingFormElements.billingSuburb.value,
+          city: billingFormElements.billingCity.value,
+          country: billingFormElements.billingRegion.value,
+          postCode: billingFormElements.billingPostCode.value,
+        }
+      : address;
+
     setUserAddress(address);
+    setBillingAddress(billingAddress);
+    setAddressError(false);
+
+    setPayment(true);
+    getSecret();
   };
 
   const isBeforeWednesdayNoon = () => {
@@ -220,87 +244,24 @@ const CheckoutForm = () => {
             </section>
             {isBookingValid() && (
               <>
-                <section aria-labelledby="shipping-heading" className="mt-10">
-                  <h2
-                    id="shipping-heading"
-                    className="text-lg font-medium text-gray-900"
-                  >
-                    Shipping address
-                  </h2>
+                {deliveryOption !== "pickup" && (
+                  <section aria-labelledby="shipping-heading" className="mt-10">
+                    <h2
+                      id="shipping-heading"
+                      className="text-lg font-medium text-gray-900"
+                    >
+                      Shipping address
+                    </h2>
 
-                  <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
-                    <div className="sm:col-span-3">
-                      <label
-                        htmlFor="address"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Address
-                      </label>
-                      <div className="mt-1">
-                        <Input
-                          id="address"
-                          name="address"
-                          type="text"
-                          autoComplete="street-address"
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                    </div>
+                    <AddressForm />
 
-                    <div>
-                      <label
-                        htmlFor="city"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        City
-                      </label>
-                      <div className="mt-1">
-                        <Input
-                          id="city"
-                          name="city"
-                          type="text"
-                          autoComplete="address-level2"
-                        />
+                    {addressError && (
+                      <div className="mt-2 text-sm text-red-600">
+                        Please fill in all required fields with a valid address.
                       </div>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="region"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Country
-                      </label>
-                      <div className="mt-1">
-                        <Input
-                          value={"New Zealand"}
-                          id="region"
-                          name="region"
-                          type="text"
-                          autoComplete="address-level1"
-                          disabled
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="postal-code"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Postal code
-                      </label>
-                      <div className="mt-1">
-                        <Input
-                          id="postCode"
-                          name="postCode"
-                          type="text"
-                          autoComplete="postal-code"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </section>
+                    )}
+                  </section>
+                )}
 
                 <section aria-labelledby="billing-heading" className="mt-10">
                   <h2
@@ -310,23 +271,29 @@ const CheckoutForm = () => {
                     Billing information
                   </h2>
 
-                  <div className="mt-6 flex items-center">
-                    <input
-                      defaultChecked
-                      id="same-as-shipping"
-                      name="same-as-shipping"
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <div className="ml-2">
-                      <label
-                        htmlFor="same-as-shipping"
-                        className="text-sm font-medium text-gray-900"
-                      >
-                        Same as shipping information
-                      </label>
+                  {deliveryOption !== "pickup" && (
+                    <div className="mt-6 flex items-center">
+                      <input
+                        checked={sameAsShipping}
+                        onChange={() => setSameAsShipping(!sameAsShipping)}
+                        id="same-as-shipping"
+                        name="same-as-shipping"
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div className="ml-2">
+                        <label
+                          htmlFor="same-as-shipping"
+                          className="text-sm font-medium text-gray-900"
+                        >
+                          Same as shipping information
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {!sameAsShipping ||
+                    (deliveryOption === "pickup" && <BillingForm />)}
                 </section>
               </>
             )}
@@ -365,6 +332,7 @@ const CheckoutForm = () => {
                   stripePromise={stripePromise}
                   isSubmitted={isSubmitted}
                   address={userAddress}
+                  billingAddress={billingAddress}
                 />
               </Elements>
             )}

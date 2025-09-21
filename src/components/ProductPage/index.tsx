@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { RadioGroup } from "@headlessui/react";
 import {
   CartType,
@@ -258,7 +258,7 @@ const Product = () => {
                   disabled={selectedDate === "" || size == ""}
                   onClick={() => addDressToCart()}
                 >
-                  Making a booking
+                  Add to cart
                 </Button>
               </div>
             </section>

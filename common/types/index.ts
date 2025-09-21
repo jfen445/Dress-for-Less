@@ -86,6 +86,7 @@ export type CartItemType = {
 
 export type Address = {
   address: string;
+  suburb: string;
   city: string;
   country: string;
   postCode: string;

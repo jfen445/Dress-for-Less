@@ -1,17 +1,8 @@
-import {
-  CheckIcon,
-  ClockIcon,
-  ExclamationCircleIcon,
-} from "@heroicons/react/20/solid";
-import Button from "../Button";
+import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import React from "react";
-import { getCart, removeFromCart } from "@/api/cart";
-import { useUserContext } from "@/context/UserContext";
-import { CartItemType, CartType, DressType } from "../../../common/types";
-import { getDress } from "../../../sanity/sanity.query";
+import { CartItemType } from "../../../common/types";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
-import Link from "next/link";
 
 interface ICartType {
   products: CartItemType[];
@@ -26,6 +17,12 @@ const CartItems = ({
   selectedProducts,
   setSelectedProducts,
 }: ICartType) => {
+  const router = useRouter();
+
+  const navigateToDressProduct = (id: string) => {
+    router.push(`/dresses/products/${id}`);
+  };
+
   const getWeekNumber = (date: Date): number => {
     const copiedDate = new Date(date.getTime());
 
@@ -186,7 +183,10 @@ const CartItems = ({
                         />
                       </div>
 
-                      <div className="flex-shrink-0">
+                      <div
+                        className="flex-shrink-0 cursor-pointer"
+                        onClick={() => navigateToDressProduct(product._id)}
+                      >
                         <img
                           alt={product.images[0]}
                           src={product.images[0]}
@@ -194,12 +194,12 @@ const CartItems = ({
                         />
                       </div>
 
-                      <div className="ml-4 flex flex-1 flex-col sm:ml-6">
+                      <div className="ml-4 flex flex-1 flex-col sm:ml-6 cursor-pointer">
                         <div>
                           <div className="flex justify-between">
                             <h4 className="text-sm">
                               <a
-                                href="#"
+                                href={`/dresses/products/${product._id}`}
                                 className="font-medium text-gray-700 hover:text-gray-800"
                               >
                                 {product.name}
