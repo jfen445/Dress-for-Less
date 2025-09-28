@@ -21,10 +21,12 @@ import Spinner from "../Spinner";
 import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import { useCartContext } from "@/context/CartContext";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
   const { data: session } = useSession();
+  const { refreshCart } = useCartContext();
   const { getItems, setItems } = useLocalStorage<CartType[]>("localCart");
   const [dress, setDress] = React.useState<DressType>();
   const [sizes, setSizes] = React.useState<Sizes>({});
@@ -141,6 +143,7 @@ const Product = () => {
             variant: "success",
             show: true,
           });
+          refreshCart();
         })
         .catch((err) => {
           setToast({
