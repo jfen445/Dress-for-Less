@@ -27,7 +27,7 @@ const OrderSummary = () => {
       deliveryOption === "pickup/delivery" ||
       deliveryOption === "delivery/pickup"
     ) {
-      return "7.00";
+      return "7.50";
     }
 
     return "0.00";
@@ -71,8 +71,11 @@ const OrderSummary = () => {
   };
 
   const sumTotalPrices = () => {
-    setTotalPrice((parseInt(sumPrices()) + parseInt(shippingCost())) * 100);
-    return (parseInt(sumPrices()) + parseInt(shippingCost())).toFixed(2);
+    const subtotal = parseFloat(sumPrices());
+    const shipping = parseFloat(shippingCost());
+    const total = subtotal + shipping;
+    setTotalPrice(Math.round(total * 100)); // Store as cents if needed
+    return total.toFixed(2);
   };
 
   return (
@@ -108,7 +111,7 @@ const OrderSummary = () => {
                   </p>
                 </div>
                 <p className="flex-none text-base font-medium">
-                  {product.price}
+                  ${product.price}
                 </p>
               </li>
             ))}

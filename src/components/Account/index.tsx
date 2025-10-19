@@ -6,7 +6,6 @@ import { UserType } from "../../../common/types";
 import { getUser, updateUserAccount } from "@/api/user";
 import Toast, { ToastType } from "../Toast";
 import { useUserContext } from "@/context/UserContext";
-import { set } from "mongoose";
 
 const Account = () => {
   const { data: session } = useSession();

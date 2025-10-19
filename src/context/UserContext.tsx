@@ -5,7 +5,7 @@ import { CartType, UserType } from "../../common/types";
 import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import { addToCart, syncCart } from "@/api/cart";
+import { addToCart, getCart, syncCart } from "@/api/cart";
 // import { cookies } from "next/headers";
 // import { setLoginCookie } from "../../lib";
 
@@ -24,6 +24,7 @@ const userContext = React.createContext<UserContextProps>(
 
 const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
+  const [cartSize, setCartSize] = React.useState<number>(0);
   const { getItems, clearItems } = useLocalStorage<CartType[]>("localCart");
 
   const { data: session } = useSession();
@@ -75,8 +76,18 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
     fetchData();
   }, [fetchData, session]);
 
+  const incrementCartSize = () => {
+    setCartSize((prev) => prev + 1);
+  };
+
   return (
-    <userContext.Provider value={{ userInfo, fetchData, getUserProfleImage }}>
+    <userContext.Provider
+      value={{
+        userInfo,
+        fetchData,
+        getUserProfleImage,
+      }}
+    >
       {children}
     </userContext.Provider>
   );

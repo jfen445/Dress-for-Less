@@ -65,11 +65,21 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
       return true;
     }
 
-    //disable days Monday - Thursday
-    return (
+    // Disable days Monday - Thursday
+    if (
       !(date.day() === 0 || date.day() === 5 || date.day() === 6) ||
       dayjs(Date.now()).diff(date) > 0
-    );
+    ) {
+      return true;
+    }
+
+    // Disable if date is more than 6 months in the future
+    const sixMonthsFromNow = today.add(6, "month");
+    if (date.isAfter(sixMonthsFromNow, "day")) {
+      return true;
+    }
+
+    return false;
   }
 
   const readObject = (obj: { [x: string]: any }, prop: string | number) => {

@@ -10,7 +10,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   await dbConnect();
-
   if (req.method === "GET") {
     const email = req.query.email as string;
 
