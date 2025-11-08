@@ -27,7 +27,9 @@ const HeroSection = () => {
         gradientColor="pink"
         autoFill={false}
       >
-        {"DRESS FOR LESS IS HERE ".repeat(100)}
+        {"Auckland Pick-Up || Postage NZ-Wide || Postage closes Tuesday 8pm for the weekend || ".repeat(
+          100
+        )}
       </Marquee>
       {dresses && dresses.length != 0 && (
         <header className="relative overflow-hidden bg-rose-50">

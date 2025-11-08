@@ -13,7 +13,7 @@ const BillingForm = () => {
         <div className="mt-1">
           <Input
             id="billingAddress"
-            name="address"
+            name="billingAddress"
             type="text"
             autoComplete="street-address"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -31,7 +31,7 @@ const BillingForm = () => {
         <div className="mt-1">
           <Input
             id="billingSuburb"
-            name="suburb"
+            name="billingSuburb"
             type="text"
             autoComplete="address-level2"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -49,7 +49,7 @@ const BillingForm = () => {
         <div className="mt-1">
           <Input
             id="billingCity"
-            name="city"
+            name="billingCity"
             type="text"
             autoComplete="address-level2"
           />
@@ -67,7 +67,7 @@ const BillingForm = () => {
           <Input
             value={"New Zealand"}
             id="billingRegion"
-            name="region"
+            name="billingRegion"
             type="text"
             autoComplete="address-level1"
             disabled
@@ -85,7 +85,7 @@ const BillingForm = () => {
         <div className="mt-1">
           <Input
             id="billingPostCode"
-            name="postCode"
+            name="billingPostCode"
             type="text"
             autoComplete="postal-code"
           />
