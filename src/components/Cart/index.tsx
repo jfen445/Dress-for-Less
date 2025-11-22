@@ -63,7 +63,7 @@ const Cart = () => {
               _id: dress._id,
               name: dress.name,
               description: dress.description,
-              size: dress.size,
+              size: item.size,
               images: dress.images,
               tags: dress.tags,
               price: dress.price,

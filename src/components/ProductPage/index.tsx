@@ -34,6 +34,7 @@ const Product = () => {
 
   const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
+  const [isAddedToCart, setIsAddedToCart] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
     variant: "success",
@@ -46,6 +47,10 @@ const Product = () => {
 
     return obj;
   }, [sizes]);
+
+  React.useEffect(() => {
+    if (isAddedToCart) setIsAddedToCart(false);
+  }, [selectedDate, size]);
 
   React.useEffect(() => {
     if (params) {
@@ -151,6 +156,9 @@ const Product = () => {
             variant: "warning",
             show: true,
           });
+        })
+        .finally(() => {
+          setIsAddedToCart(true);
         });
     }
   };
@@ -258,10 +266,10 @@ const Product = () => {
               <div className="mt-10">
                 <Button
                   className="flex w-full items-center justify-center"
-                  disabled={selectedDate === "" || size == ""}
+                  disabled={selectedDate === "" || size == "" || isAddedToCart}
                   onClick={() => addDressToCart()}
                 >
-                  Add to cart
+                  {isAddedToCart ? "Added to cart" : "Add to cart"}
                 </Button>
               </div>
             </section>

@@ -71,19 +71,23 @@ const CartItems = ({
     const daysOffset = (week - 1) * 7;
     const dayOfWeek = firstDayOfYear.getDay(); // 0 (Sunday) to 6 (Saturday)
 
-    // Calculate the Monday of the first week (ISO week starts on Monday)
-    const firstMonday = new Date(
-      firstDayOfYear.setDate(
-        firstDayOfYear.getDate() - dayOfWeek + (dayOfWeek === 0 ? 1 : 8)
-      )
+    // Calculate the Monday of the first ISO week (same as before)
+    const firstMonday = new Date(firstDayOfYear);
+    firstMonday.setDate(
+      firstDayOfYear.getDate() - dayOfWeek + (dayOfWeek === 0 ? 1 : 8)
     );
 
-    // Add the week offset
-    const weekStartDate = new Date(
-      firstMonday.setDate(firstMonday.getDate() + daysOffset)
-    );
+    // Base week start (Monday) + offset for week number
+    const isoWeekStart = new Date(firstMonday);
+    isoWeekStart.setDate(firstMonday.getDate() + daysOffset);
+
+    // Shift the start to Friday (Friday = Monday + 4 days)
+    const weekStartDate = new Date(isoWeekStart);
+    weekStartDate.setDate(isoWeekStart.getDate() + 4);
+
+    // End of the week is 6 days after the Friday start (Thursday next week)
     const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekStartDate.getDate() + 6); // End of the week (Sunday)
+    weekEndDate.setDate(isoWeekStart.getDate() + 6);
 
     return {
       start: weekStartDate.toDateString(),
@@ -92,7 +96,7 @@ const CartItems = ({
   };
 
   const formatDate = (date: string) => {
-    return dayjs(date).format("D MMMM YYYY");
+    return dayjs(date).format("dddd, D MMMM YYYY");
   };
 
   const sumPrices = () => {
