@@ -21,6 +21,14 @@ const AdminBookings = () => {
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
+  const [expandedBookingId, setExpandedBookingId] = React.useState<
+    string | null
+  >(null);
+
+  const toggleRow = (id: string) => {
+    setExpandedBookingId(expandedBookingId === id ? null : id);
+  };
+
   const [currentBookingShipping, setCurrentBookingShipping] =
     React.useState<boolean>(false);
   const [currentBookingReturned, setCurrentBookingReturned] =
@@ -170,7 +178,7 @@ const AdminBookings = () => {
     }));
   };
 
-  const renderBookingRow = (booking: Booking[]) => {
+  const renderBookingRow = (bookingList: Booking[]) => {
     const getStatusColour = (booking: Booking) => {
       let colour = "";
       switch (getStatus(booking)) {
@@ -184,70 +192,110 @@ const AdminBookings = () => {
           colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
           break;
       }
-
       return colour;
     };
+
     return (
       <>
-        {booking?.map((currentBooking: any) => (
-          <tr key={currentBooking._id}>
-            <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
-              <div className="flex items-center">
-                <div className="h-11 w-11 flex-shrink-0">
+        {bookingList?.map((currentBooking: any) => (
+          <Fragment key={currentBooking._id}>
+            {/* Main row */}
+            <tr
+              className="cursor-pointer hover:bg-gray-50"
+              onClick={() => toggleRow(currentBooking._id)}
+            >
+              <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
+                <div className="flex items-center">
                   <img
-                    alt=""
-                    src={currentBooking.dress.images[0]}
+                    src={currentBooking.dress?.images[0]}
                     className="h-11 w-11 rounded-full cursor-pointer"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setUserModalOpen(true);
-                      setSelectedUser(currentBooking.user[0]);
+                      setSelectedUser(currentBooking.user?.[0]);
                     }}
                   />
-                </div>
-                <div className="ml-4">
-                  <div className="text-gray-900">
-                    {currentBooking.dress.name}
-                  </div>
-                  <div className="mt-1 text-gray-500">
-                    {currentBooking.dress.brand}
+                  <div className="ml-4">
+                    <div>{currentBooking.dress.name}</div>
+                    <div className="text-gray-500">
+                      {currentBooking.dress.brand}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-            <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-              <div className="font-medium text-gray-900">
-                {currentBooking.user[0].name}
-              </div>
-              <div className="mt-1 text-gray-500">
-                {currentBooking.user[0].email}
-              </div>
-            </td>
-            <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-              {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
-            </td>
-            <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-              <span
-                className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
-                  currentBooking
-                )}`}
-              >
-                {getStatus(currentBooking)}
-              </span>
-            </td>
+              </td>
 
-            <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 cursor-pointer">
-              <div
-                className="text-indigo-600 hover:text-indigo-900"
-                onClick={() => {
-                  setOpenSlide(true);
-                  setSelectedBooking(currentBooking);
-                }}
-              >
-                More Info
-                <span className="sr-only">, {currentBooking.user[0].name}</span>
-              </div>
-            </td>
-          </tr>
+              <td className="px-3 py-5 text-sm">
+                <div className="font-medium">{currentBooking.user[0].name}</div>
+                <div className="text-gray-500">
+                  {currentBooking.user[0].email}
+                </div>
+              </td>
+
+              <td className="px-3 py-5 text-sm text-gray-500">
+                {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
+              </td>
+
+              <td className="px-3 py-5 text-sm">
+                <span
+                  className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
+                    currentBooking
+                  )}`}
+                >
+                  {getStatus(currentBooking)}
+                </span>
+              </td>
+
+              <td className="px-3 py-5 text-right text-sm text-indigo-600">
+                {expandedBookingId === currentBooking._id
+                  ? "Hide"
+                  : "More Info"}
+              </td>
+            </tr>
+
+            {/* EXPANDED CONTENT ROW */}
+            {expandedBookingId === currentBooking._id && (
+              <tr>
+                <td colSpan={5} className="bg-gray-50 p-6">
+                  {/* ----- Put your SlideOver content here ----- */}
+
+                  <div className="flex space-x-6">
+                    <img
+                      src={currentBooking.dress?.images[0]}
+                      className="h-40 w-40 rounded-lg object-cover"
+                    />
+
+                    <div className="space-y-4 flex-1">
+                      <h3 className="font-semibold text-gray-900">
+                        {currentBooking.dress?.name}
+                      </h3>
+
+                      <p className="text-sm">{currentBooking.dress?.brand}</p>
+
+                      <p>
+                        <span className="font-medium">Booked by:</span>{" "}
+                        {currentBooking.user?.[0].name}
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Delivery:</span>{" "}
+                        {currentBooking.deliveryType}
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Address:</span>{" "}
+                        {currentBooking.address.address},{" "}
+                        {currentBooking.address.city},{" "}
+                        {currentBooking.address.country},{" "}
+                        {currentBooking.address.postCode}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ----- End extra content ----- */}
+                </td>
+              </tr>
+            )}
+          </Fragment>
         ))}
       </>
     );
@@ -255,118 +303,6 @@ const AdminBookings = () => {
 
   return (
     <>
-      <SlideOver
-        isOpen={openSlide}
-        setOpen={setOpenSlide}
-        bookingInfo={selectedBooking}
-      >
-        <div className="space-y-6 pb-16">
-          <div>
-            <div className="aspect-h-7 aspect-w-10 block w-full overflow-hidden rounded-lg">
-              <img
-                alt=""
-                src={selectedBooking?.dress?.images[0]}
-                className="object-cover"
-              />
-            </div>
-            <div className="mt-4 flex items-start justify-between">
-              <div>
-                <h2 className="text-base font-semibold leading-6 text-gray-900">
-                  <span className="sr-only">Details for </span>
-                  {selectedBooking?.dress?.name}
-                </h2>
-                <p className="text-sm font-medium text-gray-500">
-                  {selectedBooking?.dress?.brand}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900">Booked by</h3>
-            <dl className="mt-2 divide-y divide-gray-200 border-b border-t border-gray-200">
-              <div className="flex justify-between py-3 text-sm font-medium">
-                <dt className="text-gray-500">Name</dt>
-                <dd className="text-gray-900">
-                  {selectedBooking?.user && selectedBooking?.user[0]?.name}
-                </dd>
-              </div>
-              <div className="flex justify-between py-3 text-sm font-medium">
-                <dt className="text-gray-500">Date</dt>
-                <dd className="text-gray-900">
-                  {dayjs(selectedBooking?.dateBooked).format("MMMM D, YYYY")}
-                </dd>
-              </div>
-              <div className="flex justify-between py-3 text-sm font-medium">
-                <dt className="text-gray-500">Size</dt>
-                <dd className="text-gray-900">{selectedBooking?.size}</dd>
-              </div>
-            </dl>
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900">Address</h3>
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-sm italic text-gray-500">
-                {selectedBooking?.address}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-gray-900">Delivery Type</h3>
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-sm italic text-gray-500">
-                {selectedBooking?.deliveryType}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-gray-900">Tracking</h3>
-            <div className="mt-2 flex items-center justify-between">
-              <Input
-                type="link"
-                name="tracking"
-                id="tracking"
-                value={currentBookingTracking}
-                onChange={(e) =>
-                  setCurrentBookingTracking(
-                    (e.target as HTMLInputElement).value
-                  )
-                }
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="mt-2 flex items-center justify-between">
-              <Toggle
-                title={"Mark as shipped"}
-                description={"Tick this box if dress has been shipped"}
-                enabled={selectedBooking?.isShipped || false}
-                setEnabled={() => toggleEnable("isShipped")}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="mt-2 flex items-center justify-between">
-              <Toggle
-                title={"Mark booking as completed"}
-                description={"Tick this box if dress has been returned"}
-                enabled={selectedBooking?.isReturned || false}
-                setEnabled={() => toggleEnable("isReturned")}
-              />
-            </div>
-          </div>
-
-          <div className="flex">
-            <Button type="button" onClick={() => updateCurrentBooking()}>
-              Save
-            </Button>
-          </div>
-        </div>
-      </SlideOver>
-
       <UserModal
         isOpen={userModalOpen}
         setOpen={setUserModalOpen}

@@ -85,7 +85,7 @@ const CartItems = ({
     const weekStartDate = new Date(isoWeekStart);
     weekStartDate.setDate(isoWeekStart.getDate() + 4);
 
-    // End of the week is 6 days after the Friday start (Thursday next week)
+    // End of the week is 6 days after the Monday week start
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(isoWeekStart.getDate() + 6);
 

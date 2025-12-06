@@ -11,8 +11,6 @@ import {
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
 import { Resend } from "resend";
-import OrderReceiptEmail from "@/components/Emails/OrderReceipt";
-import { SendVerificationRequestParams } from "next-auth/providers/email";
 
 export default async function handler(
   req: NextApiRequest,
@@ -72,17 +70,27 @@ export default async function handler(
     }
 
     var bookedDresses: IBooking[] = [];
-    dresses.forEach(async (dress) => {
+    for (const dress of dresses) {
       let booking: IBooking = {
         dressId: dress.dressId,
         userId: dress.userId,
         dateBooked: dress.dateBooked,
         blockOutPeriod: dress.blockOutPeriod,
-        address: dress.address,
+        address: {
+          address: dress.address?.address ?? "",
+          suburb: dress.address?.suburb ?? "",
+          city: dress.address?.city ?? "",
+          country: dress.address?.country ?? "",
+          postCode: dress.address?.postCode ?? "",
+        },
+        billingAddress: {
+          address: dress.billingAddress.address,
+          suburb: dress.billingAddress.suburb,
+          city: dress.billingAddress.city,
+          country: dress.billingAddress.country,
+          postCode: dress.billingAddress.postCode,
+        },
         price: dress.price,
-        city: dress.city,
-        country: dress.country,
-        postCode: dress.postCode,
         deliveryType: dress.deliveryType,
         tracking: dress.tracking,
         isShipped: dress.isShipped,
@@ -102,8 +110,9 @@ export default async function handler(
       };
       const options = { upsert: true };
 
+      console.log("BOOKING TO CREATE: ", booking);
       await BookingSchema.updateOne(filter, booking, options);
-    });
+    }
 
     res
       .status(200)

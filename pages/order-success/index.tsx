@@ -116,9 +116,7 @@ const OrderSuccess = ({
 
     // Check if conversion is successful
     if (isNaN(number1) || isNaN(number2)) {
-      throw new Error(
-        "Invalid input: Both inputs must be valid numbers as strings."
-      );
+      return 0; // or handle the error as needed
     }
 
     // Perform the addition
@@ -139,7 +137,7 @@ const OrderSuccess = ({
                 Thank you!
               </h1>
               <p className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-                {"It's on the way!"}
+                {"Booking submitted!"}
               </p>
               <p className="mt-2 text-base text-gray-500">
                 Your order will be with you soon.
@@ -161,8 +159,8 @@ const OrderSuccess = ({
                   className="flex space-x-6 border-b border-gray-200 py-10"
                 >
                   <img
-                    alt={dress.images[0]}
-                    src={dress.images[0]}
+                    alt={dress?.images[0]}
+                    src={dress?.images[0]}
                     className="h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40"
                   />
                   <div className="flex flex-auto flex-col">
@@ -207,17 +205,33 @@ const OrderSuccess = ({
 
                 <h4 className="sr-only">Addresses</h4>
                 <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
-                  <div>
-                    <dt className="font-medium text-gray-900">
-                      Shipping address
-                    </dt>
-                    <dd className="mt-2 text-gray-700">
-                      <address className="not-italic">
-                        <span className="block">{userInfo?.name}</span>
-                        <span className="block">{bookings[0]?.address}</span>
-                      </address>
-                    </dd>
-                  </div>
+                  {bookings[0]?.address && (
+                    <div>
+                      <dt className="font-medium text-gray-900">
+                        Shipping address
+                      </dt>
+                      <dd className="mt-2 text-gray-700">
+                        <address className="not-italic">
+                          <span className="block">{userInfo?.name}</span>
+                          <span className="block">
+                            {bookings[0]?.address.address}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.address.suburb}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.address.city}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.address.country}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.address.postCode}
+                          </span>
+                        </address>
+                      </dd>
+                    </div>
+                  )}
                   <div>
                     <dt className="font-medium text-gray-900">
                       Billing address
@@ -225,7 +239,23 @@ const OrderSuccess = ({
                     <dd className="mt-2 text-gray-700">
                       <address className="not-italic">
                         <span className="block">{userInfo?.name}</span>
-                        <span className="block">{bookings[0]?.address}</span>
+                        <span className="block">
+                          {/* <span className="block">
+                            {bookings[0]?.billingAddress.address}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.billingAddress.suburb}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.billingAddress.city}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.billingAddress.country}
+                          </span>
+                          <span className="block">
+                            {bookings[0]?.billingAddress.postCode}
+                          </span> */}
+                        </span>
                       </address>
                     </dd>
                   </div>

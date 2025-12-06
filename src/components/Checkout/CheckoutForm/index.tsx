@@ -82,26 +82,31 @@ const CheckoutForm = () => {
       setTermsError(false);
     }
 
-    if (
-      !formElements.address.value ||
-      !formElements.suburb.value ||
-      !formElements.city.value ||
-      !formElements.region.value ||
-      !formElements.postCode.value
-    ) {
-      isError = true;
-      setAddressError(true);
-    } else {
-      setAddressError(false);
+    if (deliveryOption !== "pickup") {
+      if (
+        !formElements.address.value ||
+        !formElements.suburb.value ||
+        !formElements.city.value ||
+        !formElements.region.value ||
+        !formElements.postCode.value
+      ) {
+        isError = true;
+        setAddressError(true);
+      } else {
+        setAddressError(false);
+      }
     }
 
-    const address: Address = {
-      address: formElements.address.value,
-      suburb: formElements.suburb.value,
-      city: formElements.city.value,
-      country: formElements.region.value,
-      postCode: formElements.postCode.value,
-    };
+    const address: Address | null =
+      deliveryOption === "pickup"
+        ? null
+        : {
+            address: formElements.address.value,
+            suburb: formElements.suburb.value,
+            city: formElements.city.value,
+            country: formElements.region.value,
+            postCode: formElements.postCode.value,
+          };
 
     if (
       !sameAsShipping &&
@@ -119,7 +124,7 @@ const CheckoutForm = () => {
 
     if (isError) return;
 
-    const billingAddress: Address = !sameAsShipping
+    const billingAddress: Address | null = !sameAsShipping
       ? {
           address: formElements.billingAddress.value,
           suburb: formElements.billingSuburb.value,
@@ -186,7 +191,12 @@ const CheckoutForm = () => {
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 
-  console.log("shiping", sameAsShipping);
+  const onDeliveryMethodChanged = (id: string) => {
+    setDeliveryOption(id);
+    if (id === "pickup") {
+      setSameAsShipping(false);
+    }
+  };
 
   const RadioGroup = () => {
     return (
@@ -207,7 +217,7 @@ const CheckoutForm = () => {
                         name="notification-method"
                         type="radio"
                         className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                        onChange={(e) => setDeliveryOption(e.target.id)}
+                        onChange={(e) => onDeliveryMethodChanged(e.target.id)}
                       />
                       <label
                         htmlFor={deliveryMethod.id}

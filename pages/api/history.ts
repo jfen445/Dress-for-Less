@@ -29,10 +29,15 @@ export default async function handler(
           dateBooked: booking.dateBooked,
           blockOutPeriod: booking.blockOutPeriod,
           price: dress.price,
-          address: booking.address,
-          city: booking.city,
-          country: booking.country,
-          postCode: booking.postCode,
+          address: booking.address
+            ? {
+                address: booking.address.address,
+                suburb: booking.address.suburb,
+                city: booking.address.city,
+                country: booking.address.country,
+                postCode: booking.address.postCode,
+              }
+            : undefined,
           deliveryType: booking.deliveryType,
           tracking: booking.tracking,
           isShipped: booking.isShipped,

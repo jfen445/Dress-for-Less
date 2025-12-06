@@ -99,10 +99,8 @@ export type Booking = {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
+  address?: Address;
+  billingAddress: Address;
   deliveryType: string;
   tracking: string;
   isShipped: boolean;
@@ -133,10 +131,7 @@ export type OrderHistory = {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
+  address?: Address;
   deliveryType: string;
   tracking: string;
   isShipped: boolean;

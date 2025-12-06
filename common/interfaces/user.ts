@@ -21,10 +21,8 @@ export interface IBooking {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
+  address: IAddress;
+  billingAddress: IAddress;
   deliveryType: string;
   tracking: string;
   isShipped: boolean;
@@ -32,4 +30,12 @@ export interface IBooking {
   paymentIntent: string;
   paymentSuccess: boolean;
   size: String;
+}
+
+export interface IAddress {
+  address: string;
+  suburb?: string;
+  city?: string;
+  country?: string;
+  postCode?: string;
 }
