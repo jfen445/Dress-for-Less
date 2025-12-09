@@ -98,6 +98,7 @@ export default async function handler(
         paymentIntent: dress.paymentIntent,
         paymentSuccess: false,
         size: dress.size,
+        status: dress.status,
       };
 
       bookedDresses = bookedDresses.concat(booking);
@@ -110,7 +111,6 @@ export default async function handler(
       };
       const options = { upsert: true };
 
-      console.log("BOOKING TO CREATE: ", booking);
       await BookingSchema.updateOne(filter, booking, options);
     }
 

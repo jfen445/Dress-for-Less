@@ -12,13 +12,16 @@ import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
 import AddressForm from "./AddressForm";
 import BillingForm from "./BillingForm";
-import { set } from "mongoose";
+import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const deliveryMethods = [
-  { id: "delivery", title: "Full delivery ($15)" },
-  { id: "pickup", title: "Full pick up (Free)" },
-  { id: "pickup/delivery", title: "Pick up and delivery return ($7.50)" },
-  { id: "delivery/pickup", title: "Delivery and drop off ($7.50)" },
+  { id: DeliveryType.Delivery, title: "Full delivery ($15)" },
+  { id: DeliveryType.Pickup, title: "Full pick up (Free)" },
+  {
+    id: DeliveryType.PickupDelivery,
+    title: "Pick up and delivery return ($7.50)",
+  },
+  { id: DeliveryType.DeliveryPickup, title: "Delivery and drop off ($7.50)" },
 ];
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
@@ -82,7 +85,7 @@ const CheckoutForm = () => {
       setTermsError(false);
     }
 
-    if (deliveryOption !== "pickup") {
+    if (deliveryOption !== DeliveryType.Pickup) {
       if (
         !formElements.address.value ||
         !formElements.suburb.value ||
@@ -98,7 +101,7 @@ const CheckoutForm = () => {
     }
 
     const address: Address | null =
-      deliveryOption === "pickup"
+      deliveryOption === DeliveryType.Pickup
         ? null
         : {
             address: formElements.address.value,
@@ -191,9 +194,9 @@ const CheckoutForm = () => {
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 
-  const onDeliveryMethodChanged = (id: string) => {
+  const onDeliveryMethodChanged = (id: DeliveryType) => {
     setDeliveryOption(id);
-    if (id === "pickup") {
+    if (id === DeliveryType.Pickup) {
       setSameAsShipping(false);
     }
   };
@@ -217,7 +220,9 @@ const CheckoutForm = () => {
                         name="notification-method"
                         type="radio"
                         className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                        onChange={(e) => onDeliveryMethodChanged(e.target.id)}
+                        onChange={(e) =>
+                          onDeliveryMethodChanged(e.target.id as DeliveryType)
+                        }
                       />
                       <label
                         htmlFor={deliveryMethod.id}
@@ -287,7 +292,7 @@ const CheckoutForm = () => {
             </section>
             {isBookingValid() && (
               <>
-                {deliveryOption !== "pickup" && (
+                {deliveryOption !== DeliveryType.Pickup && (
                   <section aria-labelledby="shipping-heading" className="mt-10">
                     <h2
                       id="shipping-heading"
@@ -314,7 +319,7 @@ const CheckoutForm = () => {
                     Billing information
                   </h2>
 
-                  {deliveryOption !== "pickup" && (
+                  {deliveryOption !== DeliveryType.Pickup && (
                     <div className="mt-6 flex items-center">
                       <input
                         checked={sameAsShipping}
@@ -335,7 +340,8 @@ const CheckoutForm = () => {
                     </div>
                   )}
 
-                  {(!sameAsShipping || deliveryOption === "pickup") && (
+                  {(!sameAsShipping ||
+                    deliveryOption === DeliveryType.Pickup) && (
                     <>
                       <BillingForm />
                       {billingAddressError && (

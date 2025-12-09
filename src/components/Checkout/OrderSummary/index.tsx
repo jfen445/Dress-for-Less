@@ -12,6 +12,7 @@ import { getCart } from "@/api/cart";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
+import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const OrderSummary = () => {
   const { userInfo } = useUserContext();
@@ -19,13 +20,13 @@ const OrderSummary = () => {
     React.useContext(ProductContext);
 
   const shippingCost = React.useCallback(() => {
-    if (deliveryOption === "delivery") {
+    if (deliveryOption === DeliveryType.Delivery) {
       return "15.00";
     }
 
     if (
-      deliveryOption === "pickup/delivery" ||
-      deliveryOption === "delivery/pickup"
+      deliveryOption === DeliveryType.PickupDelivery ||
+      deliveryOption === DeliveryType.DeliveryPickup
     ) {
       return "7.50";
     }

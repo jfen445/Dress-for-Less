@@ -16,6 +16,7 @@ import { useUserContext } from "@/context/UserContext";
 import { createBooking } from "@/api/booking";
 import dayjs from "dayjs";
 import { removeFromCart } from "@/api/cart";
+import { BookingStatus } from "../../../../common/enums/BookingStatus";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -92,6 +93,7 @@ const PaymentForm = ({
         isReturned: false,
         paymentIntent: clientSecret,
         size: item.size,
+        status: BookingStatus.InProgress,
       };
 
       bookingList = bookingList.concat(bookingObj);

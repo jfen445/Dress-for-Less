@@ -1,3 +1,5 @@
+import { BookingStatus } from "../enums/BookingStatus";
+
 export interface IUser {
   mongoID?: string;
   name: string;
@@ -30,6 +32,7 @@ export interface IBooking {
   paymentIntent: string;
   paymentSuccess: boolean;
   size: String;
+  status: BookingStatus;
 }
 
 export interface IAddress {

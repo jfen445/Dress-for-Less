@@ -1,4 +1,5 @@
 import { PortableTextBlock } from "sanity";
+import { BookingStatus } from "../enums/BookingStatus";
 
 export type ProfileType = {
   _id: string;
@@ -109,6 +110,7 @@ export type Booking = {
   size: String;
   dress?: DressType;
   user?: UserType[];
+  status: BookingStatus;
 };
 
 export type Sizes = {

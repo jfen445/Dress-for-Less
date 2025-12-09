@@ -1,22 +1,24 @@
 import { getAllBookings } from "@/api/admin";
-import SlideOver from "@/components/SlideOver";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
 import { Booking, UserType } from "../../../../common/types";
-import Input from "@/components/Input";
 import Button from "@/components/Button";
-import Toggle from "@/components/Toggle";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import { updateBooking } from "@/api/booking";
+import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import Toast, { ToastType } from "@/components/Toast";
 
 const AdminBookings = () => {
+  const [isError, setIsError] = React.useState<boolean>(false);
+  const [toast, setToast] = React.useState<ToastType>({
+    message: "",
+    variant: "warning",
+    show: false,
+  });
   const [bookings, setBookings] = React.useState<Booking[]>();
   const [thisWeekBookings, setThisWeekBookings] = React.useState<Booking[]>();
-  const [openSlide, setOpenSlide] = React.useState<boolean>(false);
-  const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(
-    null
-  );
+
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -29,16 +31,9 @@ const AdminBookings = () => {
     setExpandedBookingId(expandedBookingId === id ? null : id);
   };
 
-  const [currentBookingShipping, setCurrentBookingShipping] =
-    React.useState<boolean>(false);
-  const [currentBookingReturned, setCurrentBookingReturned] =
-    React.useState<boolean>(false);
-  const [currentBookingTracking, setCurrentBookingTracking] =
-    React.useState<string>("");
-
   const getBookings = async () => {
     setIsLoading(true);
-    const response = await getAllBookings().then((data) => {
+    await getAllBookings().then((data) => {
       var d = new Date();
       d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
       const now = new Date();
@@ -48,7 +43,6 @@ const AdminBookings = () => {
         currentSunday.setDate(now.getDate() + (7 - now.getDay()));
       }
       currentSunday.setHours(23, 59, 59, 999);
-
       const sortedBookings = (data.data as unknown as Booking[]).sort(function (
         a,
         b
@@ -56,10 +50,10 @@ const AdminBookings = () => {
         return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
       });
       const thisWeek = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday))
+        dayjs(booking.dateBooked).isBefore(dayjs(currentSunday))
       );
       const allBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isBefore(dayjs(currentSunday))
+        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday))
       );
 
       setThisWeekBookings(thisWeek);
@@ -72,51 +66,27 @@ const AdminBookings = () => {
     getBookings();
   }, []);
 
-  const toggleEnable = (field: any) => {
-    if (selectedBooking) {
-      var cloned = JSON.parse(JSON.stringify(selectedBooking));
-      cloned[field] = !cloned[field];
-      setCurrentBookingShipping(cloned.isShipped);
-      setCurrentBookingReturned(cloned.isReturned);
-      setSelectedBooking(cloned);
-    }
-  };
-
-  const getStatus = (booking: Booking) => {
-    if (booking.isReturned) {
-      return "Completed";
-    } else if (!booking.isShipped) {
-      return "Ready to be shipped";
-    } else if (booking.isShipped) {
-      return "Active";
-    }
-  };
-
-  const updateCurrentBooking = async () => {
+  const updateCurrentBooking = async (
+    bookingId: string,
+    bookingStatus: BookingStatus
+  ) => {
     let bookingObj: {
-      isShipped: boolean;
-      isReturned: boolean;
-      tracking?: string;
+      status: BookingStatus;
     } = {
-      isShipped: selectedBooking?.isShipped ?? false,
-      isReturned: selectedBooking?.isReturned ?? false,
+      status: bookingStatus,
     };
 
-    if (selectedBooking?.tracking != currentBookingTracking) {
-      bookingObj.tracking = currentBookingTracking;
-    }
-
-    if (selectedBooking && selectedBooking._id) {
-      await updateBooking(selectedBooking._id, bookingObj)
-        .catch((err) => console.log(err))
-        .finally(() => getBookings());
-    }
+    await updateBooking(bookingId, bookingObj)
+      .catch(() =>
+        setToast({
+          message: "An error occurred while updating booking status",
+          variant: "warning",
+          show: true,
+        })
+      )
+      .finally(() => getBookings());
   };
 
-  // const downloadToCSV = () => {
-  //   let csvContent = "data:text/csv;charset=utf-8,"
-  //   + thisWeekBookings?.map(e => e..join(",")).join("\n");
-  // }
   type ObjectArray = Record<string, any>[];
 
   const convertToCSV = (objArray: ObjectArray): string => {
@@ -178,18 +148,69 @@ const AdminBookings = () => {
     }));
   };
 
+  const Dropdown = ({
+    bookingId,
+    initialStatus,
+  }: {
+    bookingId: string;
+    initialStatus: BookingStatus;
+  }) => {
+    const [status, setStatus] = React.useState<BookingStatus>(initialStatus);
+
+    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newStatus = e.target.value as BookingStatus;
+      setStatus(newStatus);
+      updateCurrentBooking(bookingId, newStatus);
+    };
+    return (
+      <div>
+        <label
+          htmlFor="location"
+          className="block text-sm font-medium leading-6 text-gray-900 mt-4"
+        >
+          Select a status
+        </label>
+        <select
+          id="status"
+          name="status"
+          value={status}
+          onChange={handleChange}
+          className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+        >
+          {Object.values(BookingStatus).map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
   const renderBookingRow = (bookingList: Booking[]) => {
     const getStatusColour = (booking: Booking) => {
       let colour = "";
-      switch (getStatus(booking)) {
-        case "Active":
+      switch (booking.status) {
+        case BookingStatus.InProgress:
           colour = "bg-green-50 text-green-700 ring-green-600/20";
           break;
-        case "Completed":
-          colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
+        case BookingStatus.BeingReturned:
+          colour = "bg-purple-50 text-purple-700 ring-purple-600/20";
           break;
-        case "Ready to be shipped":
+        case BookingStatus.Washing:
+          colour = "bg-blue-50 text-blue-700 ring-blue-600/20";
+          break;
+        case BookingStatus.Drying:
           colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
+          break;
+        case BookingStatus.Completed:
+          colour = "bg-green-50 text-green-700 ring-green-600/20";
+          break;
+        case BookingStatus.Delayed:
+          colour = "bg-red-50 text-red-700 ring-red-600/20";
+          break;
+        case BookingStatus.Reparing:
+          colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
           break;
       }
       return colour;
@@ -241,21 +262,15 @@ const AdminBookings = () => {
                     currentBooking
                   )}`}
                 >
-                  {getStatus(currentBooking)}
+                  {currentBooking.status}
                 </span>
-              </td>
-
-              <td className="px-3 py-5 text-right text-sm text-indigo-600">
-                {expandedBookingId === currentBooking._id
-                  ? "Hide"
-                  : "More Info"}
               </td>
             </tr>
 
             {/* EXPANDED CONTENT ROW */}
             {expandedBookingId === currentBooking._id && (
               <tr>
-                <td colSpan={5} className="bg-gray-50 p-6">
+                <td colSpan={6} className="bg-gray-50 p-6">
                   {/* ----- Put your SlideOver content here ----- */}
 
                   <div className="flex space-x-6">
@@ -292,6 +307,10 @@ const AdminBookings = () => {
                   </div>
 
                   {/* ----- End extra content ----- */}
+                  <Dropdown
+                    bookingId={currentBooking._id}
+                    initialStatus={currentBooking.status}
+                  />
                 </td>
               </tr>
             )}
@@ -303,6 +322,7 @@ const AdminBookings = () => {
 
   return (
     <>
+      <Toast toast={toast} setToast={setToast} />
       <UserModal
         isOpen={userModalOpen}
         setOpen={setUserModalOpen}
@@ -360,12 +380,6 @@ const AdminBookings = () => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
                         Status
-                      </th>
-                      <th
-                        scope="col"
-                        className="relative py-3.5 pl-3 pr-4 sm:pr-0"
-                      >
-                        <span className="sr-only">Edit</span>
                       </th>
                     </tr>
                   </thead>

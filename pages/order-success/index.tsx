@@ -1,15 +1,14 @@
 import React from "react";
 import Stripe from "stripe";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useRouter } from "next/router";
 import { confirmBooking } from "@/api/booking";
 import { Booking, DressType } from "../../common/types";
-import { getDress } from "../../sanity/sanity.query";
-import dress from "../../common/schemas/dress";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { DeliveryType } from "../../common/enums/DeliveryType";
 
 const deliveryMethods = [
   { id: "delivery", title: "Full delivery" },
@@ -47,10 +46,6 @@ const OrderSuccess = ({
     // return String(delivery).charAt(0).toUpperCase() + String(delivery).slice(1);
   }, [bookings]);
 
-  const shippingCost = () => {
-    const type = deliveryType();
-  };
-
   React.useEffect(() => {
     const confirm = async () => {
       if (router.query.payment_intent_client_secret) {
@@ -62,9 +57,9 @@ const OrderSuccess = ({
             setBookings(bookingData);
             const deliveryStatus = bookingData[0].deliveryType;
 
-            if (deliveryStatus == "delivery") {
+            if (deliveryStatus == DeliveryType.Delivery) {
               setDeliveryCost(15);
-            } else if (deliveryStatus == "pickup") {
+            } else if (deliveryStatus == DeliveryType.Pickup) {
               setDeliveryCost(0);
             } else {
               setDeliveryCost(7.5);
@@ -101,14 +96,6 @@ const OrderSuccess = ({
     });
   }, [bookings, getDressWithId]);
 
-  function getDeliveryMethodTitle() {
-    const method = deliveryMethods.find(
-      (method) => method.id === deliveryType()
-    );
-
-    return method ? method.title : null; // Return title if found, otherwise null
-  }
-
   function addStringNumbers(num1: string, num2: number) {
     // Convert strings to numbers
     const number1 = parseFloat(num1);
@@ -122,6 +109,8 @@ const OrderSuccess = ({
     // Perform the addition
     return number1 + number2;
   }
+
+  const bookingDetails = bookings[0];
 
   return (
     <>
@@ -205,33 +194,34 @@ const OrderSuccess = ({
 
                 <h4 className="sr-only">Addresses</h4>
                 <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
-                  {bookings[0]?.address && (
-                    <div>
-                      <dt className="font-medium text-gray-900">
-                        Shipping address
-                      </dt>
-                      <dd className="mt-2 text-gray-700">
-                        <address className="not-italic">
-                          <span className="block">{userInfo?.name}</span>
-                          <span className="block">
-                            {bookings[0]?.address.address}
-                          </span>
-                          <span className="block">
-                            {bookings[0]?.address.suburb}
-                          </span>
-                          <span className="block">
-                            {bookings[0]?.address.city}
-                          </span>
-                          <span className="block">
-                            {bookings[0]?.address.country}
-                          </span>
-                          <span className="block">
-                            {bookings[0]?.address.postCode}
-                          </span>
-                        </address>
-                      </dd>
-                    </div>
-                  )}
+                  {bookingDetails?.deliveryType !== DeliveryType.Pickup &&
+                    bookingDetails?.address && (
+                      <div>
+                        <dt className="font-medium text-gray-900">
+                          Shipping address
+                        </dt>
+                        <dd className="mt-2 text-gray-700">
+                          <address className="not-italic">
+                            <span className="block">{userInfo?.name}</span>
+                            <span className="block">
+                              {bookingDetails?.address.address}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.suburb}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.city}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.country}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.postCode}
+                            </span>
+                          </address>
+                        </dd>
+                      </div>
+                    )}
                   <div>
                     <dt className="font-medium text-gray-900">
                       Billing address
@@ -240,21 +230,21 @@ const OrderSuccess = ({
                       <address className="not-italic">
                         <span className="block">{userInfo?.name}</span>
                         <span className="block">
-                          {/* <span className="block">
-                            {bookings[0]?.billingAddress.address}
+                          <span className="block">
+                            {bookingDetails?.billingAddress.address}
                           </span>
                           <span className="block">
-                            {bookings[0]?.billingAddress.suburb}
+                            {bookingDetails?.billingAddress.suburb}
                           </span>
                           <span className="block">
-                            {bookings[0]?.billingAddress.city}
+                            {bookingDetails?.billingAddress.city}
                           </span>
                           <span className="block">
-                            {bookings[0]?.billingAddress.country}
+                            {bookingDetails?.billingAddress.country}
                           </span>
                           <span className="block">
-                            {bookings[0]?.billingAddress.postCode}
-                          </span> */}
+                            {bookingDetails?.billingAddress.postCode}
+                          </span>
                         </span>
                       </address>
                     </dd>
@@ -268,7 +258,7 @@ const OrderSuccess = ({
                       Shipping method
                     </dt>
                     <dd className="mt-2 text-gray-700">
-                      <p>{getDeliveryMethodTitle()}</p>
+                      <p>{bookingDetails?.deliveryType}</p>
                     </dd>
                   </div>
                 </dl>
