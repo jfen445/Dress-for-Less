@@ -8,20 +8,24 @@ import UserModal from "../UserModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
+import { useAdminBooking } from "@/context/AdminBookingContext";
+import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
-const AdminBookings = () => {
+type AdminBookingsProps = {
+  deliveryType: DeliveryType[];
+};
+
+const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
+  const { bookings, thisWeekBookings, pastBookings, isLoading, getBookings } =
+    useAdminBooking();
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
     variant: "warning",
     show: false,
   });
-  const [bookings, setBookings] = React.useState<Booking[]>();
-  const [thisWeekBookings, setThisWeekBookings] = React.useState<Booking[]>();
-
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const [expandedBookingId, setExpandedBookingId] = React.useState<
     string | null
@@ -31,40 +35,26 @@ const AdminBookings = () => {
     setExpandedBookingId(expandedBookingId === id ? null : id);
   };
 
-  const getBookings = async () => {
-    setIsLoading(true);
-    await getAllBookings().then((data) => {
-      var d = new Date();
-      d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
-      const now = new Date();
+  const filteredBookings = React.useMemo(() => {
+    if (!deliveryType || deliveryType.length === 0) return bookings;
+    return bookings.filter((b) =>
+      deliveryType.includes(b.deliveryType as DeliveryType)
+    );
+  }, [bookings, deliveryType]);
 
-      const currentSunday = new Date(now);
-      if (now.getDay() !== 0) {
-        currentSunday.setDate(now.getDate() + (7 - now.getDay()));
-      }
-      currentSunday.setHours(23, 59, 59, 999);
-      const sortedBookings = (data.data as unknown as Booking[]).sort(function (
-        a,
-        b
-      ) {
-        return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
-      });
-      const thisWeek = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isBefore(dayjs(currentSunday))
-      );
-      const allBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday))
-      );
+  const filteredThisWeekBookings = React.useMemo(() => {
+    if (!deliveryType || deliveryType.length === 0) return thisWeekBookings;
+    return thisWeekBookings.filter((b) =>
+      deliveryType.includes(b.deliveryType as DeliveryType)
+    );
+  }, [thisWeekBookings, deliveryType]);
 
-      setThisWeekBookings(thisWeek);
-      setBookings(allBookings);
-    });
-    setIsLoading(false);
-  };
-
-  React.useEffect(() => {
-    getBookings();
-  }, []);
+  const filteredPastBookings = React.useMemo(() => {
+    if (!deliveryType || deliveryType.length === 0) return pastBookings;
+    return pastBookings.filter((b) =>
+      deliveryType.includes(b.deliveryType as DeliveryType)
+    );
+  }, [pastBookings, deliveryType]);
 
   const updateCurrentBooking = async (
     bookingId: string,
@@ -139,7 +129,7 @@ const AdminBookings = () => {
   };
 
   const extractObj = () => {
-    return thisWeekBookings?.map((booking) => ({
+    return filteredThisWeekBookings?.map((booking) => ({
       name: booking.user ? booking?.user[0].name : "",
       email: booking.user ? booking?.user[0].email : "",
       address: booking.address,
@@ -395,7 +385,8 @@ const AdminBookings = () => {
                         </th>
                       </tr>
                     </Fragment>
-                    {thisWeekBookings && renderBookingRow(thisWeekBookings)}
+                    {filteredThisWeekBookings &&
+                      renderBookingRow(filteredThisWeekBookings)}
                     <Fragment>
                       <tr className="border-t border-gray-200">
                         <th
@@ -403,11 +394,24 @@ const AdminBookings = () => {
                           colSpan={5}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
-                          Other bookings
+                          Upcoming bookings
                         </th>
                       </tr>
                     </Fragment>
-                    {bookings && renderBookingRow(bookings)}
+                    {filteredBookings && renderBookingRow(filteredBookings)}
+                    <Fragment>
+                      <tr className="border-t border-gray-200">
+                        <th
+                          scope="colgroup"
+                          colSpan={5}
+                          className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                        >
+                          Previous bookings
+                        </th>
+                      </tr>
+                    </Fragment>
+                    {filteredPastBookings &&
+                      renderBookingRow(filteredPastBookings)}
                   </tbody>
                 </table>
               </div>
