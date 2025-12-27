@@ -30,7 +30,7 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => (
   <Html>
     <Head />
     <Body style={main}>
-      <Preview>Your Dress for Less order is on its way!</Preview>
+      <Preview>Your Dress for Less has been received!</Preview>
       <Container style={container}>
         <Hr style={global.hr} />
         <Section style={message}>
@@ -45,7 +45,8 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => (
             Your dress has been confimred
           </Heading>
           <Text style={global.text}>
-            You order is on its way. Use the link above to track its progress.
+            You order is on its way soon. We will send you a tracking link once
+            shipped.
           </Text>
           <Text style={{ ...global.text, marginTop: 24 }}>
             Thank you for booking with Dress for Less. We hope you have a
@@ -54,12 +55,46 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => (
           </Text>
         </Section>
         <Hr style={global.hr} />
-        <Section style={global.defaultPadding}>
-          <Text style={adressTitle}>Shipping to: {orderReceipt.name}</Text>
-          <Text style={{ ...global.text, fontSize: 14 }}>
-            {orderReceipt.address}, {orderReceipt.city}
-          </Text>
-        </Section>
+        {orderReceipt.address && (
+          <Section style={global.defaultPadding}>
+            <Text style={adressTitle}>Shipping to: {orderReceipt.name}</Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.address.address}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.address.suburb}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.address.city}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.address.country}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.address.postCode}
+            </Text>
+          </Section>
+        )}
+        {orderReceipt.billingAddress && (
+          <Section style={global.defaultPadding}>
+            <Text style={adressTitle}>Shipping to: {orderReceipt.name}</Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.billingAddress.address}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.billingAddress.suburb}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.billingAddress.city}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.billingAddress.country}
+            </Text>
+            <Text style={{ ...global.text, fontSize: 10 }}>
+              {orderReceipt.billingAddress.postCode}
+            </Text>
+          </Section>
+        )}
         <Hr style={global.hr} />
         <Section
           style={{ ...paddingX, paddingTop: "40px", paddingBottom: "40px" }}
