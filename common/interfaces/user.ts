@@ -7,7 +7,7 @@ export interface IUser {
   password?: string;
   mobileNumber: string;
   instagramHandle?: string;
-  photo: string;
+  photo?: string;
 }
 
 export interface ICart {

@@ -40,8 +40,7 @@ const Cart = () => {
     userInfo?.name &&
     userInfo?.email &&
     userInfo.instagramHandle &&
-    userInfo.mobileNumber &&
-    userInfo.photo
+    userInfo.mobileNumber // removed photo check
       ? true
       : false;
 

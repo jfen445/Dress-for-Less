@@ -47,8 +47,30 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
     } else if (userInfo && userInfo.photo) {
       return userInfo.photo;
     } else {
-      return "https://www.gravatar.com/avatar/";
+      let letter = "U";
+      if (session?.user?.name && session.user.name.length > 0) {
+        letter = session.user.name.charAt(0).toUpperCase();
+      } else if (session?.user?.email && session.user.email.length > 0) {
+        letter = session.user.email.charAt(0).toUpperCase();
+      }
+      return makeLetterAvatar(letter);
     }
+  };
+
+  const makeLetterAvatar = (
+    letter: string,
+    size = 100,
+    bg = "#FFDCE6",
+    fg = "#1F2937",
+    font = "Arial, Helvetica, sans-serif"
+  ) => {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'>
+    <rect width='100%' height='100%' fill='${bg}' rx='8' ry='8'/>
+    <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='${font}' font-size='${Math.floor(
+      size * 0.48
+    )}' fill='${fg}' font-weight='600'>${letter}</text>
+  </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   };
 
   React.useEffect(() => {
