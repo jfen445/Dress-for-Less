@@ -53,6 +53,7 @@ const Cart = () => {
   const getUserCart = React.useCallback(async () => {
     if (userInfo && userInfo?._id) {
       setIsLoading(true);
+      setErr(false);
       await getCart(userInfo?._id)
         .then((data) => {
           const cartItems = data.data as unknown as CartType[];
@@ -80,7 +81,7 @@ const Cart = () => {
             setProducts(dresses);
           });
         })
-        .catch((err) => {
+        .catch(() => {
           setErr(true);
         })
         .finally(() => setIsLoading(false));
