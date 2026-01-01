@@ -114,7 +114,7 @@ const OrderSuccess = ({
 
   return (
     <>
-      {!bookings ? (
+      {!bookings && !bookingDresses ? (
         <div className="h-screen flex items-center justify-center">
           <Spinner />
         </div>

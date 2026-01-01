@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../lib/db/db";
-import { BookingSchema } from "../../lib/db/schema";
+import { BookingSchema, UserSchema } from "../../lib/db/schema";
 import { IBooking } from "../../common/interfaces/user";
 import {
   checkDuplicateBooking,
@@ -11,6 +11,7 @@ import {
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
 import { Resend } from "resend";
+import OrderReceiptEmail from "@/components/Emails/OrderReceipt";
 
 export default async function handler(
   req: NextApiRequest,
@@ -137,22 +138,8 @@ export default async function handler(
 
     await BookingSchema.updateOne(filter, booking);
 
-    sendEmailConfirmation(booking);
-
     res
       .status(200)
       .json({ message: "Booking updated successfully", booking: booking });
   }
-}
-
-// TODO: Implement email confirmation functionality
-async function sendEmailConfirmation(booking: Booking) {
-  const resend = new Resend(process.env.RESEND_API_KEY as string);
-
-  // await resend.emails.send({
-  //   from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
-  //   to: [],
-  //   subject: "Your Dress for Less Booking Confirmation",
-  //   react: OrderReceiptEmail(),
-  // });
 }

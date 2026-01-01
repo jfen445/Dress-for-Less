@@ -20,6 +20,10 @@ interface MagicLinkEmailProps {
   host?: string;
 }
 
+const baseUrl = process.env.NEXT_BASE_URL
+  ? `${process.env.NEXT_BASE_URL}`
+  : "www.dressforlessnz.com";
+
 export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
   <Html>
     <Head />
@@ -27,7 +31,7 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
     <Body style={main}>
       <Container style={container}>
         <Img
-          src={DFLLogo.src}
+          src={baseUrl ? `${baseUrl}/dfl-logo-transparent.jpeg` : DFLLogo.src}
           width="42"
           height="42"
           alt="Dress for Less"

@@ -7,7 +7,6 @@ import {
   Hr,
   Html,
   Img,
-  Link,
   Preview,
   Row,
   Section,
@@ -18,128 +17,131 @@ import DFLLogo from "../../.../../../../public/dfl-logo-transparent.jpeg";
 import { OrderReceipt } from "../../../../common/types";
 import dayjs from "dayjs";
 
-const baseUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "";
+const baseUrl = process.env.NEXT_BASE_URL
+  ? `${process.env.NEXT_BASE_URL}`
+  : "www.dressforlessnz.com";
 
 interface IOrderReceipt {
-  orderReceipt: OrderReceipt;
+  orderReceipt: OrderReceipt[];
 }
 
-const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => (
-  <Html>
-    <Head />
-    <Body style={main}>
-      <Preview>Your Dress for Less has been received!</Preview>
-      <Container style={container}>
-        <Hr style={global.hr} />
-        <Section style={message}>
-          <Img
-            src={DFLLogo.src}
-            width="66"
-            height="22"
-            alt="Dres for Less"
-            style={{ margin: "auto" }}
-          />
-          <Heading style={global.heading}>
-            Your dress has been confimred
-          </Heading>
-          <Text style={global.text}>
-            You order is on its way soon. We will send you a tracking link once
-            shipped.
-          </Text>
-          <Text style={{ ...global.text, marginTop: 24 }}>
-            Thank you for booking with Dress for Less. We hope you have a
-            wonderful time at your event and enjoy wearing your chosen dress. If
-            you have any questions or need assistance, our team is here to help.
-          </Text>
-        </Section>
-        <Hr style={global.hr} />
-        {orderReceipt.address && (
-          <Section style={global.defaultPadding}>
-            <Text style={adressTitle}>Shipping to: {orderReceipt.name}</Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.address.address}
+const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
+  const orderDetails = orderReceipt[0];
+  return (
+    <Html>
+      <Head />
+      <Body style={main}>
+        <Preview>Your Dress for Less has been received!</Preview>
+        <Container style={container}>
+          <Hr style={global.hr} />
+          <Section style={message}>
+            <Img
+              src={
+                baseUrl ? `${baseUrl}/dfl-logo-transparent.jpeg` : DFLLogo.src
+              }
+              width="66"
+              height="22"
+              alt="Dres for Less"
+              style={{ margin: "auto" }}
+            />
+            <Heading style={global.heading}>
+              Your dress has been confimred
+            </Heading>
+            <Text style={global.text}>
+              You order is on its way soon. We will send you a tracking link
+              once shipped.
             </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.address.suburb}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.address.city}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.address.country}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.address.postCode}
+            <Text style={{ ...global.text, marginTop: 24 }}>
+              Thank you for booking with Dress for Less. We hope you have a
+              wonderful time at your event and enjoy wearing your chosen dress.
+              If you have any questions or need assistance, our team is here to
+              help.
             </Text>
           </Section>
-        )}
-        {orderReceipt.billingAddress && (
-          <Section style={global.defaultPadding}>
-            <Text style={adressTitle}>Shipping to: {orderReceipt.name}</Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.billingAddress.address}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.billingAddress.suburb}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.billingAddress.city}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.billingAddress.country}
-            </Text>
-            <Text style={{ ...global.text, fontSize: 10 }}>
-              {orderReceipt.billingAddress.postCode}
-            </Text>
-          </Section>
-        )}
-        <Hr style={global.hr} />
-        <Section
-          style={{ ...paddingX, paddingTop: "40px", paddingBottom: "40px" }}
-        >
-          <Row>
-            <Column>
-              <Img
-                src={orderReceipt.dressImage}
-                alt={orderReceipt.dressName}
-                style={{ float: "left" }}
-                width="260px"
-              />
-            </Column>
-            <Column style={{ verticalAlign: "top", paddingLeft: "12px" }}>
-              <Text style={{ ...paragraph, fontWeight: "500" }}>
-                {orderReceipt.dressName}
+          <Hr style={global.hr} />
+          {orderDetails.address && (
+            <Section style={global.defaultPadding}>
+              <Text style={adressTitle}>Shipping to: {orderDetails.name}</Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.address.address}
               </Text>
-              <Text style={global.text}>Size {orderReceipt.size}</Text>
-            </Column>
-          </Row>
-        </Section>
-        <Hr style={global.hr} />
-        <Section style={global.defaultPadding}>
-          <Row style={{ display: "inline-flex", marginBottom: 40 }}>
-            {/* <Column style={{ width: "170px" }}>
-              <Text style={global.paragraphWithBold}>Order Number</Text>
-              <Text style={track.number}>C0106373851</Text>
-            </Column> */}
-            <Column>
-              <Text style={global.paragraphWithBold}>Booked for</Text>
-              <Text style={track.number}>
-                {dayjs(orderReceipt.dateBooked).format("MMMM D, YYYY")}
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.address.suburb}
               </Text>
-            </Column>
-          </Row>
-          {/* <Row>
-            <Column align="center">
-              <Link style={global.button}>Order Status</Link>
-            </Column>
-          </Row> */}
-        </Section>
-      </Container>
-    </Body>
-  </Html>
-);
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.address.city}
+              </Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.address.country}
+              </Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.address.postCode}
+              </Text>
+            </Section>
+          )}
+          {orderDetails.billingAddress && (
+            <Section style={global.defaultPadding}>
+              <Text style={adressTitle}>Billed to: {orderDetails.name}</Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.billingAddress.address}
+              </Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.billingAddress.suburb}
+              </Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.billingAddress.city}
+              </Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.billingAddress.country}
+              </Text>
+              <Text style={{ ...global.text, fontSize: 10 }}>
+                {orderDetails.billingAddress.postCode}
+              </Text>
+            </Section>
+          )}
+          <Hr style={global.hr} />
+          {orderReceipt.map((orderReceipt) => (
+            <>
+              <Section
+                style={{
+                  ...paddingX,
+                  paddingTop: "40px",
+                  paddingBottom: "40px",
+                }}
+              >
+                <Row>
+                  <Column>
+                    <Img
+                      src={orderReceipt.dressImage}
+                      alt={orderReceipt.dressName}
+                      style={{ float: "left" }}
+                      width="260px"
+                    />
+                  </Column>
+                  <Column style={{ verticalAlign: "top", paddingLeft: "12px" }}>
+                    <Text style={{ ...paragraph, fontWeight: "500" }}>
+                      {orderReceipt.dressName}
+                    </Text>
+                    <Text style={global.text}>Size {orderReceipt.size}</Text>
+                  </Column>
+                </Row>
+                <Row style={{ display: "inline-flex", marginBottom: 40 }}>
+                  <Column>
+                    <Text style={global.paragraphWithBold}>Booked for</Text>
+                    <Text style={track.number}>
+                      {dayjs(orderReceipt.dateBooked).format("MMMM D, YYYY")}
+                    </Text>
+                  </Column>
+                </Row>
+              </Section>
+              <Hr style={global.hr} />
+            </>
+          ))}
+        </Container>
+      </Body>
+    </Html>
+  );
+};
 
 export default OrderReceiptEmail;
 
