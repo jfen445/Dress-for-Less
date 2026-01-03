@@ -32,8 +32,7 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
       <Container style={container}>
         <Img
           src={baseUrl ? `${baseUrl}/dfl-logo-transparent.jpeg` : DFLLogo.src}
-          width="42"
-          height="42"
+          width="90"
           alt="Dress for Less"
           style={logo}
         />
@@ -58,9 +57,9 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
 export default MagicLinkEmail;
 
 const logo = {
-  borderRadius: 21,
-  width: 42,
-  height: 42,
+  borderRadius: 0,
+  width: 90,
+  height: "auto",
 };
 
 const main = {
