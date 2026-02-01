@@ -31,3 +31,12 @@ export async function getCartItem(
 export async function removeItemFromCart(cartId: String) {
   return CartSchema.findByIdAndDelete(cartId);
 }
+
+export async function removeItemFromCartByFields(
+  userId: String,
+  dressId: String,
+  dateBooked: String,
+  size: String
+) {
+  return CartSchema.findOneAndDelete({ userId, dressId, dateBooked, size });
+}

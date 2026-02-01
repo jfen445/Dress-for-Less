@@ -1,13 +1,17 @@
 import axios, { AxiosError } from "axios";
 import { Booking } from "../../common/types";
 
-export async function createBooking(booking: Booking[]) {
+export async function createBooking(booking: Booking[], paymentIntent: string) {
   try {
-    const response = await axios.post(`/api/booking`, booking, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await axios.post(
+      `/api/booking`,
+      { booking, paymentIntent },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     return response;
   } catch (error) {
@@ -76,6 +80,20 @@ export async function getAllBookingsByUserId(userId: string) {
     });
 
     return response;
+  } catch (error) {
+    const err = error as AxiosError;
+    throw new Error((err?.response?.data as any).message);
+  }
+}
+
+export async function checkValidBooking(booking: Booking[]) {
+  try {
+    await axios.post(`/api/validateBooking`, {
+      booking,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error) {
     const err = error as AxiosError;
     throw new Error((err?.response?.data as any).message);

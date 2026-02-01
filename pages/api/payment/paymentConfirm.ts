@@ -5,6 +5,7 @@ import OrderReceiptEmail from "@/components/Emails/OrderReceipt";
 import { Resend } from "resend";
 import { getDress } from "../../../sanity/sanity.query";
 import { Booking, OrderReceipt, User } from "../../../common/types";
+import { removeItemFromCartByFields } from "../../../lib/db/cart-dao";
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,8 +17,26 @@ export default async function handler(
     const filter = { paymentIntent: intent };
     const update = { paymentSuccess: true };
     try {
-      await BookingSchema.updateMany(filter, update);
+      const result = await BookingSchema.updateMany(filter, update);
+
       const bookings = await getBookingsByPaymentIntent(intent);
+
+      if (result.modifiedCount === 0) {
+        res
+          .status(200)
+          .json({ message: "No bookings updated", booking: bookings });
+        return;
+      }
+
+      for (const booking of bookings) {
+        await removeItemFromCartByFields(
+          booking.userId,
+          booking.dressId,
+          booking.dateBooked,
+          booking.size
+        );
+      }
+
       sendEmailConfirmation(bookings);
 
       res.status(200).json({ message: "Update successful", booking: bookings });

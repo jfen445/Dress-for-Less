@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../lib/db/db";
-import { BookingSchema, UserSchema } from "../../lib/db/schema";
+import { BookingSchema } from "../../lib/db/schema";
 import { IBooking } from "../../common/interfaces/user";
 import {
   checkDuplicateBooking,
@@ -11,7 +11,9 @@ import {
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
 import { Resend } from "resend";
-import OrderReceiptEmail from "@/components/Emails/OrderReceipt";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export default async function handler(
   req: NextApiRequest,
@@ -48,8 +50,18 @@ export default async function handler(
 
     res.status(200).json(bookingItems);
   } else if (req.method == "POST") {
-    const dresses = req.body as Booking[];
+    const dresses = req.body.booking as Booking[];
+    const paymentIntent = req.body.paymentIntent;
+
     var errorResponse: String[] = [];
+
+    const payment = await stripe.paymentIntents.retrieve(paymentIntent);
+
+    if (payment.status !== "succeeded") {
+      return res.status(400).json({
+        message: "Payment not confirmed. Please try again.",
+      });
+    }
 
     for (const dress of dresses) {
       const checkBooking = await checkDuplicateBooking(
@@ -96,7 +108,7 @@ export default async function handler(
         tracking: dress.tracking,
         isShipped: dress.isShipped,
         isReturned: dress.isReturned,
-        paymentIntent: dress.paymentIntent,
+        paymentIntent: paymentIntent,
         paymentSuccess: false,
         size: dress.size,
         status: dress.status,
