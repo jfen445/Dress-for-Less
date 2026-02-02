@@ -46,12 +46,12 @@ const OrderSuccess = ({
     // return String(delivery).charAt(0).toUpperCase() + String(delivery).slice(1);
   }, [bookings]);
 
+  const paymentIntent = router.query.paymentIntent;
+
   React.useEffect(() => {
     const confirm = async () => {
-      if (router.query.payment_intent_client_secret) {
-        await confirmBooking(
-          router.query.payment_intent_client_secret.toString()
-        )
+      if (paymentIntent) {
+        await confirmBooking(paymentIntent.toString())
           .then(async (data) => {
             const bookingData = data.data.booking as Booking[];
             setBookings(bookingData);
