@@ -11,8 +11,9 @@ import {
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
 import { Resend } from "resend";
-import OrderReceiptEmail from "@/components/Emails/OrderReceipt";
-import { SendVerificationRequestParams } from "next-auth/providers/email";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export default async function handler(
   req: NextApiRequest,
@@ -49,8 +50,18 @@ export default async function handler(
 
     res.status(200).json(bookingItems);
   } else if (req.method == "POST") {
-    const dresses = req.body as Booking[];
+    const dresses = req.body.booking as Booking[];
+    const paymentIntent = req.body.paymentIntent;
+
     var errorResponse: String[] = [];
+
+    const payment = await stripe.paymentIntents.retrieve(paymentIntent);
+
+    if (payment.status !== "succeeded") {
+      return res.status(400).json({
+        message: "Payment not confirmed. Please try again.",
+      });
+    }
 
     for (const dress of dresses) {
       const checkBooking = await checkDuplicateBooking(
@@ -72,24 +83,35 @@ export default async function handler(
     }
 
     var bookedDresses: IBooking[] = [];
-    dresses.forEach(async (dress) => {
+    for (const dress of dresses) {
       let booking: IBooking = {
         dressId: dress.dressId,
         userId: dress.userId,
         dateBooked: dress.dateBooked,
         blockOutPeriod: dress.blockOutPeriod,
-        address: dress.address,
+        address: {
+          address: dress.address?.address ?? "",
+          suburb: dress.address?.suburb ?? "",
+          city: dress.address?.city ?? "",
+          country: dress.address?.country ?? "",
+          postCode: dress.address?.postCode ?? "",
+        },
+        billingAddress: {
+          address: dress.billingAddress.address,
+          suburb: dress.billingAddress.suburb,
+          city: dress.billingAddress.city,
+          country: dress.billingAddress.country,
+          postCode: dress.billingAddress.postCode,
+        },
         price: dress.price,
-        city: dress.city,
-        country: dress.country,
-        postCode: dress.postCode,
         deliveryType: dress.deliveryType,
         tracking: dress.tracking,
         isShipped: dress.isShipped,
         isReturned: dress.isReturned,
-        paymentIntent: dress.paymentIntent,
+        paymentIntent: paymentIntent,
         paymentSuccess: false,
         size: dress.size,
+        status: dress.status,
       };
 
       bookedDresses = bookedDresses.concat(booking);
@@ -103,7 +125,7 @@ export default async function handler(
       const options = { upsert: true };
 
       await BookingSchema.updateOne(filter, booking, options);
-    });
+    }
 
     res
       .status(200)
@@ -128,22 +150,8 @@ export default async function handler(
 
     await BookingSchema.updateOne(filter, booking);
 
-    sendEmailConfirmation(booking);
-
     res
       .status(200)
       .json({ message: "Booking updated successfully", booking: booking });
   }
-}
-
-// TODO: Implement email confirmation functionality
-async function sendEmailConfirmation(booking: Booking) {
-  const resend = new Resend(process.env.RESEND_API_KEY as string);
-
-  // await resend.emails.send({
-  //   from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
-  //   to: [],
-  //   subject: "Your Dress for Less Booking Confirmation",
-  //   react: OrderReceiptEmail(),
-  // });
 }

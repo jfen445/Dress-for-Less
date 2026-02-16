@@ -12,12 +12,16 @@ import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
 import AddressForm from "./AddressForm";
 import BillingForm from "./BillingForm";
+import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const deliveryMethods = [
-  { id: "delivery", title: "Full delivery ($15)" },
-  { id: "pickup", title: "Full pick up (Free)" },
-  { id: "pickup/delivery", title: "Pick up and delivery return ($7.50)" },
-  { id: "delivery/pickup", title: "Delivery and drop off ($7.50)" },
+  { id: DeliveryType.Delivery, title: "Full delivery ($15)" },
+  { id: DeliveryType.Pickup, title: "Full pick up (Free)" },
+  {
+    id: DeliveryType.PickupDelivery,
+    title: "Pick up and delivery return ($7.50)",
+  },
+  { id: DeliveryType.DeliveryPickup, title: "Delivery and drop off ($7.50)" },
 ];
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
@@ -38,6 +42,11 @@ const CheckoutForm = () => {
     null
   );
   const [addressError, setAddressError] = React.useState<boolean>(false);
+  const [billingAddressError, setBillingAddressError] =
+    React.useState<boolean>(false);
+  const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
+  const [termsError, setTermsError] = React.useState<boolean>(false);
+  React.useState<boolean>(false);
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
@@ -51,6 +60,7 @@ const CheckoutForm = () => {
   };
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    let isError = false;
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -61,28 +71,6 @@ const CheckoutForm = () => {
       city: { value: string };
       region: { value: string };
       postCode: { value: string };
-    };
-
-    if (
-      !formElements.address.value ||
-      !formElements.suburb.value ||
-      !formElements.city.value ||
-      !formElements.region.value ||
-      !formElements.postCode.value
-    ) {
-      setAddressError(true);
-      return;
-    }
-
-    const address: Address = {
-      address: formElements.address.value,
-      suburb: formElements.suburb.value,
-      city: formElements.city.value,
-      country: formElements.region.value,
-      postCode: formElements.postCode.value,
-    };
-
-    const billingFormElements = form.elements as typeof form.elements & {
       billingAddress: { value: string };
       billingSuburb: { value: string };
       billingCity: { value: string };
@@ -90,19 +78,70 @@ const CheckoutForm = () => {
       billingPostCode: { value: string };
     };
 
-    const billingAddress: Address = !sameAsShipping
+    if (!termsAccepted) {
+      isError = true;
+      setTermsError(true);
+    } else {
+      setTermsError(false);
+    }
+
+    if (deliveryOption !== DeliveryType.Pickup) {
+      if (
+        !formElements.address.value ||
+        !formElements.suburb.value ||
+        !formElements.city.value ||
+        !formElements.region.value ||
+        !formElements.postCode.value
+      ) {
+        isError = true;
+        setAddressError(true);
+      } else {
+        setAddressError(false);
+      }
+    }
+
+    const address: Address | null =
+      deliveryOption === DeliveryType.Pickup
+        ? null
+        : {
+            address: formElements.address.value,
+            suburb: formElements.suburb.value,
+            city: formElements.city.value,
+            country: formElements.region.value,
+            postCode: formElements.postCode.value,
+          };
+
+    if (
+      !sameAsShipping &&
+      (!formElements.billingAddress.value ||
+        !formElements.billingSuburb.value ||
+        !formElements.billingCity.value ||
+        !formElements.billingRegion.value ||
+        !formElements.billingPostCode.value)
+    ) {
+      setBillingAddressError(true);
+      isError = true;
+    } else {
+      setBillingAddressError(false);
+    }
+
+    if (isError) return;
+
+    const billingAddress: Address | null = !sameAsShipping
       ? {
-          address: billingFormElements.billingAddress.value,
-          suburb: billingFormElements.billingSuburb.value,
-          city: billingFormElements.billingCity.value,
-          country: billingFormElements.billingRegion.value,
-          postCode: billingFormElements.billingPostCode.value,
+          address: formElements.billingAddress.value,
+          suburb: formElements.billingSuburb.value,
+          city: formElements.billingCity.value,
+          country: formElements.billingRegion.value,
+          postCode: formElements.billingPostCode.value,
         }
       : address;
 
     setUserAddress(address);
     setBillingAddress(billingAddress);
     setAddressError(false);
+    setBillingAddressError(false);
+    setTermsError(false);
 
     setPayment(true);
     getSecret();
@@ -155,6 +194,13 @@ const CheckoutForm = () => {
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 
+  const onDeliveryMethodChanged = (id: DeliveryType) => {
+    setDeliveryOption(id);
+    if (id === DeliveryType.Pickup) {
+      setSameAsShipping(false);
+    }
+  };
+
   const RadioGroup = () => {
     return (
       <div>
@@ -174,7 +220,9 @@ const CheckoutForm = () => {
                         name="notification-method"
                         type="radio"
                         className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                        onChange={(e) => setDeliveryOption(e.target.id)}
+                        onChange={(e) =>
+                          onDeliveryMethodChanged(e.target.id as DeliveryType)
+                        }
                       />
                       <label
                         htmlFor={deliveryMethod.id}
@@ -244,7 +292,7 @@ const CheckoutForm = () => {
             </section>
             {isBookingValid() && (
               <>
-                {deliveryOption !== "pickup" && (
+                {deliveryOption !== DeliveryType.Pickup && (
                   <section aria-labelledby="shipping-heading" className="mt-10">
                     <h2
                       id="shipping-heading"
@@ -271,7 +319,7 @@ const CheckoutForm = () => {
                     Billing information
                   </h2>
 
-                  {deliveryOption !== "pickup" && (
+                  {deliveryOption !== DeliveryType.Pickup && (
                     <div className="mt-6 flex items-center">
                       <input
                         checked={sameAsShipping}
@@ -292,8 +340,51 @@ const CheckoutForm = () => {
                     </div>
                   )}
 
-                  {!sameAsShipping ||
-                    (deliveryOption === "pickup" && <BillingForm />)}
+                  {(!sameAsShipping ||
+                    deliveryOption === DeliveryType.Pickup) && (
+                    <>
+                      <BillingForm />
+                      {billingAddressError && (
+                        <div className="mt-2 text-sm text-red-600">
+                          Please fill in all required fields with a valid
+                          address.
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className="mt-6 flex items-center">
+                    <input
+                      checked={termsAccepted}
+                      onChange={() => setTermsAccepted(!termsAccepted)}
+                      id="terms-and-conditions"
+                      name="terms-and-conditions"
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div className="ml-2">
+                      <label
+                        htmlFor="same-as-shipping"
+                        className="text-sm font-medium text-gray-900"
+                      >
+                        I agree to the{" "}
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_SERVER_URL}/policies`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Dress for Less terms and conditions
+                        </a>
+                      </label>
+                    </div>
+                  </div>
+                  {termsError && (
+                    <div className="mt-2 text-sm text-red-600">
+                      You must accept the terms and conditions to proceed.
+                    </div>
+                  )}
                 </section>
               </>
             )}

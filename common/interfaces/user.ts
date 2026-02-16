@@ -1,3 +1,5 @@
+import { BookingStatus } from "../enums/BookingStatus";
+
 export interface IUser {
   mongoID?: string;
   name: string;
@@ -5,7 +7,7 @@ export interface IUser {
   password?: string;
   mobileNumber: string;
   instagramHandle?: string;
-  photo: string;
+  photo?: string;
 }
 
 export interface ICart {
@@ -21,10 +23,8 @@ export interface IBooking {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
+  address: IAddress;
+  billingAddress: IAddress;
   deliveryType: string;
   tracking: string;
   isShipped: boolean;
@@ -32,4 +32,13 @@ export interface IBooking {
   paymentIntent: string;
   paymentSuccess: boolean;
   size: String;
+  status: BookingStatus;
+}
+
+export interface IAddress {
+  address: string;
+  suburb?: string;
+  city?: string;
+  country?: string;
+  postCode?: string;
 }

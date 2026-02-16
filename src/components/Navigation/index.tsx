@@ -334,7 +334,7 @@ const NavigationBar = () => {
                       <span className="absolute -inset-1.5" />
                       <span className="sr-only">Open user menu</span>
                       <img
-                        alt=""
+                        alt="Profile image"
                         src={getUserProfleImage()}
                         className="h-8 w-8 rounded-full border-2 border-secondary-pink"
                         referrerPolicy="no-referrer"

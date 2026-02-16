@@ -28,7 +28,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    console.log("HEREEE");
     const cart = await getCart(userInfo?._id)
       .then((res) => res.data)
       .catch((err) => {

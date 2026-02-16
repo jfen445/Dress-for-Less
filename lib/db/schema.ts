@@ -20,17 +20,30 @@ const userSchema = new Schema({
 const UserSchema =
   mongoose.models.AllUsers ?? mongoose.model("AllUsers", userSchema);
 
+const addressSchema = new Schema({
+  address: { type: String, required: false },
+  suburb: { type: String, required: false },
+  city: { type: String, required: false },
+  country: { type: String, required: false },
+  postCode: { type: String, required: false },
+});
+
+const billingAddressSchema = new Schema({
+  address: { type: String, required: false },
+  suburb: { type: String, required: false },
+  city: { type: String, required: false },
+  country: { type: String, required: false },
+  postCode: { type: String, required: false },
+});
+
 const bookingSchema = new Schema(
   {
     dressId: { type: String, required: true },
     userId: { type: mongoose.Schema.ObjectId, required: true },
     dateBooked: { type: String, required: true },
     blockOutPeriod: { type: [String], required: true },
-    address: { type: String, required: false },
-    city: { type: String, required: false },
-    country: { type: String, required: false },
-    postCode: { type: String, required: false },
-    price: { type: String, required: false },
+    address: { type: addressSchema, required: false },
+    billingAddress: { type: billingAddressSchema, required: false },
     deliveryType: { type: String, required: true, default: "delivery" },
     tracking: { type: String, required: false },
     isShipped: { type: Boolean, required: true, default: false },
@@ -38,6 +51,8 @@ const bookingSchema = new Schema(
     paymentIntent: { type: String, required: true },
     paymentSuccess: { type: Boolean, required: true, default: false },
     size: { type: String, required: true },
+    price: { type: Number, required: true },
+    status: { type: String, required: true },
   },
   { timestamps: true }
 );

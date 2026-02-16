@@ -5,10 +5,15 @@ import AdminBookings from "@/components/Admin/Bookings";
 import AdminDresses from "@/components/Admin/Dresses";
 import { useUserContext } from "@/context/UserContext";
 import ErrorPage from "@/components/ErrorPage";
+import AdminBookingContextProvider from "@/context/AdminBookingContext";
+import { AdminTabs } from "../../common/enums/AdminTabs";
+import { DeliveryType } from "../../common/enums/DeliveryType";
 
 const AdminPage = () => {
   const { userInfo } = useUserContext();
-  const [selectedTab, setSelectedTab] = React.useState<String>("Bookings");
+  const [selectedTab, setSelectedTab] = React.useState<String>(
+    AdminTabs.DeliveryBookings
+  );
 
   return (
     <>
@@ -33,10 +38,26 @@ const AdminPage = () => {
                     selected={selectedTab}
                     setSelectedTab={setSelectedTab}
                   />
-
-                  {selectedTab == "Bookings" && <AdminBookings />}
-                  {selectedTab == "Users" && <AdminUsers />}
-                  {selectedTab == "Dresses" && <AdminDresses />}
+                  <AdminBookingContextProvider>
+                    {selectedTab == AdminTabs.DeliveryBookings && (
+                      <AdminBookings
+                        deliveryType={[
+                          DeliveryType.Delivery,
+                          DeliveryType.DeliveryPickup,
+                        ]}
+                      />
+                    )}
+                    {selectedTab == AdminTabs.PickupBookings && (
+                      <AdminBookings
+                        deliveryType={[
+                          DeliveryType.Pickup,
+                          DeliveryType.PickupDelivery,
+                        ]}
+                      />
+                    )}
+                    {selectedTab == AdminTabs.Users && <AdminUsers />}
+                    {selectedTab == AdminTabs.Dresses && <AdminDresses />}
+                  </AdminBookingContextProvider>
                 </div>
               </div>
             </main>

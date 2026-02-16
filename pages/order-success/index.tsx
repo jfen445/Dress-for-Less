@@ -1,15 +1,14 @@
 import React from "react";
 import Stripe from "stripe";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useRouter } from "next/router";
 import { confirmBooking } from "@/api/booking";
 import { Booking, DressType } from "../../common/types";
-import { getDress } from "../../sanity/sanity.query";
-import dress from "../../common/schemas/dress";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { DeliveryType } from "../../common/enums/DeliveryType";
 
 const deliveryMethods = [
   { id: "delivery", title: "Full delivery" },
@@ -47,24 +46,20 @@ const OrderSuccess = ({
     // return String(delivery).charAt(0).toUpperCase() + String(delivery).slice(1);
   }, [bookings]);
 
-  const shippingCost = () => {
-    const type = deliveryType();
-  };
+  const paymentIntent = router.query.paymentIntent;
 
   React.useEffect(() => {
     const confirm = async () => {
-      if (router.query.payment_intent_client_secret) {
-        await confirmBooking(
-          router.query.payment_intent_client_secret.toString()
-        )
+      if (paymentIntent) {
+        await confirmBooking(paymentIntent.toString())
           .then(async (data) => {
             const bookingData = data.data.booking as Booking[];
             setBookings(bookingData);
             const deliveryStatus = bookingData[0].deliveryType;
 
-            if (deliveryStatus == "delivery") {
+            if (deliveryStatus == DeliveryType.Delivery) {
               setDeliveryCost(15);
-            } else if (deliveryStatus == "pickup") {
+            } else if (deliveryStatus == DeliveryType.Pickup) {
               setDeliveryCost(0);
             } else {
               setDeliveryCost(7.5);
@@ -101,14 +96,6 @@ const OrderSuccess = ({
     });
   }, [bookings, getDressWithId]);
 
-  function getDeliveryMethodTitle() {
-    const method = deliveryMethods.find(
-      (method) => method.id === deliveryType()
-    );
-
-    return method ? method.title : null; // Return title if found, otherwise null
-  }
-
   function addStringNumbers(num1: string, num2: number) {
     // Convert strings to numbers
     const number1 = parseFloat(num1);
@@ -116,18 +103,18 @@ const OrderSuccess = ({
 
     // Check if conversion is successful
     if (isNaN(number1) || isNaN(number2)) {
-      throw new Error(
-        "Invalid input: Both inputs must be valid numbers as strings."
-      );
+      return 0; // or handle the error as needed
     }
 
     // Perform the addition
     return number1 + number2;
   }
 
+  const bookingDetails = bookings[0];
+
   return (
     <>
-      {!bookings ? (
+      {!bookings && !bookingDresses ? (
         <div className="h-screen flex items-center justify-center">
           <Spinner />
         </div>
@@ -139,7 +126,7 @@ const OrderSuccess = ({
                 Thank you!
               </h1>
               <p className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-                {"It's on the way!"}
+                {"Booking submitted!"}
               </p>
               <p className="mt-2 text-base text-gray-500">
                 Your order will be with you soon.
@@ -161,8 +148,8 @@ const OrderSuccess = ({
                   className="flex space-x-6 border-b border-gray-200 py-10"
                 >
                   <img
-                    alt={dress.images[0]}
-                    src={dress.images[0]}
+                    alt={dress?.images[0]}
+                    src={dress?.images[0]}
                     className="h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40"
                   />
                   <div className="flex flex-auto flex-col">
@@ -207,17 +194,34 @@ const OrderSuccess = ({
 
                 <h4 className="sr-only">Addresses</h4>
                 <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
-                  <div>
-                    <dt className="font-medium text-gray-900">
-                      Shipping address
-                    </dt>
-                    <dd className="mt-2 text-gray-700">
-                      <address className="not-italic">
-                        <span className="block">{userInfo?.name}</span>
-                        <span className="block">{bookings[0]?.address}</span>
-                      </address>
-                    </dd>
-                  </div>
+                  {bookingDetails?.deliveryType !== DeliveryType.Pickup &&
+                    bookingDetails?.address && (
+                      <div>
+                        <dt className="font-medium text-gray-900">
+                          Shipping address
+                        </dt>
+                        <dd className="mt-2 text-gray-700">
+                          <address className="not-italic">
+                            <span className="block">{userInfo?.name}</span>
+                            <span className="block">
+                              {bookingDetails?.address.address}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.suburb}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.city}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.country}
+                            </span>
+                            <span className="block">
+                              {bookingDetails?.address.postCode}
+                            </span>
+                          </address>
+                        </dd>
+                      </div>
+                    )}
                   <div>
                     <dt className="font-medium text-gray-900">
                       Billing address
@@ -225,7 +229,23 @@ const OrderSuccess = ({
                     <dd className="mt-2 text-gray-700">
                       <address className="not-italic">
                         <span className="block">{userInfo?.name}</span>
-                        <span className="block">{bookings[0]?.address}</span>
+                        <span className="block">
+                          <span className="block">
+                            {bookingDetails?.billingAddress.address}
+                          </span>
+                          <span className="block">
+                            {bookingDetails?.billingAddress.suburb}
+                          </span>
+                          <span className="block">
+                            {bookingDetails?.billingAddress.city}
+                          </span>
+                          <span className="block">
+                            {bookingDetails?.billingAddress.country}
+                          </span>
+                          <span className="block">
+                            {bookingDetails?.billingAddress.postCode}
+                          </span>
+                        </span>
                       </address>
                     </dd>
                   </div>
@@ -238,7 +258,7 @@ const OrderSuccess = ({
                       Shipping method
                     </dt>
                     <dd className="mt-2 text-gray-700">
-                      <p>{getDeliveryMethodTitle()}</p>
+                      <p>{bookingDetails?.deliveryType}</p>
                     </dd>
                   </div>
                 </dl>

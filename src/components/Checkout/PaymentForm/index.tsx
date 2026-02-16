@@ -6,16 +6,18 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import axios from "axios";
 import React, { FormEvent } from "react";
 import { ProductContext } from "..";
 import { Stripe } from "@stripe/stripe-js";
 import Button from "@/components/Button";
 import { Address, Booking } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
-import { createBooking } from "@/api/booking";
+import { checkValidBooking, createBooking } from "@/api/booking";
 import dayjs from "dayjs";
 import { removeFromCart } from "@/api/cart";
+import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import Toast, { ToastType } from "@/components/Toast";
+import { useRouter } from "next/router";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -30,6 +32,7 @@ const PaymentForm = ({
   clientSecret,
   billingAddress,
 }: IPaymentForm) => {
+  const router = useRouter();
   const { userInfo } = useUserContext();
   const { products, deliveryOption } = React.useContext(ProductContext);
   const stripe = useStripe();
@@ -37,6 +40,11 @@ const PaymentForm = ({
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>();
   const [email, setEmail] = React.useState<string>();
+  const [toast, setToast] = React.useState<ToastType>({
+    message: "A payment error occured. Please try again",
+    variant: "error",
+    show: false,
+  });
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -72,63 +80,114 @@ const PaymentForm = ({
         dateBooked: date,
         blockOutPeriod: dates,
         price: parseInt(item.price),
-        address: address?.address ?? "",
-        city: address?.city ?? "",
-        country: address?.country ?? "",
-        postCode: address?.postCode ?? "",
+        address: {
+          address: address?.address ?? "",
+          suburb: address?.suburb ?? "",
+          city: address?.city ?? "",
+          country: address?.country ?? "",
+          postCode: address?.postCode ?? "",
+        },
+        billingAddress: {
+          address: billingAddress?.address ?? "",
+          suburb: billingAddress?.suburb ?? "",
+          city: billingAddress?.city ?? "",
+          country: billingAddress?.country ?? "",
+          postCode: billingAddress?.postCode ?? "",
+        },
         deliveryType: deliveryOption,
         tracking: "",
         isShipped: false,
         isReturned: false,
         paymentIntent: clientSecret,
         size: item.size,
+        status: BookingStatus.InProgress,
       };
 
       bookingList = bookingList.concat(bookingObj);
     });
 
-    await createBooking(bookingList)
-      .then(async (data) => {
-        products.forEach(async (product) => {
-          await removeFromCart(product.cartItemId);
+    let isValid = true;
+
+    await checkValidBooking(bookingList)
+      .then()
+      .catch((err) => {
+        console.error(err);
+        setToast({
+          ...toast,
+          message: err.message,
+          variant: "error",
+          show: true,
         });
-      })
-      .catch((err) => console.error(err));
+        isValid = false;
+      });
+
+    if (!isValid) {
+      setIsLoading(false);
+      return;
+    }
 
     stripe
       .confirmPayment({
         elements,
+        redirect: "if_required",
         confirmParams: {
           return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
         },
       })
-      .then(({ error }) => {
-        if (error.type === "card_error" || error.type === "validation_error") {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage("An unknown error occurred");
+      .then(async ({ error, paymentIntent }) => {
+        if (error) {
+          console.log("Payment failed:", error);
+          setToast({
+            ...toast,
+            message:
+              error?.message ?? "A payment error occured. Please try again",
+            variant: "error",
+            show: true,
+          });
+        }
+
+        if (paymentIntent && paymentIntent.status === "succeeded") {
+          console.log("Payment succeeded:", paymentIntent);
+          await createBooking(bookingList, paymentIntent.id)
+            .then(() => {
+              router.push("/order-success?paymentIntent=" + paymentIntent.id);
+            })
+            .catch((err) => {
+              console.error(err);
+              setToast({
+                ...toast,
+                message: err.message,
+                variant: "error",
+                show: true,
+              });
+            });
         }
       })
       .finally(() => setIsLoading(false));
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <PaymentElement />
-      <div className="mt-4">
-        <LinkAuthenticationElement onChange={(e) => setEmail(e.value.email)} />
-      </div>
+    <>
+      <Toast toast={toast} setToast={setToast} />
+      <form onSubmit={handleSubmit}>
+        <PaymentElement />
+        <div className="mt-4">
+          <LinkAuthenticationElement
+            onChange={(e) => setEmail(e.value.email)}
+          />
+        </div>
 
-      <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
-        <Button
-          type="submit"
-          className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
-        >
-          Submit Booking
-        </Button>
-        <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left"></p>
-      </div>
-    </form>
+        <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
+          <Button
+            type="submit"
+            className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
+          >
+            Submit Booking
+          </Button>
+          <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left"></p>
+        </div>
+      </form>
+    </>
   );
 };
 

@@ -261,38 +261,7 @@ const Account = () => {
                 </div>
               </div>
             </div>
-
-            <div className="col-span-full">
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium leading-6  "
-              >
-                Photo Identification
-              </label>
-              <div className="mt-2">
-                {photo ? (
-                  <img
-                    src={photo}
-                    alt="photo identification"
-                    className="my-2 h-64 w-full object-cover border-4 border-primary-pink rounded-lg"
-                  />
-                ) : null}
-                <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
-                  <Input
-                    onChange={handleChangeFile}
-                    id="instagramHandle"
-                    name="instagramHandle"
-                    type="file"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
-          {photoWarningText && (
-            <p className="mt-1 text-sm leading-6 text-red-500">
-              Please upload a valid photo identification. Max file size 1MB.
-            </p>
-          )}
 
           <div className="mt-8 flex">
             <Button

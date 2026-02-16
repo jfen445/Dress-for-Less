@@ -1,4 +1,6 @@
 import { PortableTextBlock } from "sanity";
+import { BookingStatus } from "../enums/BookingStatus";
+import { DeliveryType } from "../enums/DeliveryType";
 
 export type ProfileType = {
   _id: string;
@@ -99,11 +101,9 @@ export type Booking = {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
-  deliveryType: string;
+  address?: Address;
+  billingAddress: Address;
+  deliveryType: DeliveryType;
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
@@ -111,6 +111,7 @@ export type Booking = {
   size: String;
   dress?: DressType;
   user?: UserType[];
+  status: BookingStatus;
 };
 
 export type Sizes = {
@@ -133,10 +134,7 @@ export type OrderHistory = {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
+  address?: Address;
   deliveryType: string;
   tracking: string;
   isShipped: boolean;
@@ -155,10 +153,8 @@ export type OrderReceipt = {
   dateBooked: string;
   blockOutPeriod: string[];
   price: number;
-  address: string;
-  city: string;
-  country: string;
-  postCode: string;
+  address?: Address;
+  billingAddress?: Address;
   deliveryType: string;
   tracking: string;
   isShipped: boolean;

@@ -5,11 +5,23 @@ import {
   UsersIcon,
   TruckIcon,
 } from "@heroicons/react/20/solid";
+import { AdminTabs } from "../../../common/enums/AdminTabs";
 
 const initialTabList = [
-  { name: "Bookings", href: "#", icon: TruckIcon, current: true },
-  { name: "Users", href: "#", icon: UsersIcon, current: false },
-  { name: "Dresses", href: "#", icon: AcademicCapIcon, current: false },
+  {
+    name: AdminTabs.DeliveryBookings,
+    href: "#",
+    icon: TruckIcon,
+    current: true,
+  },
+  {
+    name: AdminTabs.PickupBookings,
+    href: "#",
+    icon: TruckIcon,
+    current: false,
+  },
+  { name: AdminTabs.Users, href: "#", icon: UsersIcon, current: false },
+  { name: AdminTabs.Dresses, href: "#", icon: AcademicCapIcon, current: false },
 ];
 
 function classNames(...classes: string[]) {

@@ -3,7 +3,6 @@ import React from "react";
 import { getCart, removeFromCart } from "@/api/cart";
 import { useUserContext } from "@/context/UserContext";
 import { CartItemType, CartType } from "../../../common/types";
-import { getDress } from "../../../sanity/sanity.query";
 import Link from "next/link";
 import CartItems from "../CartItems";
 import Spinner from "../Spinner";
@@ -12,11 +11,12 @@ import Modal from "../Modal";
 import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
-import ErrorPage from "../ErrorPage";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import { useCartContext } from "@/context/CartContext";
 
 const Cart = () => {
+  const { refreshCart } = useCartContext();
   const { getDressWithId } = useGlobalContext();
   const { getItems, setItems, clearItems } =
     useLocalStorage<CartType[]>("localCart");
@@ -33,14 +33,14 @@ const Cart = () => {
 
   const triggerUpdate = () => {
     setForceUpdate((prev) => prev + 1); // Increment the state to force a re-render
+    refreshCart();
   };
 
   const isUserValid: boolean =
     userInfo?.name &&
     userInfo?.email &&
     userInfo.instagramHandle &&
-    userInfo.mobileNumber &&
-    userInfo.photo
+    userInfo.mobileNumber // removed photo check
       ? true
       : false;
 
@@ -53,6 +53,7 @@ const Cart = () => {
   const getUserCart = React.useCallback(async () => {
     if (userInfo && userInfo?._id) {
       setIsLoading(true);
+      setErr(false);
       await getCart(userInfo?._id)
         .then((data) => {
           const cartItems = data.data as unknown as CartType[];
@@ -63,7 +64,7 @@ const Cart = () => {
               _id: dress._id,
               name: dress.name,
               description: dress.description,
-              size: dress.size,
+              size: item.size,
               images: dress.images,
               tags: dress.tags,
               price: dress.price,
@@ -77,17 +78,10 @@ const Cart = () => {
 
             dresses = [...dresses, cartDress];
 
-            // await getDress(item.dressId).then((data) => {
-            //   data.dateBooked = item.dateBooked;
-            //   data.cartItemId = item._id;
-            //   data.size = item.size;
-            //   dresses = [...dresses, data];
-            // });
-
             setProducts(dresses);
           });
         })
-        .catch((err) => {
+        .catch(() => {
           setErr(true);
         })
         .finally(() => setIsLoading(false));
