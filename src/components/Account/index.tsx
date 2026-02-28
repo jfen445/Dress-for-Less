@@ -6,6 +6,7 @@ import { UserType } from "../../../common/types";
 import { getUser, updateUserAccount } from "@/api/user";
 import Toast, { ToastType } from "../Toast";
 import { useUserContext } from "@/context/UserContext";
+import Spinner from "../Spinner";
 
 const Account = () => {
   const { data: session } = useSession();
@@ -13,12 +14,12 @@ const Account = () => {
   const [firstName, setFirstName] = React.useState<string>(
     session && session.user && session.user.name
       ? session.user.name.split(" ")[0]
-      : ""
+      : "",
   );
   const [lastName, setLastName] = React.useState<string>(
     session && session.user && session.user.name
       ? session.user.name.split(" ")[1]
-      : ""
+      : "",
   );
   const [mobile, setMobile] = React.useState<string>("");
   const [instagramHandle, setInstagramHandle] = React.useState<string>("");
@@ -28,7 +29,6 @@ const Account = () => {
     show: false,
   });
   const [file, setFile] = React.useState<File | null>(null);
-  const [photo, setPhoto] = React.useState<string>("");
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const [photoWarningText, setPhotoWarningText] =
     React.useState<boolean>(false);
@@ -48,7 +48,6 @@ const Account = () => {
           setLastName(user.name.split(" ")[1]);
           setMobile(user.mobileNumber);
           setInstagramHandle(user.instagramHandle ?? "");
-          setPhoto(user.photo);
         })
         .catch((err) => console.error(err));
     };
@@ -68,7 +67,6 @@ const Account = () => {
 
     const base64 = await convertToBase64(currentFile);
     setFile(currentFile);
-    setPhoto(base64 as string);
 
     setPhotoWarningText(currentFile.size > 1 * 1024 * 102); // check if file size is greater than 1mb
   };
@@ -91,14 +89,6 @@ const Account = () => {
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!photo) {
-      setToast({
-        message: "Please upload a photo identification",
-        variant: "warning",
-        show: true,
-      });
-      return;
-    }
 
     setIsSaving(true);
 
@@ -114,7 +104,6 @@ const Account = () => {
       name: formElements.firstname.value + " " + formElements.lastname.value,
       mobileNumber: mobile,
       instagramHandle: instagramHandle,
-      photo: photo,
       role: "user",
     };
 
@@ -250,9 +239,10 @@ const Account = () => {
                 <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
                   <Input
                     value={instagramHandle}
-                    onChange={(e) =>
-                      setInstagramHandle((e.target as HTMLInputElement).value)
-                    }
+                    onChange={(e) => {
+                      const value = (e.target as HTMLInputElement).value;
+                      setInstagramHandle(value.replace(/@/g, ""));
+                    }}
                     id="instagramHandle"
                     name="instagramHandle"
                     type="text"
@@ -263,15 +253,23 @@ const Account = () => {
             </div>
           </div>
 
-          <div className="mt-8 flex">
-            <Button
-              type="submit"
-              disabled={isSaving || photoWarningText}
-              className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </div>
+          {isSaving ? (
+            <div className="flex items-center justify-center w-2/3">
+              <Spinner message="Saving..." />
+            </div>
+          ) : (
+            <>
+              <div className="mt-8 flex">
+                <Button
+                  type="submit"
+                  disabled={isSaving || photoWarningText}
+                  className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                >
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </>
+          )}
         </form>
       </div>
     </main>

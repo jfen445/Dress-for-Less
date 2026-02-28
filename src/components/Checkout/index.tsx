@@ -19,7 +19,7 @@ export const ProductContext = React.createContext<ProductCtx>({} as ProductCtx);
 
 const Checkout = () => {
   const [deliveryOption, setDeliveryOption] = React.useState<DeliveryType>(
-    DeliveryType.Delivery
+    DeliveryType.Delivery,
   );
 
   const [totalPrice, setTotalPrice] = React.useState<number>(0);
