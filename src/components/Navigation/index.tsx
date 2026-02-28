@@ -24,6 +24,7 @@ import { Fragment } from "react";
 import { navigationSections } from "@/model/navigation";
 import { Navigation } from "../../../common/types/navigation";
 import { useCartContext } from "@/context/CartContext";
+import { usePathname } from "next/navigation";
 
 const navigation: Navigation = {
   categories: [
@@ -66,14 +67,14 @@ const navigation: Navigation = {
     },
     {
       id: "faq",
-      name: "Faq",
+      name: "FAQ",
       href: "/faq",
       featured: [],
       sections: [],
     },
     {
       id: "policies",
-      name: "Policies",
+      name: "T&Cs",
       href: "/policies",
       featured: [],
       sections: [],
@@ -94,6 +95,7 @@ const NavigationBar = () => {
   const { cartCount } = useCartContext();
   const { data: session } = useSession();
   const { setMobileNavOpen } = useNavigationContext();
+  const pathname = usePathname();
 
   return (
     <header className="relative bg-white">
@@ -132,13 +134,15 @@ const NavigationBar = () => {
                   <Popover key={category.name} className="flex">
                     {({ open }) => (
                       <>
-                        <div className="relative flex">
+                        <div
+                          className={`relative flex border-b-2 ${pathname === category.href ? "border-secondary-pink" : "border-transparent"}`}
+                        >
                           <Popover.Button
                             className={classNames(
                               open
                                 ? "text-secondary-pink"
                                 : "text-gray-700 hover:text-gray-800",
-                              "relative z-10 flex items-center justify-center text-sm font-medium transition-colors duration-200 ease-out"
+                              "relative z-10 flex items-center justify-center text-sm font-medium transition-colors duration-200 ease-out",
                             )}
                           >
                             {category.sections.length > 0 ? (
@@ -154,7 +158,7 @@ const NavigationBar = () => {
                             <span
                               className={classNames(
                                 open ? "bg-secondary-pink" : "",
-                                "absolute inset-x-0 bottom-0 h-0.5 transition-colors duration-200 ease-out sm:mt-5 sm:translate-y-px sm:transform"
+                                "absolute inset-x-0 bottom-0 h-0.5 transition-colors duration-200 ease-out sm:mt-5 sm:translate-y-px sm:transform",
                               )}
                               aria-hidden="true"
                             />
@@ -190,7 +194,7 @@ const NavigationBar = () => {
                                                   itemIdx === 0
                                                     ? "aspect-w-2 col-span-2"
                                                     : "",
-                                                  "group aspect-w-1 aspect-h-1 relative overflow-hidden rounded-md bg-gray-100"
+                                                  "group aspect-w-1 aspect-h-1 relative overflow-hidden rounded-md bg-gray-100",
                                                 )}
                                               >
                                                 <img
@@ -219,7 +223,7 @@ const NavigationBar = () => {
                                                   </div>
                                                 </div>
                                               </div>
-                                            )
+                                            ),
                                           )}
                                         </div>
                                       </>
@@ -259,13 +263,13 @@ const NavigationBar = () => {
                                                             {item.name}
                                                           </a>
                                                         </li>
-                                                      )
+                                                      ),
                                                     )}
                                                   </ul>
                                                 </div>
                                               ))}
                                             </div>
-                                          )
+                                          ),
                                         )}
                                       </div>
                                     )}

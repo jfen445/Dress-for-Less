@@ -6,7 +6,7 @@ import { DressType } from "../../../../common/types";
 const FavouritesSection = () => {
   const { allDresses, getFavouriteDresses } = useGlobalContext();
   const [dresses, setDresses] = React.useState<DressType[]>(
-    getFavouriteDresses()
+    getFavouriteDresses(),
   );
 
   React.useEffect(() => {
@@ -25,11 +25,12 @@ const FavouritesSection = () => {
               >
                 Our Favorites
               </h2>
-              <Link href="/dresses?filter=customer_faves">
-                <a className="hidden text-sm font-semibold text-indigo-600 hover:text-indigo-500 sm:block">
-                  Browse all favorites
-                  <span aria-hidden="true"> &rarr;</span>
-                </a>
+              <Link
+                href="/dresses?filter=customer_faves"
+                className="hidden text-sm font-semibold text-indigo-600 hover:text-indigo-500 sm:block"
+              >
+                Browse all favorites
+                <span aria-hidden="true"> &rarr;</span>
               </Link>
             </div>
 
@@ -55,11 +56,12 @@ const FavouritesSection = () => {
             </div>
 
             <div className="mt-6 sm:hidden">
-              <Link href="/dresses?filter=customer_faves">
-                <a className="block text-sm font-semibold text-secondary-pink hover:text-primary-pink">
-                  Browse all favorites
-                  <span aria-hidden="true"> &rarr;</span>
-                </a>
+              <Link
+                href="/dresses?filter=customer_faves"
+                className="block text-sm font-semibold text-secondary-pink hover:text-primary-pink"
+              >
+                Browse all favorites
+                <span aria-hidden="true"> &rarr;</span>
               </Link>
             </div>
           </div>
