@@ -160,6 +160,7 @@ const Account = () => {
                   name="firstname"
                   type="text"
                   className=""
+                  required
                 />
               </div>
             </div>
@@ -181,6 +182,7 @@ const Account = () => {
                   name="lastname"
                   type="text"
                   className=""
+                  required
                 />
               </div>
             </div>
@@ -223,6 +225,7 @@ const Account = () => {
                     name="mobile"
                     type="number"
                     className=""
+                    required
                   />
                 </div>
               </div>

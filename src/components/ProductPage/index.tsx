@@ -140,6 +140,7 @@ const Product = () => {
           show: true,
         });
         refreshCart();
+        setIsAddedToCart(true);
       }
     } else {
       await addToCart(cartItem)

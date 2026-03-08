@@ -29,12 +29,6 @@ const Cart = () => {
   const [err, setErr] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
-  const [forceUpdate, setForceUpdate] = React.useState(0);
-
-  const triggerUpdate = () => {
-    setForceUpdate((prev) => prev + 1); // Increment the state to force a re-render
-    refreshCart();
-  };
 
   const isUserValid: boolean =
     userInfo?.name &&
@@ -51,7 +45,6 @@ const Cart = () => {
   }, [selectedProductIds]);
 
   const getUserCart = React.useCallback(async () => {
-    console.log("Fetching cart for user:", userInfo);
     if (userInfo && userInfo?._id) {
       setIsLoading(true);
       setErr(false);
@@ -131,7 +124,7 @@ const Cart = () => {
 
       const updatedCart = localCart.filter(
         (item) =>
-          item.dressId !== cartItemId._id &&
+          item._id !== cartItemId._id &&
           item.dateBooked !== cartItemId.dateBooked &&
           item.size !== cartItemId.size,
       ) as CartType[];
@@ -144,7 +137,7 @@ const Cart = () => {
         setItems(updatedCart);
         getUserCart();
       }
-      triggerUpdate();
+      refreshCart();
       return;
     }
 
@@ -172,10 +165,6 @@ const Cart = () => {
   const isInvalidDate = (day: string | number | Date) => {
     const currentDate = dayjs(new Date());
     return dayjs(currentDate).isAfter(dayjs(new Date(day)));
-  };
-
-  const checkoutWithoutLogin = () => {
-    setIsOpen(true);
   };
 
   const isAuthenticated = status === "authenticated";
