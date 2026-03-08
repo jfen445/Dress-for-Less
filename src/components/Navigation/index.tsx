@@ -91,11 +91,13 @@ function classNames(...classes: string[]) {
 }
 
 const NavigationBar = () => {
-  const { userInfo, getUserProfleImage } = useUserContext();
+  const { userInfo, getUserProfileImage } = useUserContext();
   const { cartCount } = useCartContext();
   const { data: session } = useSession();
   const { setMobileNavOpen } = useNavigationContext();
   const pathname = usePathname();
+
+  console.log("User info in NavigationBar:", userInfo);
 
   return (
     <header className="relative bg-white">
@@ -339,7 +341,7 @@ const NavigationBar = () => {
                       <span className="sr-only">Open user menu</span>
                       <img
                         alt="Profile image"
-                        src={getUserProfleImage()}
+                        src={getUserProfileImage()}
                         className="h-8 w-8 rounded-full border-2 border-secondary-pink"
                         referrerPolicy="no-referrer"
                       />

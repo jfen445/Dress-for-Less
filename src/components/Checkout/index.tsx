@@ -2,7 +2,7 @@
 
 import React from "react";
 import OrderSummary from "./OrderSummary";
-import { CartItemType, CartType } from "../../../common/types";
+import { CartItemType } from "../../../common/types";
 import CheckoutForm from "./CheckoutForm";
 import { DeliveryType } from "../../../common/enums/DeliveryType";
 

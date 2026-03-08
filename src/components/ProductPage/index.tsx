@@ -67,7 +67,7 @@ const Product = () => {
           }))(currentDress as any);
 
           let pickedSizes = Object.fromEntries(
-            Object.entries(dressSizes).filter(([_, v]) => v != null)
+            Object.entries(dressSizes).filter(([_, v]) => v != null),
           );
 
           setSizes(pickedSizes);
@@ -75,7 +75,7 @@ const Product = () => {
           var obj: ImageType[] = currentDress.images.reduce(function (
             acc: ImageType[], // Set the accumulator type to an array of ImageType
             cur: string, // Assuming cur is a string, the image source
-            i: number // Index is a number
+            i: number, // Index is a number
           ): ImageType[] {
             // The return type should be ImageType[]
             var o: ImageType = {
@@ -123,7 +123,7 @@ const Product = () => {
       const localCart = getItems() || ([] as CartType[]);
 
       const itemAlreadyInCart = localCart.some(
-        (item) => JSON.stringify(item) === JSON.stringify(cartItem)
+        (item) => JSON.stringify(item) === JSON.stringify(cartItem),
       );
 
       if (itemAlreadyInCart) {
@@ -139,6 +139,7 @@ const Product = () => {
           variant: "success",
           show: true,
         });
+        refreshCart();
       }
     } else {
       await addToCart(cartItem)

@@ -10,7 +10,7 @@ import Spinner from "../Spinner";
 
 const Account = () => {
   const { data: session } = useSession();
-  const { fetchData, getUserProfleImage } = useUserContext();
+  const { fetchData, getUserProfileImage } = useUserContext();
   const [firstName, setFirstName] = React.useState<string>(
     session && session.user && session.user.name
       ? session.user.name.split(" ")[0]
@@ -36,7 +36,7 @@ const Account = () => {
   const email =
     session && session.user && session.user.email ? session.user.email : "";
 
-  const profileImage = getUserProfleImage();
+  const profileImage = getUserProfileImage();
 
   React.useEffect(() => {
     const getCurrentUser = async () => {

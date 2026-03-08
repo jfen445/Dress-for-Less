@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getCart } from "@/api/cart";
 import { useUserContext } from "./UserContext";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { CartType } from "../../common/types";
 
 interface CartContextType {
   cartCount: number;
@@ -20,11 +22,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { userInfo } = useUserContext();
   const [cartCount, setCartCount] = useState(0);
+  const { getItems } = useLocalStorage<CartType[]>("localCart");
 
   const refreshCart = async () => {
-    console.log("Refreshing cart...", userInfo);
     if (!userInfo?._id) {
-      setCartCount(0);
+      const localCart = getItems();
+      setCartCount(localCart ? localCart.length : 0);
       return;
     }
 
@@ -35,7 +38,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         return [];
       });
 
-    console.log("Cart items:", cart);
     setCartCount(cart.length);
   };
 

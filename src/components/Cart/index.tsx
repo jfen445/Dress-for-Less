@@ -24,7 +24,7 @@ const Cart = () => {
   const { status } = useSession();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
   const [selectedProductIds, setSelectedProductIds] = React.useState<String[]>(
-    []
+    [],
   );
   const [err, setErr] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -51,6 +51,7 @@ const Cart = () => {
   }, [selectedProductIds]);
 
   const getUserCart = React.useCallback(async () => {
+    console.log("Fetching cart for user:", userInfo);
     if (userInfo && userInfo?._id) {
       setIsLoading(true);
       setErr(false);
@@ -132,7 +133,7 @@ const Cart = () => {
         (item) =>
           item.dressId !== cartItemId._id &&
           item.dateBooked !== cartItemId.dateBooked &&
-          item.size !== cartItemId.size
+          item.size !== cartItemId.size,
       ) as CartType[];
 
       if (updatedCart.length === 0) {
@@ -156,11 +157,11 @@ const Cart = () => {
 
   const isValidCheckout = () => {
     const selectedProducts = products.filter((item) =>
-      selectedProductIds.includes(item.cartItemId)
+      selectedProductIds.includes(item.cartItemId),
     );
 
     const isDatesValid = selectedProducts.some((item) =>
-      isInvalidDate(item.dateBooked)
+      isInvalidDate(item.dateBooked),
     );
 
     const isEmpty = selectedProductIds.length == 0;
