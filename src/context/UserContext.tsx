@@ -27,7 +27,6 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const { data: session } = useSession();
 
   const fetchData = React.useCallback(() => {
-    console.log("sesiosn in UserContextProvider:", session);
     if (session != null && session?.user.email) {
       getUser(session?.user.email)
         .then((res) => {

@@ -27,6 +27,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
 
+  const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
+  const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
+  const [showUpcoming, setShowUpcoming] = React.useState<boolean>(true);
+
   const [expandedBookingId, setExpandedBookingId] = React.useState<
     string | null
   >(null);
@@ -38,27 +42,27 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const filteredBookings = React.useMemo(() => {
     if (!deliveryType || deliveryType.length === 0) return bookings;
     return bookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType)
+      deliveryType.includes(b.deliveryType as DeliveryType),
     );
   }, [bookings, deliveryType]);
 
   const filteredThisWeekBookings = React.useMemo(() => {
     if (!deliveryType || deliveryType.length === 0) return thisWeekBookings;
     return thisWeekBookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType)
+      deliveryType.includes(b.deliveryType as DeliveryType),
     );
   }, [thisWeekBookings, deliveryType]);
 
   const filteredPastBookings = React.useMemo(() => {
     if (!deliveryType || deliveryType.length === 0) return pastBookings;
     return pastBookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType)
+      deliveryType.includes(b.deliveryType as DeliveryType),
     );
   }, [pastBookings, deliveryType]);
 
   const updateCurrentBooking = async (
     bookingId: string,
-    bookingStatus: BookingStatus
+    bookingStatus: BookingStatus,
   ) => {
     let bookingObj: {
       status: BookingStatus;
@@ -72,7 +76,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           message: "An error occurred while updating booking status",
           variant: "warning",
           show: true,
-        })
+        }),
       )
       .finally(() => getBookings());
   };
@@ -154,18 +158,19 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     };
     return (
       <div>
-        <label
+        {/* <label
           htmlFor="location"
           className="block text-sm font-medium leading-6 text-gray-900 mt-4"
         >
           Select a status
-        </label>
+        </label> */}
         <select
           id="status"
           name="status"
           value={status}
           onChange={handleChange}
-          className="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+          onClick={(e) => e.stopPropagation()}
+          className={`mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 ${getStatusColour(status)}`}
         >
           {Object.values(BookingStatus).map((status) => (
             <option key={status} value={status}>
@@ -177,35 +182,35 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   };
 
-  const renderBookingRow = (bookingList: Booking[]) => {
-    const getStatusColour = (booking: Booking) => {
-      let colour = "";
-      switch (booking.status) {
-        case BookingStatus.InProgress:
-          colour = "bg-green-50 text-green-700 ring-green-600/20";
-          break;
-        case BookingStatus.BeingReturned:
-          colour = "bg-purple-50 text-purple-700 ring-purple-600/20";
-          break;
-        case BookingStatus.Washing:
-          colour = "bg-blue-50 text-blue-700 ring-blue-600/20";
-          break;
-        case BookingStatus.Drying:
-          colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
-          break;
-        case BookingStatus.Completed:
-          colour = "bg-green-50 text-green-700 ring-green-600/20";
-          break;
-        case BookingStatus.Delayed:
-          colour = "bg-red-50 text-red-700 ring-red-600/20";
-          break;
-        case BookingStatus.Reparing:
-          colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
-          break;
-      }
-      return colour;
-    };
+  const getStatusColour = (status: BookingStatus) => {
+    let colour = "";
+    switch (status) {
+      case BookingStatus.InProgress:
+        colour = "bg-green-50 text-green-700 ring-green-600/20";
+        break;
+      case BookingStatus.BeingReturned:
+        colour = "bg-purple-50 text-purple-700 ring-purple-600/20";
+        break;
+      case BookingStatus.Washing:
+        colour = "bg-blue-50 text-blue-700 ring-blue-600/20";
+        break;
+      case BookingStatus.Drying:
+        colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
+        break;
+      case BookingStatus.Completed:
+        colour = "bg-green-50 text-green-700 ring-green-600/20";
+        break;
+      case BookingStatus.Delayed:
+        colour = "bg-red-50 text-red-700 ring-red-600/20";
+        break;
+      case BookingStatus.Reparing:
+        colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
+        break;
+    }
+    return colour;
+  };
 
+  const renderBookingRow = (bookingList: Booking[]) => {
     return (
       <>
         {bookingList?.map((currentBooking: any) => (
@@ -236,9 +241,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               </td>
 
               <td className="px-3 py-5 text-sm">
-                <div className="font-medium">{currentBooking.user[0].name}</div>
+                <div className="font-medium">
+                  {currentBooking.user[0]?.name}
+                </div>
                 <div className="text-gray-500">
-                  {currentBooking.user[0].email}
+                  {currentBooking.user[0]?.email}
                 </div>
               </td>
 
@@ -247,13 +254,17 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               </td>
 
               <td className="px-3 py-5 text-sm">
-                <span
+                {/* <span
                   className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
-                    currentBooking
+                    currentBooking,
                   )}`}
                 >
                   {currentBooking.status}
-                </span>
+                </span> */}
+                <Dropdown
+                  bookingId={currentBooking._id}
+                  initialStatus={currentBooking.status}
+                />
               </td>
             </tr>
 
@@ -278,7 +289,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
                       <p>
                         <span className="font-medium">Booked by:</span>{" "}
-                        {currentBooking.user?.[0].name}
+                        {currentBooking.user?.[0]?.name}
                       </p>
 
                       <p>
@@ -375,7 +386,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     <Fragment>
-                      <tr className="border-t border-gray-200">
+                      <tr
+                        className="border-t border-gray-200 cursor-pointer"
+                        onClick={() => setShowThisWeek(!showThisWeek)}
+                      >
                         <th
                           scope="colgroup"
                           colSpan={5}
@@ -386,9 +400,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       </tr>
                     </Fragment>
                     {filteredThisWeekBookings &&
+                      showThisWeek &&
                       renderBookingRow(filteredThisWeekBookings)}
                     <Fragment>
-                      <tr className="border-t border-gray-200">
+                      <tr
+                        className="border-t border-gray-200 cursor-pointer"
+                        onClick={() => setShowUpcoming(!showUpcoming)}
+                      >
                         <th
                           scope="colgroup"
                           colSpan={5}
@@ -398,9 +416,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         </th>
                       </tr>
                     </Fragment>
-                    {filteredBookings && renderBookingRow(filteredBookings)}
+                    {filteredBookings &&
+                      showUpcoming &&
+                      renderBookingRow(filteredBookings)}
                     <Fragment>
-                      <tr className="border-t border-gray-200">
+                      <tr
+                        className="border-t border-gray-200 cursor-pointer"
+                        onClick={() => setShowPrevious(!showPrevious)}
+                      >
                         <th
                           scope="colgroup"
                           colSpan={5}
@@ -411,6 +434,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       </tr>
                     </Fragment>
                     {filteredPastBookings &&
+                      showPrevious &&
                       renderBookingRow(filteredPastBookings)}
                   </tbody>
                 </table>

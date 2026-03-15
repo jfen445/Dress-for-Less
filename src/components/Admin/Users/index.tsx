@@ -22,6 +22,29 @@ const AdminUsers = () => {
 
     getUsers();
   }, []);
+
+  const getUserProfileImage = () => {
+    let letter = "D";
+
+    return makeLetterAvatar(letter);
+  };
+
+  const makeLetterAvatar = (
+    letter: string,
+    size = 100,
+    bg = "#FFDCE6",
+    fg = "#1F2937",
+    font = "Arial, Helvetica, sans-serif",
+  ) => {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'>
+    <rect width='100%' height='100%' fill='${bg}' rx='8' ry='8'/>
+    <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='${font}' font-size='${Math.floor(
+      size * 0.48,
+    )}' fill='${fg}' font-weight='600'>${letter}</text>
+  </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
+
   return (
     <>
       <UserModal
@@ -39,15 +62,6 @@ const AdminUsers = () => {
               A list of all the users in your account including their name,
               title, email and role.
             </p>
-          </div>
-          <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-            <Button
-              type="button"
-              variant="secondary"
-              className="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Add user
-            </Button>
           </div>
         </div>
         {isLoading ? (
@@ -109,7 +123,9 @@ const AdminUsers = () => {
                             <div className="h-11 w-11 flex-shrink-0">
                               <img
                                 alt=""
-                                src={user.photo}
+                                src={makeLetterAvatar(
+                                  user.name.charAt(0) || user.email.charAt(0),
+                                )}
                                 className="h-11 w-11 rounded-full"
                               />
                             </div>

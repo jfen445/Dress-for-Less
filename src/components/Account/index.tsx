@@ -28,7 +28,6 @@ const Account = () => {
     variant: "success",
     show: false,
   });
-  const [file, setFile] = React.useState<File | null>(null);
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const [photoWarningText, setPhotoWarningText] =
     React.useState<boolean>(false);
@@ -55,38 +54,6 @@ const Account = () => {
     getCurrentUser();
   }, [email]);
 
-  const handleChangeFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.currentTarget.files || e.currentTarget.files.length == 0) return;
-
-    const files = e.currentTarget.files;
-    if (files.length == 0) {
-      return;
-    }
-
-    const currentFile = files[0];
-
-    const base64 = await convertToBase64(currentFile);
-    setFile(currentFile);
-
-    setPhotoWarningText(currentFile.size > 1 * 1024 * 102); // check if file size is greater than 1mb
-  };
-
-  function convertToBase64(file: File) {
-    if (!file) {
-      return;
-    }
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
-      fileReader.onload = () => {
-        resolve(fileReader.result);
-      };
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
-  }
-
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -110,11 +77,15 @@ const Account = () => {
     await updateUserAccount(user)
       .then(() => {
         setToast({ message: "Account saved", variant: "success", show: true });
-        console.log("Account saved");
         fetchData();
       })
       .catch((err) => {
         console.log("Error saving account", err);
+        setToast({
+          message: "Error saving account",
+          variant: "error",
+          show: true,
+        });
       })
       .finally(() => setIsSaving(false));
   };

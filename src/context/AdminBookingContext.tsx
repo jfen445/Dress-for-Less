@@ -57,9 +57,11 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
         dayjs(booking.dateBooked).isAfter(dayjs(currentSunday)),
       );
 
-      const pastBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isBefore(previousMonday()),
-      );
+      const pastBookings = sortedBookings
+        .filter((booking) =>
+          dayjs(booking.dateBooked).isBefore(previousMonday()),
+        )
+        .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked)));
       setPastBookings(pastBookings);
 
       setThisWeekBookings(thisWeek);

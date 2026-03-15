@@ -156,7 +156,6 @@ const PaymentForm = ({
         }
 
         if (paymentIntent && paymentIntent.status === "succeeded") {
-          console.log("Payment succeeded:", paymentIntent);
           await createBooking(bookingList, paymentIntent.id)
             .then(() => {
               router.push("/order-success?paymentIntent=" + paymentIntent.id);

@@ -97,8 +97,6 @@ const NavigationBar = () => {
   const { setMobileNavOpen } = useNavigationContext();
   const pathname = usePathname();
 
-  console.log("User info in NavigationBar:", userInfo);
-
   return (
     <header className="relative bg-white">
       <nav aria-label="Top" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -354,7 +352,11 @@ const NavigationBar = () => {
                     {userInfo?.role == "admin" && (
                       <MenuItem>
                         <a
-                          href={"/admin"}
+                          href={
+                            pathname.includes("/admin")
+                              ? "javascript:void(0)"
+                              : "/admin"
+                          }
                           className="block px-4 py-2 text-sm text-gray-700"
                         >
                           Admin
@@ -363,7 +365,11 @@ const NavigationBar = () => {
                     )}
                     <MenuItem>
                       <a
-                        href={"/account"}
+                        href={
+                          pathname.includes("/account")
+                            ? "javascript:void(0)"
+                            : "/account"
+                        }
                         className="block px-4 py-2 text-sm text-gray-700"
                       >
                         Account
@@ -372,7 +378,11 @@ const NavigationBar = () => {
                     {userInfo && (
                       <MenuItem>
                         <a
-                          href={"/order-history"}
+                          href={
+                            pathname.includes("order")
+                              ? "javascript:void(0)"
+                              : "/order-history"
+                          }
                           className="block px-4 py-2 text-sm text-gray-700"
                         >
                           Order History

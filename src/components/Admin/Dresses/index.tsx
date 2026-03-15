@@ -1,9 +1,15 @@
 import React from "react";
 import Spinner from "@/components/Spinner";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { useRouter } from "next/router";
 
 const AdminDresses = () => {
   const { allDresses } = useGlobalContext();
+  const router = useRouter();
+
+  const onDressClick = (dressId: string) => {
+    router.push(`/dresses/products/${dressId}`);
+  };
 
   return (
     <>
@@ -26,7 +32,8 @@ const AdminDresses = () => {
             {allDresses.map((dress) => (
               <li
                 key={dress._id}
-                className="col-span-1 flex flex-col divide-y divide-gray-200 rounded-lg bg-white text-center shadow"
+                className="col-span-1 flex flex-col divide-y divide-gray-200 rounded-lg bg-white text-center shadow cursor-pointer"
+                onClick={() => onDressClick(dress._id)}
               >
                 <div className="flex flex-1 flex-col p-8">
                   <img
