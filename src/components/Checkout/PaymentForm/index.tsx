@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  LinkAuthenticationElement,
   PaymentElement,
   useElements,
   useStripe,
@@ -14,10 +13,10 @@ import { Address, Booking } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import { checkValidBooking, createBooking } from "@/api/booking";
 import dayjs from "dayjs";
-import { removeFromCart } from "@/api/cart";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
 import { useRouter } from "next/router";
+import Spinner from "@/components/Spinner";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -39,7 +38,6 @@ const PaymentForm = ({
   const elements = useElements();
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>();
-  const [email, setEmail] = React.useState<string>();
   const [toast, setToast] = React.useState<ToastType>({
     message: "A payment error occured. Please try again",
     variant: "error",
@@ -47,11 +45,22 @@ const PaymentForm = ({
   });
 
   async function handleSubmit(e: FormEvent) {
+    setIsLoading(true);
+
     e.preventDefault();
 
-    if (stripe == null || elements == null || email == null) return;
+    if (stripe == null || elements == null) {
+      setToast({
+        ...toast,
+        message:
+          "Something went wrong with the payment. Please refresh and try again",
+        variant: "error",
+        show: true,
+      });
+      setIsLoading(false);
 
-    setIsLoading(true);
+      return;
+    }
 
     var bookingList: Booking[] = [];
 
@@ -147,7 +156,6 @@ const PaymentForm = ({
         }
 
         if (paymentIntent && paymentIntent.status === "succeeded") {
-          console.log("Payment succeeded:", paymentIntent);
           await createBooking(bookingList, paymentIntent.id)
             .then(() => {
               router.push("/order-success?paymentIntent=" + paymentIntent.id);
@@ -169,24 +177,35 @@ const PaymentForm = ({
   return (
     <>
       <Toast toast={toast} setToast={setToast} />
-      <form onSubmit={handleSubmit}>
-        <PaymentElement />
-        <div className="mt-4">
-          <LinkAuthenticationElement
-            onChange={(e) => setEmail(e.value.email)}
-          />
-        </div>
+      <>
+        <form onSubmit={handleSubmit}>
+          <PaymentElement />
+          {/* <div className="mt-4">
+            <LinkAuthenticationElement
+              onChange={(e) => setEmail(e.value.email)}
+            />
+          </div> */}
 
-        <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
-          <Button
-            type="submit"
-            className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
-          >
-            Submit Booking
-          </Button>
-          <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left"></p>
-        </div>
-      </form>
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <Spinner message="Processing your payment..." />
+            </div>
+          ) : (
+            <>
+              <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
+                >
+                  Submit Booking
+                </Button>
+                <p className="mt-4 text-center text-sm text-gray-500 sm:mt-0 sm:text-left"></p>
+              </div>
+            </>
+          )}
+        </form>
+      </>
     </>
   );
 };

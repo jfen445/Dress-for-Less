@@ -46,7 +46,7 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
           If you didn&apos;t try to login, you can safely ignore this email.
         </Text>
         <Hr style={hr} />
-        <Link href={process.env.NEXT_BASE_URL} style={reportLink}>
+        <Link href={baseUrl + "/account"} style={reportLink}>
           Dress for Less
         </Link>
       </Container>

@@ -1,6 +1,4 @@
 import NextAuth, { DefaultSession, NextAuthOptions } from "next-auth";
-import AppleProvider from "next-auth/providers/apple";
-import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider, {
   SendVerificationRequestParams,
@@ -9,6 +7,8 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
 import { Resend } from "resend";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
+import { UserSchema } from "../../../lib/db/schema";
+import { UserType } from "../../../common/types";
 
 declare module "next-auth" {
   interface Session {
@@ -20,7 +20,7 @@ declare module "next-auth" {
 }
 
 export const sendVerificationRequest = async (
-  params: SendVerificationRequestParams
+  params: SendVerificationRequestParams,
 ) => {
   const { identifier, url } = params;
 
@@ -78,8 +78,44 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      return baseUrl; // Ensure it dynamically adjusts to your environment
+      return baseUrl + "/account"; // Ensure it dynamically adjusts to your environment
     },
+    // // Called when user signs in - update your custom MongoDB collection
+    async signIn({ user, profile }) {
+      try {
+        const filter = { email: user.email };
+        const update: UserType = {
+          email: user.email ?? "",
+          name: user.name || profile?.name || "",
+          photo: user.image || profile?.image || "",
+          mobileNumber: "", // Will be filled in by user later
+          instagramHandle: "",
+          role: "user",
+        };
+        const options = { upsert: true };
+
+        console.log("Updating/inserting user record in DB:", update);
+
+        await UserSchema.updateOne(filter, update, options);
+        console.log("User record updated/created successfully");
+
+        return true;
+      } catch (error) {
+        console.error("Error in signIn callback:", error);
+        return true; // Still allow sign in even if DB update fails
+      }
+    },
+    // Add custom fields to JWT token
+    // async jwt({ token, user }) {
+    //   if (user) {
+    //     const dbUser = await UserSchema.findOne({ email: user.email });
+    //     if (dbUser) {
+    //       token.mobile = dbUser.mobileNumber;
+    //       token.instagramHandle = dbUser.instagramHandle;
+    //     }
+    //   }
+    //   return token;
+    // },
   },
   adapter: MongoDBAdapter(clientPromise),
   secret: process.env.NEXTAUTH_URL,

@@ -2,7 +2,7 @@
 
 import React from "react";
 import OrderSummary from "./OrderSummary";
-import { CartItemType, CartType } from "../../../common/types";
+import { CartItemType } from "../../../common/types";
 import CheckoutForm from "./CheckoutForm";
 import { DeliveryType } from "../../../common/enums/DeliveryType";
 
@@ -19,7 +19,7 @@ export const ProductContext = React.createContext<ProductCtx>({} as ProductCtx);
 
 const Checkout = () => {
   const [deliveryOption, setDeliveryOption] = React.useState<DeliveryType>(
-    DeliveryType.Delivery
+    DeliveryType.Delivery,
   );
 
   const [totalPrice, setTotalPrice] = React.useState<number>(0);

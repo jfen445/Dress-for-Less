@@ -5,10 +5,10 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
   email: { type: String, required: true },
   password: { type: String, required: false },
-  name: { type: String, required: true },
-  mobileNumber: { type: String, required: true },
+  name: { type: String, required: false },
+  mobileNumber: { type: String, required: false },
   instagramHandle: { type: String, required: false },
-  photo: { type: String, required: true },
+  photo: { type: String, required: false },
   role: {
     type: String,
     enum: ["admin", "user"],
@@ -54,7 +54,7 @@ const bookingSchema = new Schema(
     price: { type: Number, required: true },
     status: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const BookingSchema =

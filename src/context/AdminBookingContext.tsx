@@ -2,9 +2,6 @@
 
 import * as React from "react";
 import { Booking, UserType } from "../../common/types";
-import { logUserIn, signUp } from "@/api/user";
-import { AxiosResponse } from "axios";
-import UserAuthContextProvider from "./UserAuthContext";
 import { getAllBookings } from "@/api/admin";
 import dayjs from "dayjs";
 
@@ -17,7 +14,7 @@ interface AdminBookingCtx {
 }
 
 const adminBookingContext = React.createContext<AdminBookingCtx>(
-  {} as AdminBookingCtx
+  {} as AdminBookingCtx,
 );
 
 const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
@@ -38,12 +35,11 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
         currentSunday.setDate(now.getDate() + (7 - now.getDay()));
       }
       currentSunday.setHours(23, 59, 59, 999);
-      const sortedBookings = (data.data as unknown as Booking[]).sort(function (
-        a,
-        b
-      ) {
-        return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
-      });
+      const sortedBookings = (data.data as unknown as Booking[]).sort(
+        function (a, b) {
+          return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
+        },
+      );
 
       const previousMonday = (d = dayjs()) => {
         // dayjs().day(): Sunday = 0, Monday = 1, ..., Saturday = 6
@@ -54,16 +50,18 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
       const thisWeek = sortedBookings.filter(
         (booking) =>
           dayjs(booking.dateBooked).isBefore(dayjs(currentSunday)) &&
-          dayjs(booking.dateBooked).isAfter(dayjs(previousMonday()))
+          dayjs(booking.dateBooked).isAfter(dayjs(previousMonday())),
       );
 
       const allBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday))
+        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday)),
       );
 
-      const pastBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isBefore(previousMonday())
-      );
+      const pastBookings = sortedBookings
+        .filter((booking) =>
+          dayjs(booking.dateBooked).isBefore(previousMonday()),
+        )
+        .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked)));
       setPastBookings(pastBookings);
 
       setThisWeekBookings(thisWeek);

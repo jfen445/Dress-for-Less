@@ -16,16 +16,16 @@ enum Selected {
 const Orders = () => {
   const { userInfo } = useUserContext();
   const [previousOrders, setPreviousOrders] = React.useState<OrderHistory[]>(
-    []
+    [],
   );
   const [upcomingOrders, setUpcomingOrders] = React.useState<OrderHistory[]>(
-    []
+    [],
   );
   const { status } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedTab, setSelectedTab] = React.useState<Selected>(
-    Selected.Upcoming
+    Selected.Upcoming,
   );
 
   if (status === "unauthenticated") {
@@ -48,7 +48,7 @@ const Orders = () => {
           .filter(
             (booking) =>
               dayjs(booking.dateBooked).isBefore(today) ||
-              dayjs(booking.dateBooked).isSame(today)
+              dayjs(booking.dateBooked).isSame(today),
           )
           .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked))); // most recent past first
 
@@ -168,12 +168,15 @@ const Orders = () => {
 
           <Tabs></Tabs>
           {upcomingOrders.length === 0 ? (
-            <p className="mt-4 text-sm text-gray-500">No upcoming orders</p>
+            <p className="mt-4 text-sm text-gray-500">
+              No {selectedTab === Selected.Upcoming ? "upcoming" : "previous"}{" "}
+              orders
+            </p>
           ) : (
             itemList(
               selectedTab === Selected.Upcoming
                 ? upcomingOrders
-                : previousOrders
+                : previousOrders,
             )
           )}
         </main>
