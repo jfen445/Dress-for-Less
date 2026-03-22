@@ -1,4 +1,4 @@
-import { dbConnect, disconnect } from "../../../lib/db/db";
+import { dbConnect } from "../../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
 import { createUser, findUser } from "../../../lib/db/user-dao";
 import { IUser } from "../../../common/interfaces/user";
@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const con = await dbConnect();
   console.log("hit db connect", new Date().getSeconds(), con);
@@ -36,8 +36,6 @@ export default async function handler(
 
       // await createUser(user);
     });
-
-    // await disconnect();
 
     res.status(200).json({ message: "Account created" });
   }

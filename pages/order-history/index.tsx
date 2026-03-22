@@ -5,7 +5,6 @@ import { OrderHistory } from "../../common/types";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
-import { rule } from "postcss";
 import Spinner from "@/components/Spinner";
 
 enum Selected {

@@ -2,13 +2,11 @@
 
 import * as React from "react";
 import { CartType, UserType } from "../../common/types";
-import { getUser } from "@/api/user";
+import { getUser, updateUserAccount } from "@/api/user";
 import { useSession } from "next-auth/react";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { syncCart } from "@/api/cart";
-
-const secretKey = "secret";
-const key = new TextEncoder().encode(secretKey);
+import { AccountType } from "../../common/enums/AccountType";
 
 interface UserContextProps {
   userInfo: UserType | null;
@@ -26,13 +24,28 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
 
   const { data: session } = useSession();
 
-  const fetchData = React.useCallback(() => {
+  const fetchData = React.useCallback(async () => {
     if (session != null && session?.user.email) {
       getUser(session?.user.email)
         .then((res) => {
           if (res === undefined) return;
           const r = res.data as unknown as UserType;
           setUserInfo(r);
+        })
+        .catch((err) => console.error(err));
+    }
+
+    if (userInfo == null) {
+      await updateUserAccount({
+        email: session?.user.email ?? "",
+        name: session?.user.name || "",
+        mobileNumber: "",
+        instagramHandle: "",
+        role: AccountType.User,
+      })
+        .then((res) => {
+          const newUser = res.data as unknown as UserType;
+          setUserInfo(newUser);
         })
         .catch((err) => console.error(err));
     }
