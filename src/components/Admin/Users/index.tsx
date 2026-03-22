@@ -23,12 +23,6 @@ const AdminUsers = () => {
     getUsers();
   }, []);
 
-  const getUserProfileImage = () => {
-    let letter = "D";
-
-    return makeLetterAvatar(letter);
-  };
-
   const makeLetterAvatar = (
     letter: string,
     size = 100,

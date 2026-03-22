@@ -9,6 +9,7 @@ import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DeliveryType } from "../../common/enums/DeliveryType";
+import { useCartContext } from "@/context/CartContext";
 
 const deliveryMethods = [
   { id: "delivery", title: "Full delivery" },
@@ -26,6 +27,7 @@ const OrderSuccess = ({
 }) => {
   const params = useParams<{ payment_intent: string }>();
   const router = useRouter();
+  const { refreshCart } = useCartContext();
   const { getDressWithId } = useGlobalContext();
   const { userInfo } = useUserContext();
   const [bookings, setBookings] = React.useState<Booking[]>([]);
@@ -34,7 +36,7 @@ const OrderSuccess = ({
   const price = React.useCallback(() => {
     const totalPrice = bookings.reduce(
       (partialSum, { price }) => partialSum + price,
-      0
+      0,
     );
 
     return Number(totalPrice).toString();
@@ -73,6 +75,8 @@ const OrderSuccess = ({
   }, [params, router.query, router.query.payment_intent_client_secret]);
 
   React.useEffect(() => {
+    refreshCart();
+
     async function fetchDressDetails(bookings: Booking[]) {
       const dressDetails = await Promise.all(
         bookings.map(async (booking) => {
@@ -81,11 +85,11 @@ const OrderSuccess = ({
           } catch (error) {
             console.error(
               `Error fetching dress with ID ${booking.dressId}:`,
-              error
+              error,
             );
             return null; // Handle errors gracefully
           }
-        })
+        }),
       );
 
       return dressDetails.filter((detail) => detail !== null); // Remove null values if any
@@ -129,7 +133,7 @@ const OrderSuccess = ({
                 {"Booking submitted!"}
               </p>
               <p className="mt-2 text-base text-gray-500">
-                Your order will be with you soon.
+                A confirmation will be sent to your email shortly.
               </p>
 
               {/* <dl className="mt-12 text-sm font-medium">
@@ -179,7 +183,7 @@ const OrderSuccess = ({
                           </dt>
                           <dd className="ml-2 text-gray-700">
                             {dayjs(bookings[index].dateBooked).format(
-                              "DD/MM/YYYY"
+                              "DD/MM/YYYY",
                             )}
                           </dd>
                         </div>

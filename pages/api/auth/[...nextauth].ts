@@ -7,8 +7,8 @@ import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
 import { Resend } from "resend";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
-import { UserSchema } from "../../../lib/db/schema";
 import { UserType } from "../../../common/types";
+import { createUser } from "../../../lib/db/user-dao";
 
 declare module "next-auth" {
   interface Session {
@@ -33,7 +33,7 @@ export const sendVerificationRequest = async (
   try {
     const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-    await resend.emails.send({
+    resend.emails.send({
       from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [identifier],
       subject: "Log into your Dress for Less account",
@@ -83,7 +83,6 @@ export const authOptions: NextAuthOptions = {
     // // Called when user signs in - update your custom MongoDB collection
     async signIn({ user, profile }) {
       try {
-        const filter = { email: user.email };
         const update: UserType = {
           email: user.email ?? "",
           name: user.name || profile?.name || "",
@@ -92,12 +91,8 @@ export const authOptions: NextAuthOptions = {
           instagramHandle: "",
           role: "user",
         };
-        const options = { upsert: true };
 
-        console.log("Updating/inserting user record in DB:", update);
-
-        await UserSchema.updateOne(filter, update, options);
-        console.log("User record updated/created successfully");
+        await createUser(update);
 
         return true;
       } catch (error) {
@@ -105,17 +100,6 @@ export const authOptions: NextAuthOptions = {
         return true; // Still allow sign in even if DB update fails
       }
     },
-    // Add custom fields to JWT token
-    // async jwt({ token, user }) {
-    //   if (user) {
-    //     const dbUser = await UserSchema.findOne({ email: user.email });
-    //     if (dbUser) {
-    //       token.mobile = dbUser.mobileNumber;
-    //       token.instagramHandle = dbUser.instagramHandle;
-    //     }
-    //   }
-    //   return token;
-    // },
   },
   adapter: MongoDBAdapter(clientPromise),
   secret: process.env.NEXTAUTH_URL,

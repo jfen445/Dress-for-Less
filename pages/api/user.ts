@@ -1,4 +1,4 @@
-import { dbConnect, disconnect } from "../../lib/db/db";
+import { dbConnect } from "../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
 import { findAllUsers, findUser } from "../../lib/db/user-dao";
 import { IUser } from "../../common/interfaces/user";
@@ -7,7 +7,7 @@ import { UserSchema } from "../../lib/db/schema";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   await dbConnect();
   if (req.method === "GET") {

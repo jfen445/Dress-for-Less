@@ -10,14 +10,13 @@ import {
 } from "../../lib/db/booking-dao";
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
-import { Resend } from "resend";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   await dbConnect();
 
@@ -31,7 +30,7 @@ export default async function handler(
         allBookings.map(async (booking) => {
           const dressInfo = await getDress(booking.dressId);
           return { ...booking, dress: dressInfo };
-        })
+        }),
       );
       res.status(200).json(allBookingInfo);
 
@@ -67,7 +66,7 @@ export default async function handler(
       const checkBooking = await checkDuplicateBooking(
         dress.dressId,
         dress.size,
-        dress.dateBooked
+        dress.dateBooked,
       );
 
       if (checkBooking.length > 0) {
