@@ -3,22 +3,27 @@ import { UserType } from "../../common/types";
 import clientPromise from "./db";
 
 export async function createUser(user: UserType) {
-  // const hashedPassword = await bcrypt.hash(user.password, 10);
-
   const client = await clientPromise;
   const db = client.db();
+  const collection = db.collection(UserSchema.collection.name);
 
-  const newUser = await db
-    .collection(UserSchema.collection.name)
-    .updateOne({ email: user.email }, { $set: user }, { upsert: true });
+  // 1. Check if user already exists
+  const existingUser = await collection.findOne({ email: user.email });
 
-  // const newUser = await UserSchema.create({
-  //   email: user.email,
-  //   name: user.name,
-  //   mobileNumber: user.mobileNumber,
-  //   instagramHandle: user.instagramHandle ?? "",
-  // });
+  if (existingUser) {
+    return existingUser; // ✅ return without modifying
+  }
 
+  // 2. Create new user
+  const newUser = await collection.insertOne({
+    email: user.email,
+    name: user.name,
+    mobileNumber: user.mobileNumber,
+    instagramHandle: user.instagramHandle,
+    role: user.role,
+  });
+
+  // 3. Return newly created user
   return newUser;
 }
 
