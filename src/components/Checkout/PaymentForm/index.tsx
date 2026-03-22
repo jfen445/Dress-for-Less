@@ -17,6 +17,7 @@ import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
+import { useCartContext } from "@/context/CartContext";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -33,6 +34,7 @@ const PaymentForm = ({
 }: IPaymentForm) => {
   const router = useRouter();
   const { userInfo } = useUserContext();
+  const { refreshCart } = useCartContext();
   const { products, deliveryOption } = React.useContext(ProductContext);
   const stripe = useStripe();
   const elements = useElements();
@@ -171,7 +173,10 @@ const PaymentForm = ({
             });
         }
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setIsLoading(false);
+        refreshCart();
+      });
   }
 
   return (
