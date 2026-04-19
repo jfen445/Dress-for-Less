@@ -1,8 +1,9 @@
-import axios, { AxiosError } from "axios";
+import api from "./client";
+import { AxiosError } from "axios";
 
 export async function getAllDresses() {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/sanity/dresses`,
       method: "GET",
     });

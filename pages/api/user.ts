@@ -4,12 +4,20 @@ import { findAllUsers, findUser } from "../../lib/db/user-dao";
 import { IUser } from "../../common/interfaces/user";
 import { UserType } from "../../common/types";
 import { UserSchema } from "../../lib/db/schema";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   await dbConnect();
+
   if (req.method === "GET") {
     const email = req.query.email as string;
 

@@ -3,13 +3,20 @@ import { dbConnect } from "../../lib/db/db";
 import { checkDuplicateBooking } from "../../lib/db/booking-dao";
 import { Booking } from "../../common/types";
 import Stripe from "stripe";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   await dbConnect();
 
   if (req.method == "POST") {
@@ -20,7 +27,7 @@ export default async function handler(
       const checkBooking = await checkDuplicateBooking(
         dress.dressId,
         dress.size,
-        dress.dateBooked
+        dress.dateBooked,
       );
 
       if (checkBooking.length > 0) {

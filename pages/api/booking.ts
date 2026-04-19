@@ -11,6 +11,8 @@ import {
 import { Booking } from "../../common/types";
 import { getDress } from "../../sanity/sanity.query";
 import Stripe from "stripe";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -18,6 +20,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   await dbConnect();
 
   if (req.method == "GET") {

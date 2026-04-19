@@ -35,7 +35,7 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
         .catch((err) => console.error(err));
     }
 
-    if (userInfo == null && !session?.user.email) {
+    if (session && userInfo == null && !session?.user.email) {
       await updateUserAccount({
         email: session?.user.email ?? "",
         name: session?.user.name || "",
