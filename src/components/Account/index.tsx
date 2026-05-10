@@ -31,6 +31,7 @@ const Account = () => {
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const [photoWarningText, setPhotoWarningText] =
     React.useState<boolean>(false);
+  const [isEditMode, setIsEditMode] = React.useState<boolean>(false);
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
@@ -87,7 +88,34 @@ const Account = () => {
           show: true,
         });
       })
-      .finally(() => setIsSaving(false));
+      .finally(() => {
+        setIsSaving(false);
+        setIsEditMode(false);
+      });
+  };
+
+  const SaveButton = () => {
+    return (
+      <>
+        {isSaving ? (
+          <div className="flex items-center justify-center w-2/3">
+            <Spinner message="Saving..." />
+          </div>
+        ) : (
+          <>
+            <div className="mt-8 flex">
+              <Button
+                type="submit"
+                disabled={isSaving || photoWarningText}
+                className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </>
+        )}
+      </>
+    );
   };
 
   return (
@@ -130,7 +158,7 @@ const Account = () => {
                   id="firstname"
                   name="firstname"
                   type="text"
-                  className=""
+                  disabled={!isEditMode}
                   required
                 />
               </div>
@@ -152,7 +180,7 @@ const Account = () => {
                   id="lastname"
                   name="lastname"
                   type="text"
-                  className=""
+                  disabled={!isEditMode}
                   required
                 />
               </div>
@@ -195,6 +223,7 @@ const Account = () => {
                     id="mobile"
                     name="mobile"
                     type="number"
+                    disabled={!isEditMode}
                     className=""
                     required
                   />
@@ -219,6 +248,7 @@ const Account = () => {
                     }}
                     id="instagramHandle"
                     name="instagramHandle"
+                    disabled={!isEditMode}
                     type="text"
                     className=""
                   />
@@ -227,22 +257,18 @@ const Account = () => {
             </div>
           </div>
 
-          {isSaving ? (
-            <div className="flex items-center justify-center w-2/3">
-              <Spinner message="Saving..." />
+          {!isEditMode ? (
+            <div className="mt-8 flex">
+              <Button
+                onClick={() => setIsEditMode(true)}
+                disabled={isSaving || photoWarningText}
+                className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              >
+                Edit
+              </Button>
             </div>
           ) : (
-            <>
-              <div className="mt-8 flex">
-                <Button
-                  type="submit"
-                  disabled={isSaving || photoWarningText}
-                  className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-                >
-                  {isSaving ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </>
+            <SaveButton />
           )}
         </form>
       </div>
