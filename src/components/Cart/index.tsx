@@ -17,13 +17,13 @@ import { useCartContext } from "@/context/CartContext";
 
 const Cart = () => {
   const { refreshCart } = useCartContext();
-  const { getDressWithId } = useGlobalContext();
+  const { getDressWithId, allDresses } = useGlobalContext();
   const { getItems, setItems, clearItems } =
     useLocalStorage<CartType[]>("localCart");
   const { userInfo } = useUserContext();
   const { status } = useSession();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
-  const [selectedProductIds, setSelectedProductIds] = React.useState<String[]>(
+  const [selectedProductIds, setSelectedProductIds] = React.useState<string[]>(
     [],
   );
   const [err, setErr] = React.useState<boolean>(false);
@@ -45,74 +45,77 @@ const Cart = () => {
   }, [selectedProductIds]);
 
   const getUserCart = React.useCallback(async () => {
-    if (userInfo && userInfo?._id) {
-      setIsLoading(true);
-      setErr(false);
-      await getCart(userInfo?._id)
-        .then((data) => {
-          const cartItems = data.data as unknown as CartType[];
-          let dresses: CartItemType[] = [];
-          cartItems.map(async (item) => {
-            const dress = getDressWithId(item.dressId);
-            const cartDress: CartItemType = {
-              _id: dress._id,
-              name: dress.name,
-              description: dress.description,
-              size: item.size,
-              images: dress.images,
-              tags: dress.tags,
-              price: dress.price,
-              length: dress.length,
-              brand: dress.brand,
-              rrp: dress.rrp,
-              stretch: dress.stretch,
-              dateBooked: item.dateBooked,
-              cartItemId: item._id || "",
-            };
+    setIsLoading(true);
+    setErr(false);
 
-            dresses = [...dresses, cartDress];
+    const buildCartProducts = (cartItems: CartType[]) => {
+      const items = cartItems
+        .map((item) => {
+          const dress = getDressWithId(item.dressId);
+          if (!dress) return null;
 
-            setProducts(dresses);
-          });
+          const cartItemId =
+            item._id ?? `${item.dressId}-${item.dateBooked}-${item.size}`;
+
+          return {
+            _id: dress._id,
+            name: dress.name,
+            description: dress.description,
+            size: item.size,
+            images: dress.images,
+            tags: dress.tags,
+            price: dress.price,
+            length: dress.length,
+            brand: dress.brand,
+            rrp: dress.rrp,
+            stretch: dress.stretch,
+            dateBooked: item.dateBooked,
+            cartItemId,
+          } as CartItemType;
         })
-        .catch(() => {
+        .filter((product): product is CartItemType => Boolean(product));
+
+      setProducts(items);
+      setSelectedProductIds((prev) =>
+        prev.filter((id) => items.some((product) => product.cartItemId === id)),
+      );
+      setErr(items.length === 0);
+    };
+
+    try {
+      if (userInfo && userInfo._id) {
+        const data = await getCart(userInfo._id);
+        const cartItems = (data.data ?? []) as CartType[];
+
+        if (cartItems.length === 0) {
+          setProducts([]);
+          setSelectedProductIds([]);
           setErr(true);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      const cartItems = getItems();
+          return;
+        }
 
-      if (!cartItems) {
+        buildCartProducts(cartItems);
+        return;
+      }
+
+      const cartItems = getItems() ?? [];
+      if (cartItems.length === 0) {
+        setProducts([]);
+        setSelectedProductIds([]);
         setErr(true);
         return;
       }
 
-      let dresses: CartItemType[] = [];
-      cartItems.map(async (item) => {
-        const dress = await getDressWithId(item.dressId);
-        const cartDress: CartItemType = {
-          _id: dress._id,
-          name: dress.name,
-          description: dress.description,
-          size: dress.size,
-          images: dress.images,
-          tags: dress.tags,
-          price: dress.price,
-          length: dress.length,
-          brand: dress.brand,
-          rrp: dress.rrp,
-          stretch: dress.stretch,
-          dateBooked: item.dateBooked,
-          cartItemId:
-            item._id || (Math.floor(Math.random() * 1000) + 1).toString(),
-        };
-
-        dresses = [...dresses, cartDress];
-
-        setProducts(dresses);
-      });
+      buildCartProducts(cartItems);
+    } catch (error) {
+      setProducts([]);
+      setSelectedProductIds([]);
+      setErr(true);
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [getDressWithId, userInfo, getItems]);
+  }, [getDressWithId, userInfo, getItems, allDresses]);
 
   React.useEffect(() => {
     getUserCart().catch(() => setErr(true));
@@ -124,28 +127,41 @@ const Cart = () => {
 
       const updatedCart = localCart.filter(
         (item) =>
-          item._id !== cartItemId._id &&
-          item.dateBooked !== cartItemId.dateBooked &&
-          item.size !== cartItemId.size,
-      ) as CartType[];
+          !(
+            item.dressId === cartItemId._id &&
+            item.dateBooked === cartItemId.dateBooked &&
+            item.size === cartItemId.size
+          ),
+      );
+
+      setSelectedProductIds((prev) =>
+        prev.filter((id) => id !== cartItemId.cartItemId),
+      );
 
       if (updatedCart.length === 0) {
         clearItems();
         setProducts([]);
         setErr(true);
-      } else {
-        setItems(updatedCart);
-        getUserCart();
+        refreshCart();
+        return;
       }
+
+      setItems(updatedCart);
+      await getUserCart();
       refreshCart();
       return;
     }
 
-    await removeFromCart(cartItemId.cartItemId)
-      .then(() => getUserCart())
-      .catch((err) => {
-        console.log(err);
-      });
+    try {
+      await removeFromCart(cartItemId.cartItemId);
+      setSelectedProductIds((prev) =>
+        prev.filter((id) => id !== cartItemId.cartItemId),
+      );
+      refreshCart();
+      await getUserCart();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const isValidCheckout = () => {
@@ -168,6 +184,7 @@ const Cart = () => {
   };
 
   const isAuthenticated = status === "authenticated";
+  const checkoutDisabled = isValidCheckout();
 
   return (
     <>
@@ -241,23 +258,25 @@ const Cart = () => {
 
                   <div className="mt-10 flex justify-center">
                     {isUserValid ? (
-                      <Link
-                        href={{
-                          pathname: "/checkout",
-                          query: query().toString(),
-                        }}
-                      >
-                        <Button
-                          type="submit"
-                          disabled={isValidCheckout()}
-                          variant="secondary"
-                        >
+                      checkoutDisabled ? (
+                        <Button type="button" disabled variant="secondary">
                           Checkout
                         </Button>
-                      </Link>
+                      ) : (
+                        <Link
+                          href={{
+                            pathname: "/checkout",
+                            query: query().toString(),
+                          }}
+                        >
+                          <Button type="submit" variant="secondary">
+                            Checkout
+                          </Button>
+                        </Link>
+                      )
                     ) : (
                       <Button
-                        type="submit"
+                        type="button"
                         disabled={false}
                         variant="secondary"
                         onClick={() => setIsOpen(true)}

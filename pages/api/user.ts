@@ -12,10 +12,6 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
   await dbConnect();
 
   if (req.method === "GET") {
@@ -40,6 +36,10 @@ export default async function handler(
 
     res.status(200).json(userInfo);
   } else if (req.method == "POST") {
+    if (!session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const email: string = req.body.user.email;
 
     let user: IUser = {

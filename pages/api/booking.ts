@@ -21,9 +21,6 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
 
   await dbConnect();
 
@@ -56,6 +53,10 @@ export default async function handler(
 
     res.status(200).json(bookingItems);
   } else if (req.method == "POST") {
+    if (!session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const dresses = req.body.booking as Booking[];
     const paymentIntent = req.body.paymentIntent;
 
@@ -137,6 +138,9 @@ export default async function handler(
       .status(200)
       .json({ message: "Booking successful", booking: bookedDresses });
   } else if (req.method == "PATCH") {
+    if (!session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const bookingId = req.query.bookingId as string;
 
     const booking = await getBookingsById(bookingId);

@@ -8,6 +8,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       window.location.href = "/login"; // Force a full redirect
     }
+
+    if (error.response?.status === 403) {
+      window.location.href = "/login"; // Force a full redirect
+    }
+
     return Promise.reject(error);
   },
 );
