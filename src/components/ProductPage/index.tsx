@@ -22,6 +22,7 @@ import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
+import { set } from "mongoose";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
@@ -41,6 +42,7 @@ const Product = () => {
     show: false,
   });
   const params = useParams<{ id: string }>();
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const sizeOptions = React.useCallback(() => {
     const obj = Object.keys(sizes).map((item) => item.toUpperCase());
@@ -95,6 +97,8 @@ const Product = () => {
   }, [getDressWithId, params]);
 
   const addDressToCart = async () => {
+    setIsLoading(true);
+
     const user = await getUser(session?.user.email ?? "")
       .then((res) => {
         if (res === undefined) return null;
@@ -103,12 +107,13 @@ const Product = () => {
       })
       .catch((err) => console.error(err));
 
-    if (!params?.id) {
+    if (!params?.id || !user) {
       setToast({
         message: "An error occurred while adding to cart",
         variant: "error",
         show: true,
       });
+      setIsLoading(false);
       return;
     }
 
@@ -163,6 +168,8 @@ const Product = () => {
           setIsAddedToCart(true);
         });
     }
+
+    setIsLoading(false);
   };
 
   const Dropdown = () => {
@@ -268,7 +275,12 @@ const Product = () => {
               <div className="mt-10">
                 <Button
                   className="flex w-full items-center justify-center"
-                  disabled={selectedDate === "" || size == "" || isAddedToCart}
+                  disabled={
+                    selectedDate === "" ||
+                    size == "" ||
+                    isAddedToCart ||
+                    isLoading
+                  }
                   onClick={() => addDressToCart()}
                 >
                   {isAddedToCart ? "Added to cart" : "Add to cart"}

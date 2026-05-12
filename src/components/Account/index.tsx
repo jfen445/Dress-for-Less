@@ -7,10 +7,12 @@ import { getUser, updateUserAccount } from "@/api/user";
 import Toast, { ToastType } from "../Toast";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "../Spinner";
+import { useCartContext } from "@/context/CartContext";
 
 const Account = () => {
   const { data: session } = useSession();
   const { fetchData, getUserProfileImage } = useUserContext();
+  const { refreshCart } = useCartContext();
   const [firstName, setFirstName] = React.useState<string>(
     session && session.user && session.user.name
       ? session.user.name.split(" ")[0]
@@ -54,6 +56,10 @@ const Account = () => {
 
     getCurrentUser();
   }, [email]);
+
+  React.useEffect(() => {
+    refreshCart();
+  }, []);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
