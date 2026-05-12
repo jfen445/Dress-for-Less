@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { syncCart } from "@/api/cart";
 import { AccountType } from "../../common/enums/AccountType";
+import { useCartContext } from "./CartContext";
 
 interface UserContextProps {
   userInfo: UserType | null;
@@ -21,7 +22,8 @@ const userContext = React.createContext<UserContextProps>(
 const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
   const { getItems, clearItems } = useLocalStorage<CartType[]>("localCart");
-
+  const { refreshCart } = useCartContext();
+  55;
   const { data: session } = useSession();
 
   const fetchData = React.useCallback(async () => {
@@ -35,7 +37,7 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
         .catch((err) => console.error(err));
     }
 
-    if (userInfo == null && !session?.user.email) {
+    if (session && userInfo == null && !session?.user.email) {
       await updateUserAccount({
         email: session?.user.email ?? "",
         name: session?.user.name || "",
@@ -95,6 +97,9 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
       })
       .catch((err) => {
         console.error(err);
+      })
+      .finally(() => {
+        refreshCart();
       });
   }, [userInfo]);
 

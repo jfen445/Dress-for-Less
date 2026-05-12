@@ -4,12 +4,16 @@ import { findAllUsers, findUser } from "../../lib/db/user-dao";
 import { IUser } from "../../common/interfaces/user";
 import { UserType } from "../../common/types";
 import { UserSchema } from "../../lib/db/schema";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  const session = await getServerSession(req, res, authOptions);
   await dbConnect();
+
   if (req.method === "GET") {
     const email = req.query.email as string;
 
@@ -32,6 +36,10 @@ export default async function handler(
 
     res.status(200).json(userInfo);
   } else if (req.method == "POST") {
+    if (!session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const email: string = req.body.user.email;
 
     let user: IUser = {

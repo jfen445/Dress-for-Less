@@ -1,8 +1,9 @@
-import axios, { AxiosError } from "axios";
+import api from "./client";
+import { AxiosError } from "axios";
 
 export async function getAllBookings() {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/admin/bookings`,
       method: "GET",
     });

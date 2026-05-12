@@ -1,8 +1,9 @@
-import axios, { AxiosError } from "axios";
+import api from "./client";
+import { AxiosError } from "axios";
 
 export async function getClientSecret(price: string) {
   try {
-    const response = await axios.post(`/api/payment/intent?price=${price}`, {
+    const response = await api.post(`/api/payment/intent?price=${price}`, {
       headers: {
         "Content-Type": "application/json",
       },

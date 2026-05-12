@@ -1,16 +1,17 @@
-import axios, { AxiosError } from "axios";
+import api from "./client";
+import { AxiosError } from "axios";
 import { Booking } from "../../common/types";
 
 export async function createBooking(booking: Booking[], paymentIntent: string) {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `/api/booking`,
       { booking, paymentIntent },
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response;
@@ -22,14 +23,14 @@ export async function createBooking(booking: Booking[], paymentIntent: string) {
 
 export async function confirmBooking(intent: string) {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       `/api/payment/paymentConfirm`,
       { intent: intent },
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response;
@@ -41,7 +42,7 @@ export async function confirmBooking(intent: string) {
 
 export async function getAllBookingsByDress(dressId: string) {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/booking?dressId=${dressId}`,
       method: "GET",
     });
@@ -55,14 +56,14 @@ export async function getAllBookingsByDress(dressId: string) {
 
 export async function updateBooking(bookingId: string, bookingObj: any) {
   try {
-    const response = await axios.patch(
+    const response = await api.patch(
       `/api/booking?bookingId=${bookingId}`,
       { bookingObj },
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response;
@@ -74,7 +75,7 @@ export async function updateBooking(bookingId: string, bookingObj: any) {
 
 export async function getAllBookingsByUserId(userId: string) {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/history?userId=${userId}`,
       method: "GET",
     });
@@ -88,7 +89,7 @@ export async function getAllBookingsByUserId(userId: string) {
 
 export async function checkValidBooking(booking: Booking[]) {
   try {
-    await axios.post(`/api/validateBooking`, {
+    await api.post(`/api/validateBooking`, {
       booking,
       headers: {
         "Content-Type": "application/json",

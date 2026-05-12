@@ -1,16 +1,17 @@
-import axios, { AxiosError } from "axios";
+import api from "./client";
+import { AxiosError } from "axios";
 import { CartType } from "../../common/types";
 
 export async function addToCart(cartItem: CartType) {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       "/api/cart",
       { cartItem },
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response;
@@ -23,7 +24,7 @@ export async function addToCart(cartItem: CartType) {
 
 export async function getCart(userId: string) {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/cart?userId=${userId}`,
       method: "GET",
     });
@@ -37,7 +38,7 @@ export async function getCart(userId: string) {
 
 export async function removeFromCart(cartItemId: string) {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/cart?cartItemId=${cartItemId}`,
       method: "DELETE",
     });
@@ -51,14 +52,14 @@ export async function removeFromCart(cartItemId: string) {
 
 export async function syncCart(cart: CartType[]) {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       "/api/syncCart",
       { cart },
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response;

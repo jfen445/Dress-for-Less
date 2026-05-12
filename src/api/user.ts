@@ -1,9 +1,10 @@
-import axios, { AxiosError } from "axios";
+import api from "./client";
+import { AxiosError } from "axios";
 import { UserType } from "../../common/types";
 
 export async function signUp(user: UserType) {
   try {
-    const response = await axios.post(`/api/auth/signup`, user, {
+    const response = await api.post(`/api/auth/signup`, user, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -18,14 +19,14 @@ export async function signUp(user: UserType) {
 
 export async function logUserIn(email: string, password: string) {
   try {
-    const response = await axios.post(
+    const response = await api.post(
       "/api/auth/login",
       { email: email, password: password },
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     return response;
@@ -37,7 +38,7 @@ export async function logUserIn(email: string, password: string) {
 
 export async function getUser(email: string) {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/user?email=${email}`,
       method: "GET",
     });
@@ -51,7 +52,7 @@ export async function getUser(email: string) {
 
 export async function getAllUsers() {
   try {
-    const response = await axios.request({
+    const response = await api.request({
       url: `/api/user`,
       method: "GET",
     });
@@ -65,7 +66,7 @@ export async function getAllUsers() {
 
 export async function updateUserAccount(userAccountDetails: UserType) {
   try {
-    const response = await axios.post("/api/user", {
+    const response = await api.post("/api/user", {
       user: userAccountDetails,
     });
 

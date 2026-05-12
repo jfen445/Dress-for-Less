@@ -197,7 +197,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       case BookingStatus.Drying:
         colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
         break;
-      case BookingStatus.Completed:
+      case BookingStatus.Packed:
         colour = "bg-green-50 text-green-700 ring-green-600/20";
         break;
       case BookingStatus.Delayed:
@@ -205,6 +205,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         break;
       case BookingStatus.Reparing:
         colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
+        break;
+      case BookingStatus.Returned:
+        colour = "bg-green-50 text-green-700 ring-green-600/20";
+        break;
+      case BookingStatus.NA:
+        colour = "bg-gray-50 text-gray-700 ring-gray-600/20";
         break;
     }
     return colour;

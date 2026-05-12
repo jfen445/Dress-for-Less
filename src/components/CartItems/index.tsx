@@ -6,8 +6,8 @@ import { useRouter } from "next/router";
 
 interface ICartType {
   products: CartItemType[];
-  selectedProducts: String[];
-  setSelectedProducts: React.Dispatch<React.SetStateAction<String[]>>;
+  selectedProducts: string[];
+  setSelectedProducts: React.Dispatch<React.SetStateAction<string[]>>;
   removeItem: (cartItemId: CartItemType) => void;
 }
 
@@ -28,7 +28,7 @@ const CartItems = ({
 
     // Set the day to Thursday of the current week to ensure correct ISO week calculation
     copiedDate.setUTCDate(
-      copiedDate.getUTCDate() + 4 - (copiedDate.getUTCDay() || 7)
+      copiedDate.getUTCDate() + 4 - (copiedDate.getUTCDay() || 7),
     );
 
     // Start of the year
@@ -36,7 +36,7 @@ const CartItems = ({
 
     // Calculate the full weeks to the current date
     const weekNo = Math.ceil(
-      ((copiedDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
+      ((copiedDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
     );
     return weekNo;
   };
@@ -53,7 +53,7 @@ const CartItems = ({
           acc[year][week].push(item);
           return acc;
         },
-        {}
+        {},
       );
     }
 
@@ -65,12 +65,12 @@ const CartItems = ({
         year: Number(year),
         week: Number(w),
         items,
-      }))
+      })),
     );
 
     // Sort: newest year first, then by week (adjust asc/desc as desired)
     groups.sort((a, b) =>
-      a.year !== b.year ? b.year - a.year : a.week - b.week
+      a.year !== b.year ? b.year - a.year : a.week - b.week,
     );
 
     return groups;
@@ -110,9 +110,9 @@ const CartItems = ({
   };
 
   const handleCheckboxEvent = (
-    selected: Boolean,
-    id: String[],
-    groupId: String[]
+    selected: boolean,
+    id: string[],
+    groupId: string[],
   ) => {
     if (selected) {
       const filteredArray = selectedProducts
@@ -122,7 +122,7 @@ const CartItems = ({
       setSelectedProducts(filteredArray);
     } else {
       const filteredArray = selectedProducts.filter(
-        (item) => !id.includes(item)
+        (item) => !id.includes(item),
       );
       setSelectedProducts(filteredArray);
     }
@@ -161,7 +161,7 @@ const CartItems = ({
                       handleCheckboxEvent(
                         e.target.checked,
                         items.map((d) => d.cartItemId),
-                        items.map((d) => d.cartItemId)
+                        items.map((d) => d.cartItemId),
                       )
                     }
                   />
@@ -181,7 +181,7 @@ const CartItems = ({
                           handleCheckboxEvent(
                             e.target.checked,
                             [product.cartItemId],
-                            items.map((d) => d.cartItemId)
+                            items.map((d) => d.cartItemId),
                           )
                         }
                       />
