@@ -22,7 +22,6 @@ import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
-import { set } from "mongoose";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();

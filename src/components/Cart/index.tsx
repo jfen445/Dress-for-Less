@@ -27,7 +27,7 @@ const Cart = () => {
     [],
   );
   const [err, setErr] = React.useState<boolean>(false);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
   const isUserValid: boolean =
@@ -119,7 +119,7 @@ const Cart = () => {
 
   React.useEffect(() => {
     getUserCart().catch(() => setErr(true));
-  }, [getUserCart, userInfo]);
+  }, []);
 
   const removeItem = async (cartItemId: CartItemType) => {
     if (status === "unauthenticated") {
