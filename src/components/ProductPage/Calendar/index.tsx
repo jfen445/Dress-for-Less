@@ -40,13 +40,29 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
       return true;
     }
 
-    //disabled booked days
+    const sizeStock = readObject(sizes, selectedSize.toLowerCase());
+
+    // Disable if this date falls within any booking's block-out period (covers the full Fri-Sun window).
+    const blockedCount =
+      bookings?.filter(
+        (booking) =>
+          booking.size == selectedSize &&
+          booking.blockOutPeriod?.some((bp) => dayjs(bp).isSame(date, "day")),
+      ).length ?? 0;
+
+    if (blockedCount >= sizeStock) {
+      return true;
+    }
+
+    // Fall back to checking dateBooked directly for bookings without a blockOutPeriod.
     const days = bookings?.filter(
       (booking) =>
-        dayjs(booking.dateBooked).isSame(date) && booking.size == selectedSize
+        !booking.blockOutPeriod?.length &&
+        dayjs(booking.dateBooked).isSame(date, "day") &&
+        booking.size == selectedSize,
     );
 
-    if (days && days.length >= readObject(sizes, selectedSize.toLowerCase())) {
+    if (days && days.length >= sizeStock) {
       return true;
     }
 

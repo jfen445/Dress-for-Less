@@ -13,6 +13,23 @@ import { getDress } from "../../sanity/sanity.query";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import dayjs from "dayjs";
+
+// Returns the full Fri/Sat/Sun window for any weekend booking date.
+function calculateBlockOutPeriod(dateBooked: string): string[] {
+  const date = dayjs(dateBooked);
+  const day = date.day(); // 0=Sun, 5=Fri, 6=Sat
+
+  if (day === 5) {
+    return [date.toJSON(), date.add(1, "day").toJSON(), date.add(2, "day").toJSON()];
+  } else if (day === 6) {
+    return [date.subtract(1, "day").toJSON(), date.toJSON(), date.add(1, "day").toJSON()];
+  } else if (day === 0) {
+    return [date.subtract(2, "day").toJSON(), date.subtract(1, "day").toJSON(), date.toJSON()];
+  }
+
+  return [];
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -95,7 +112,7 @@ export default async function handler(
         dressId: dress.dressId,
         userId: dress.userId,
         dateBooked: dress.dateBooked,
-        blockOutPeriod: dress.blockOutPeriod,
+        blockOutPeriod: calculateBlockOutPeriod(dress.dateBooked),
         address: {
           address: dress.address?.address ?? "",
           suburb: dress.address?.suburb ?? "",

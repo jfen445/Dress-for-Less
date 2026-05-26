@@ -12,7 +12,6 @@ import Button from "@/components/Button";
 import { Address, Booking } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import { checkValidBooking, createBooking } from "@/api/booking";
-import dayjs from "dayjs";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
 import { useRouter } from "next/router";
@@ -69,27 +68,11 @@ const PaymentForm = ({
     products.forEach((item) => {
       const date = item.dateBooked;
 
-      const day = dayjs(date).subtract(1, "day").day();
-
-      let dates: string[] = [];
-
-      if (day == 5) {
-        const fri = dayjs(date).toJSON();
-        const sat = dayjs(date).add(1, "day").toJSON();
-        dates = [fri, sat];
-      }
-
-      if (day == 6) {
-        const fri = dayjs(date).subtract(1, "day").toJSON();
-        const sat = dayjs(date).toJSON();
-        dates = [fri, sat];
-      }
-
       const bookingObj: Booking = {
         userId: userInfo?._id ?? "",
         dressId: item._id,
         dateBooked: date,
-        blockOutPeriod: dates,
+        blockOutPeriod: [],
         price: parseInt(item.price),
         address: {
           address: address?.address ?? "",
