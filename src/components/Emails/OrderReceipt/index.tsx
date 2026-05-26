@@ -39,7 +39,7 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
               src={
                 baseUrl ? `${baseUrl}/dfl-logo-transparent.jpeg` : DFLLogo.src
               }
-              width="66"
+              width="160"
               height="22"
               alt="Dres for Less"
               style={{ margin: "auto" }}
