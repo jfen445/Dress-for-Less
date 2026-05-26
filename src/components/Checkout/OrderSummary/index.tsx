@@ -38,25 +38,28 @@ const OrderSummary = () => {
     const productIds = new URLSearchParams(window.location.search).getAll("id");
 
     const getUserCart = async () => {
-      if (userInfo && userInfo?._id) {
-        await getCart(userInfo?._id)
-          .then((data) => {
-            const cartItems = data.data as unknown as CartType[];
-            let dresses: CartItemType[] = [];
-            cartItems.forEach(async (item) => {
-              await getDress(item.dressId).then((data) => {
-                data.dateBooked = item.dateBooked;
-                data.cartItemId = item._id;
-                data.size = item.size;
+      if (!userInfo?._id) return;
 
-                if (productIds.includes(data.cartItemId)) {
-                  dresses = [...dresses, data];
-                }
-              });
-              setProducts(dresses);
-            });
-          })
-          .catch((err) => console.error(err));
+      try {
+        const data = await getCart(userInfo._id);
+        const cartItems = data.data as unknown as CartType[];
+        const selectedItems = cartItems.filter((item) =>
+          productIds.includes(item._id ?? ""),
+        );
+
+        const dresses = await Promise.all(
+          selectedItems.map(async (item) => {
+            const dress = await getDress(item.dressId);
+            dress.dateBooked = item.dateBooked;
+            dress.cartItemId = item._id;
+            dress.size = item.size;
+            return dress as CartItemType;
+          }),
+        );
+
+        setProducts(dresses);
+      } catch (err) {
+        console.error(err);
       }
     };
 

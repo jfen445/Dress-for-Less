@@ -6,11 +6,21 @@ import { Resend } from "resend";
 import { getDress } from "../../../sanity/sanity.query";
 import { Booking, OrderReceipt, User } from "../../../common/types";
 import { removeItemFromCartByFields } from "../../../lib/db/cart-dao";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
+import { dbConnect } from "../../../lib/db/db";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  await dbConnect();
+
   if (req.method == "POST") {
     const intent = req.body.intent as string;
 

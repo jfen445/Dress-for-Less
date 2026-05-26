@@ -46,7 +46,6 @@ const CheckoutForm = () => {
     React.useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
   const [termsError, setTermsError] = React.useState<boolean>(false);
-  React.useState<boolean>(false);
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
