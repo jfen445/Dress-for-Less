@@ -16,8 +16,14 @@ type AdminBookingsProps = {
 };
 
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
-  const { bookings, thisWeekBookings, pastBookings, isLoading, getBookings, updateBookingStatus } =
-    useAdminBooking();
+  const {
+    bookings,
+    thisWeekBookings,
+    pastBookings,
+    isLoading,
+    getBookings,
+    updateBookingStatus,
+  } = useAdminBooking();
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
@@ -64,13 +70,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     bookingId: string,
     bookingStatus: BookingStatus,
   ) => {
-    let bookingObj: {
-      status: BookingStatus;
-    } = {
-      status: bookingStatus,
-    };
-
-    await updateBooking(bookingId, bookingObj)
+    await updateBooking(bookingId, { status: bookingStatus })
       .then(() => updateBookingStatus(bookingId, bookingStatus))
       .catch(() =>
         setToast({
@@ -189,25 +189,30 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
   const getStatusBgColour = (status: BookingStatus) => {
     switch (status) {
-      case BookingStatus.InProgress: return "bg-green-50";
-      case BookingStatus.BeingReturned: return "bg-purple-50";
-      case BookingStatus.Washing: return "bg-blue-50";
-      case BookingStatus.Drying: return "bg-yellow-50";
-      case BookingStatus.Packed: return "bg-green-50";
-      case BookingStatus.Delayed: return "bg-red-50";
-      case BookingStatus.Reparing: return "bg-stone-50";
-      case BookingStatus.Returned: return "bg-green-50";
-      case BookingStatus.NA: return "bg-gray-50";
-      default: return "";
+      case BookingStatus.BeingReturned:
+        return "bg-purple-50";
+      case BookingStatus.Washing:
+        return "bg-blue-50";
+      case BookingStatus.Drying:
+        return "bg-lime-50";
+      case BookingStatus.Packed:
+        return "bg-orange-50";
+      case BookingStatus.Delayed:
+        return "bg-red-50";
+      case BookingStatus.Reparing:
+        return "bg-stone-50";
+      case BookingStatus.Returned:
+        return "bg-green-50";
+      case BookingStatus.NA:
+        return "bg-gray-50";
+      default:
+        return "";
     }
   };
 
   const getStatusColour = (status: BookingStatus) => {
     let colour = "";
     switch (status) {
-      case BookingStatus.InProgress:
-        colour = "bg-green-50 text-green-700 ring-green-600/20";
-        break;
       case BookingStatus.BeingReturned:
         colour = "bg-purple-50 text-purple-700 ring-purple-600/20";
         break;
@@ -215,10 +220,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         colour = "bg-blue-50 text-blue-700 ring-blue-600/20";
         break;
       case BookingStatus.Drying:
-        colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
+        colour = "bg-lime-50 text-lime-700 ring-lime-600/20";
         break;
       case BookingStatus.Packed:
-        colour = "bg-green-50 text-green-700 ring-green-600/20";
+        colour = "bg-orange-50 text-orange-700 ring-orange-600/20";
         break;
       case BookingStatus.Delayed:
         colour = "bg-red-50 text-red-700 ring-red-600/20";
@@ -243,7 +248,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           <Fragment key={currentBooking._id}>
             {/* Main row */}
             <tr
-              className={`cursor-pointer hover:brightness-95 ${getStatusBgColour(currentBooking.status)}`}
+              className={`cursor-pointer ${getStatusBgColour(currentBooking.status)}`}
               onClick={() => toggleRow(currentBooking._id)}
             >
               <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
@@ -277,10 +282,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
               <td className="px-3 py-5 text-sm text-gray-500">
                 {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
-              </td>
-
-              <td className="px-3 py-5 text-sm text-gray-500">
-                {currentBooking.size}
               </td>
 
               <td className="px-3 py-5 text-sm">
@@ -329,15 +330,16 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
                       <p>
                         <span className="font-medium">Address:</span>{" "}
-                        {currentBooking.address.address},{" "}
+                        {currentBooking.address.apartment
+                          ? `${currentBooking.address.apartment}/${currentBooking.address.address}`
+                          : currentBooking.address.address}
+                        {", "}
                         {currentBooking.address.city},{" "}
                         {currentBooking.address.country},{" "}
                         {currentBooking.address.postCode}
                       </p>
                     </div>
                   </div>
-
-                  {/* ----- End extra content ----- */}
                 </td>
               </tr>
             )}
@@ -401,12 +403,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
                         Date Booked
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Size
                       </th>
                       <th
                         scope="col"

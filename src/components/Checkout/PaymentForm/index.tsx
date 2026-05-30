@@ -98,7 +98,7 @@ const PaymentForm = ({
         isReturned: false,
         paymentIntent: clientSecret,
         size: item.size,
-        status: BookingStatus.InProgress,
+        status: BookingStatus.NA,
       };
 
       bookingList = bookingList.concat(bookingObj);
