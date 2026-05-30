@@ -68,13 +68,10 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
                 </Text>
               )}
               <Text style={{ ...global.text, fontSize: 10 }}>
-                {orderDetails.address.address}
+                {orderDetails.address.apartment
+                  ? `${orderDetails.address.apartment}/${orderDetails.address.address}`
+                  : orderDetails.address.address}
               </Text>
-              {orderDetails.address.apartment && (
-                <Text style={{ ...global.text, fontSize: 10 }}>
-                  {orderDetails.address.apartment}
-                </Text>
-              )}
               <Text style={{ ...global.text, fontSize: 10 }}>
                 {orderDetails.address.suburb}
               </Text>
@@ -98,13 +95,10 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
                 </Text>
               )}
               <Text style={{ ...global.text, fontSize: 10 }}>
-                {orderDetails.billingAddress.address}
+                {orderDetails.billingAddress.apartment
+                  ? `${orderDetails.billingAddress.apartment}/${orderDetails.billingAddress.address}`
+                  : orderDetails.billingAddress.address}
               </Text>
-              {orderDetails.billingAddress.apartment && (
-                <Text style={{ ...global.text, fontSize: 10 }}>
-                  {orderDetails.billingAddress.apartment}
-                </Text>
-              )}
               <Text style={{ ...global.text, fontSize: 10 }}>
                 {orderDetails.billingAddress.suburb}
               </Text>
