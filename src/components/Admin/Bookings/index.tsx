@@ -16,7 +16,7 @@ type AdminBookingsProps = {
 };
 
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
-  const { bookings, thisWeekBookings, pastBookings, isLoading, getBookings } =
+  const { bookings, thisWeekBookings, pastBookings, isLoading, getBookings, updateBookingStatus } =
     useAdminBooking();
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
@@ -71,14 +71,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     };
 
     await updateBooking(bookingId, bookingObj)
+      .then(() => updateBookingStatus(bookingId, bookingStatus))
       .catch(() =>
         setToast({
           message: "An error occurred while updating booking status",
           variant: "warning",
           show: true,
         }),
-      )
-      .finally(() => getBookings());
+      );
   };
 
   type ObjectArray = Record<string, any>[];
@@ -136,7 +136,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     return filteredThisWeekBookings?.map((booking) => ({
       name: booking.user ? booking?.user[0].name : "",
       email: booking.user ? booking?.user[0].email : "",
-      address: booking.address,
+      company: booking.address?.company ?? "",
+      address: booking.address?.address ?? "",
+      apartment: booking.address?.apartment ?? "",
+      suburb: booking.address?.suburb ?? "",
+      city: booking.address?.city ?? "",
+      postCode: booking.address?.postCode ?? "",
       deliveryType: booking.deliveryType,
       dress: booking.dress?.name,
     }));
@@ -182,6 +187,21 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   };
 
+  const getStatusBgColour = (status: BookingStatus) => {
+    switch (status) {
+      case BookingStatus.InProgress: return "bg-green-50";
+      case BookingStatus.BeingReturned: return "bg-purple-50";
+      case BookingStatus.Washing: return "bg-blue-50";
+      case BookingStatus.Drying: return "bg-yellow-50";
+      case BookingStatus.Packed: return "bg-green-50";
+      case BookingStatus.Delayed: return "bg-red-50";
+      case BookingStatus.Reparing: return "bg-stone-50";
+      case BookingStatus.Returned: return "bg-green-50";
+      case BookingStatus.NA: return "bg-gray-50";
+      default: return "";
+    }
+  };
+
   const getStatusColour = (status: BookingStatus) => {
     let colour = "";
     switch (status) {
@@ -223,7 +243,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           <Fragment key={currentBooking._id}>
             {/* Main row */}
             <tr
-              className="cursor-pointer hover:bg-gray-50"
+              className={`cursor-pointer hover:brightness-95 ${getStatusBgColour(currentBooking.status)}`}
               onClick={() => toggleRow(currentBooking._id)}
             >
               <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
@@ -257,6 +277,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
               <td className="px-3 py-5 text-sm text-gray-500">
                 {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
+              </td>
+
+              <td className="px-3 py-5 text-sm text-gray-500">
+                {currentBooking.size}
               </td>
 
               <td className="px-3 py-5 text-sm">
@@ -314,10 +338,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                   </div>
 
                   {/* ----- End extra content ----- */}
-                  <Dropdown
-                    bookingId={currentBooking._id}
-                    initialStatus={currentBooking.status}
-                  />
                 </td>
               </tr>
             )}
@@ -381,6 +401,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
                         Date Booked
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Size
                       </th>
                       <th
                         scope="col"

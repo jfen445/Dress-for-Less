@@ -207,20 +207,27 @@ const OrderSuccess = ({
                         <dd className="mt-2 text-gray-700">
                           <address className="not-italic">
                             <span className="block">{userInfo?.name}</span>
+                            {bookingDetails.address.company && (
+                              <span className="block">
+                                {bookingDetails.address.company}
+                              </span>
+                            )}
                             <span className="block">
-                              {bookingDetails?.address.address}
+                              {bookingDetails.address.apartment
+                                ? `${bookingDetails.address.apartment}/${bookingDetails.address.address}`
+                                : bookingDetails.address.address}
                             </span>
                             <span className="block">
-                              {bookingDetails?.address.suburb}
+                              {[
+                                bookingDetails.address.suburb,
+                                bookingDetails.address.city,
+                                bookingDetails.address.postCode,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
                             </span>
                             <span className="block">
-                              {bookingDetails?.address.city}
-                            </span>
-                            <span className="block">
-                              {bookingDetails?.address.country}
-                            </span>
-                            <span className="block">
-                              {bookingDetails?.address.postCode}
+                              {bookingDetails.address.country}
                             </span>
                           </address>
                         </dd>
@@ -233,22 +240,27 @@ const OrderSuccess = ({
                     <dd className="mt-2 text-gray-700">
                       <address className="not-italic">
                         <span className="block">{userInfo?.name}</span>
+                        {bookingDetails?.billingAddress.company && (
+                          <span className="block">
+                            {bookingDetails.billingAddress.company}
+                          </span>
+                        )}
                         <span className="block">
-                          <span className="block">
-                            {bookingDetails?.billingAddress.address}
-                          </span>
-                          <span className="block">
-                            {bookingDetails?.billingAddress.suburb}
-                          </span>
-                          <span className="block">
-                            {bookingDetails?.billingAddress.city}
-                          </span>
-                          <span className="block">
-                            {bookingDetails?.billingAddress.country}
-                          </span>
-                          <span className="block">
-                            {bookingDetails?.billingAddress.postCode}
-                          </span>
+                          {bookingDetails?.billingAddress.apartment
+                            ? `${bookingDetails.billingAddress.apartment}/${bookingDetails.billingAddress.address}`
+                            : bookingDetails?.billingAddress.address}
+                        </span>
+                        <span className="block">
+                          {[
+                            bookingDetails?.billingAddress.suburb,
+                            bookingDetails?.billingAddress.city,
+                            bookingDetails?.billingAddress.postCode,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </span>
+                        <span className="block">
+                          {bookingDetails?.billingAddress.country}
                         </span>
                       </address>
                     </dd>

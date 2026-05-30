@@ -75,14 +75,18 @@ const PaymentForm = ({
         blockOutPeriod: [],
         price: parseInt(item.price),
         address: {
+          company: address?.company ?? "",
           address: address?.address ?? "",
+          apartment: address?.apartment ?? "",
           suburb: address?.suburb ?? "",
           city: address?.city ?? "",
           country: address?.country ?? "",
           postCode: address?.postCode ?? "",
         },
         billingAddress: {
+          company: billingAddress?.company ?? "",
           address: billingAddress?.address ?? "",
+          apartment: billingAddress?.apartment ?? "",
           suburb: billingAddress?.suburb ?? "",
           city: billingAddress?.city ?? "",
           country: billingAddress?.country ?? "",

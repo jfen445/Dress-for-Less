@@ -5,6 +5,24 @@ const AddressForm = () => {
     <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
       <div className="sm:col-span-3">
         <label
+          htmlFor="company"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Company <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <div className="mt-1">
+          <Input
+            id="company"
+            name="company"
+            type="text"
+            autoComplete="organization"
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="sm:col-span-3">
+        <label
           htmlFor="address"
           className="block text-sm font-medium text-gray-700"
         >
@@ -23,7 +41,26 @@ const AddressForm = () => {
 
       <div className="sm:col-span-3">
         <label
-          htmlFor="address"
+          htmlFor="apartment"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Apartment, suite, etc.{" "}
+          <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <div className="mt-1">
+          <Input
+            id="apartment"
+            name="apartment"
+            type="text"
+            autoComplete="address-line2"
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="sm:col-span-3">
+        <label
+          htmlFor="suburb"
           className="block text-sm font-medium text-gray-700"
         >
           Suburb

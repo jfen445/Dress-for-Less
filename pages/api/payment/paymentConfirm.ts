@@ -12,7 +12,7 @@ import { dbConnect } from "../../../lib/db/db";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) {
@@ -24,8 +24,8 @@ export default async function handler(
   if (req.method == "POST") {
     const intent = req.body.intent as string;
 
-    const filter = { paymentIntent: intent };
-    const update = { paymentSuccess: true };
+    const filter = { paymentIntent: intent, paymentSuccess: { $ne: true } };
+    const update = { $set: { paymentSuccess: true } };
     try {
       const result = await BookingSchema.updateMany(filter, update);
 
@@ -43,11 +43,11 @@ export default async function handler(
           booking.userId,
           booking.dressId,
           booking.dateBooked,
-          booking.size
+          booking.size,
         );
       }
 
-      sendEmailConfirmation(bookings);
+      await sendEmailConfirmation(bookings);
 
       res.status(200).json({ message: "Update successful", booking: bookings });
     } catch (err) {
@@ -57,7 +57,7 @@ export default async function handler(
 }
 
 // TODO: Implement email confirmation functionality
-async function sendEmailConfirmation(bookings: Booking[]) {
+export async function sendEmailConfirmation(bookings: Booking[]) {
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
   // Ensure we have dress data (booking may not include populated dress)
@@ -92,7 +92,7 @@ async function sendEmailConfirmation(bookings: Booking[]) {
         dressDescription: dress?.description ?? "",
         dressImage: dress?.images?.[0] ?? "",
       };
-    })
+    }),
   );
 
   // Determine recipient: try first booking's user email, fallback to configured address

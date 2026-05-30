@@ -11,6 +11,7 @@ interface AdminBookingCtx {
   pastBookings: Booking[];
   isLoading: boolean;
   getBookings: () => Promise<void>;
+  updateBookingStatus: (bookingId: string, status: string) => void;
 }
 
 const adminBookingContext = React.createContext<AdminBookingCtx>(
@@ -70,6 +71,14 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
     setIsLoading(false);
   };
 
+  const updateBookingStatus = (bookingId: string, status: string) => {
+    const patch = (list: Booking[]) =>
+      list.map((b) => (b._id === bookingId ? { ...b, status } : b));
+    setBookings(patch);
+    setThisWeekBookings(patch);
+    setPastBookings(patch);
+  };
+
   React.useEffect(() => {
     getBookings();
   }, []);
@@ -82,6 +91,7 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
         pastBookings,
         isLoading,
         getBookings,
+        updateBookingStatus,
       }}
     >
       {children}

@@ -62,9 +62,19 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
           {orderDetails.address && (
             <Section style={global.defaultPadding}>
               <Text style={adressTitle}>Shipping to: {orderDetails.name}</Text>
+              {orderDetails.address.company && (
+                <Text style={{ ...global.text, fontSize: 10 }}>
+                  {orderDetails.address.company}
+                </Text>
+              )}
               <Text style={{ ...global.text, fontSize: 10 }}>
                 {orderDetails.address.address}
               </Text>
+              {orderDetails.address.apartment && (
+                <Text style={{ ...global.text, fontSize: 10 }}>
+                  {orderDetails.address.apartment}
+                </Text>
+              )}
               <Text style={{ ...global.text, fontSize: 10 }}>
                 {orderDetails.address.suburb}
               </Text>
@@ -82,9 +92,19 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
           {orderDetails.billingAddress && (
             <Section style={global.defaultPadding}>
               <Text style={adressTitle}>Billed to: {orderDetails.name}</Text>
+              {orderDetails.billingAddress.company && (
+                <Text style={{ ...global.text, fontSize: 10 }}>
+                  {orderDetails.billingAddress.company}
+                </Text>
+              )}
               <Text style={{ ...global.text, fontSize: 10 }}>
                 {orderDetails.billingAddress.address}
               </Text>
+              {orderDetails.billingAddress.apartment && (
+                <Text style={{ ...global.text, fontSize: 10 }}>
+                  {orderDetails.billingAddress.apartment}
+                </Text>
+              )}
               <Text style={{ ...global.text, fontSize: 10 }}>
                 {orderDetails.billingAddress.suburb}
               </Text>
