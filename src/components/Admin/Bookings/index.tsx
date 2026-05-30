@@ -40,31 +40,40 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [expandedBookingId, setExpandedBookingId] = React.useState<
     string | null
   >(null);
+  const [selectedStatuses, setSelectedStatuses] = React.useState<
+    BookingStatus[]
+  >([]);
 
   const toggleRow = (id: string) => {
     setExpandedBookingId(expandedBookingId === id ? null : id);
   };
 
-  const filteredBookings = React.useMemo(() => {
-    if (!deliveryType || deliveryType.length === 0) return bookings;
-    return bookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType),
+  const toggleStatus = (status: BookingStatus) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
     );
-  }, [bookings, deliveryType]);
+  };
+
+  const filteredBookings = React.useMemo(() => {
+    let result = bookings;
+    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
+    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    return result;
+  }, [bookings, deliveryType, selectedStatuses]);
 
   const filteredThisWeekBookings = React.useMemo(() => {
-    if (!deliveryType || deliveryType.length === 0) return thisWeekBookings;
-    return thisWeekBookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType),
-    );
-  }, [thisWeekBookings, deliveryType]);
+    let result = thisWeekBookings;
+    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
+    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    return result;
+  }, [thisWeekBookings, deliveryType, selectedStatuses]);
 
   const filteredPastBookings = React.useMemo(() => {
-    if (!deliveryType || deliveryType.length === 0) return pastBookings;
-    return pastBookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType),
-    );
-  }, [pastBookings, deliveryType]);
+    let result = pastBookings;
+    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
+    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    return result;
+  }, [pastBookings, deliveryType, selectedStatuses]);
 
   const updateCurrentBooking = async (
     bookingId: string,
@@ -374,6 +383,32 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           >
             Download
           </Button>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {Object.values(BookingStatus).map((status) => {
+            const isActive = selectedStatuses.includes(status);
+            return (
+              <button
+                key={status}
+                onClick={() => toggleStatus(status)}
+                className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                  isActive
+                    ? getStatusColour(status)
+                    : "bg-white text-gray-500 ring-gray-300"
+                }`}
+              >
+                {status}
+              </button>
+            );
+          })}
+          {selectedStatuses.length > 0 && (
+            <button
+              onClick={() => setSelectedStatuses([])}
+              className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
+            >
+              Clear
+            </button>
+          )}
         </div>
         {isLoading ? (
           <div className="flex justify-center">

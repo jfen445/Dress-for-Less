@@ -8,12 +8,23 @@ import ErrorPage from "@/components/ErrorPage";
 import AdminBookingContextProvider from "@/context/AdminBookingContext";
 import { AdminTabs } from "../../common/enums/AdminTabs";
 import { DeliveryType } from "../../common/enums/DeliveryType";
+import { useSession } from "next-auth/react";
+import Spinner from "@/components/Spinner";
 
 const AdminPage = () => {
   const { userInfo } = useUserContext();
+  const { status } = useSession();
   const [selectedTab, setSelectedTab] = React.useState<String>(
     AdminTabs.DeliveryBookings
   );
+
+  if (status === "loading" || (status === "authenticated" && !userInfo)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <>
