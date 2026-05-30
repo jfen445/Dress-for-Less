@@ -26,6 +26,8 @@ const addressSchema = new Schema({
   city: { type: String, required: false },
   country: { type: String, required: false },
   postCode: { type: String, required: false },
+  company: { type: String, required: false },
+  apartment: { type: String, required: false },
 });
 
 const billingAddressSchema = new Schema({
@@ -34,6 +36,8 @@ const billingAddressSchema = new Schema({
   city: { type: String, required: false },
   country: { type: String, required: false },
   postCode: { type: String, required: false },
+  company: { type: String, required: false },
+  apartment: { type: String, required: false },
 });
 
 const bookingSchema = new Schema(

@@ -2,11 +2,10 @@
 
 import * as React from "react";
 import { CartType, UserType } from "../../common/types";
-import { getUser, updateUserAccount } from "@/api/user";
+import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { syncCart } from "@/api/cart";
-import { AccountType } from "../../common/enums/AccountType";
 import { useCartContext } from "./CartContext";
 
 interface UserContextProps {
@@ -23,7 +22,6 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
   const { getItems, clearItems } = useLocalStorage<CartType[]>("localCart");
   const { refreshCart } = useCartContext();
-  55;
   const { data: session } = useSession();
 
   const fetchData = React.useCallback(async () => {
@@ -37,20 +35,6 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
         .catch((err) => console.error(err));
     }
 
-    if (session && userInfo == null && !session?.user.email) {
-      await updateUserAccount({
-        email: session?.user.email ?? "",
-        name: session?.user.name || "",
-        mobileNumber: "",
-        instagramHandle: "",
-        role: AccountType.User,
-      })
-        .then((res) => {
-          const newUser = res.data as unknown as UserType;
-          setUserInfo(newUser);
-        })
-        .catch((err) => console.error(err));
-    }
   }, [session]);
 
   const getUserProfileImage = () => {

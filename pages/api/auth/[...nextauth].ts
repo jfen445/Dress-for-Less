@@ -33,7 +33,7 @@ export const sendVerificationRequest = async (
   try {
     const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-    resend.emails.send({
+    await resend.emails.send({
       from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [identifier],
       subject: "Log into your Dress for Less account",
@@ -52,10 +52,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      authorization: {
-        params: {},
-      },
-      checks: ["none"],
     }),
     EmailProvider({
       server: {
@@ -78,7 +74,8 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      return baseUrl + "/account"; // Ensure it dynamically adjusts to your environment
+      if (url.startsWith(baseUrl)) return url;
+      return baseUrl + "/account";
     },
     // // Called when user signs in - update your custom MongoDB collection
     async signIn({ user, profile }) {
@@ -102,7 +99,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   adapter: MongoDBAdapter(clientPromise),
-  secret: process.env.NEXTAUTH_URL,
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export default NextAuth(authOptions);

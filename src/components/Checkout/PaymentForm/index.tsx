@@ -12,7 +12,6 @@ import Button from "@/components/Button";
 import { Address, Booking } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import { checkValidBooking, createBooking } from "@/api/booking";
-import dayjs from "dayjs";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
 import { useRouter } from "next/router";
@@ -69,37 +68,25 @@ const PaymentForm = ({
     products.forEach((item) => {
       const date = item.dateBooked;
 
-      const day = dayjs(date).subtract(1, "day").day();
-
-      let dates: string[] = [];
-
-      if (day == 5) {
-        const fri = dayjs(date).toJSON();
-        const sat = dayjs(date).add(1, "day").toJSON();
-        dates = [fri, sat];
-      }
-
-      if (day == 6) {
-        const fri = dayjs(date).subtract(1, "day").toJSON();
-        const sat = dayjs(date).toJSON();
-        dates = [fri, sat];
-      }
-
       const bookingObj: Booking = {
         userId: userInfo?._id ?? "",
         dressId: item._id,
         dateBooked: date,
-        blockOutPeriod: dates,
+        blockOutPeriod: [],
         price: parseInt(item.price),
         address: {
+          company: address?.company ?? "",
           address: address?.address ?? "",
+          apartment: address?.apartment ?? "",
           suburb: address?.suburb ?? "",
           city: address?.city ?? "",
           country: address?.country ?? "",
           postCode: address?.postCode ?? "",
         },
         billingAddress: {
+          company: billingAddress?.company ?? "",
           address: billingAddress?.address ?? "",
+          apartment: billingAddress?.apartment ?? "",
           suburb: billingAddress?.suburb ?? "",
           city: billingAddress?.city ?? "",
           country: billingAddress?.country ?? "",
@@ -111,7 +98,7 @@ const PaymentForm = ({
         isReturned: false,
         paymentIntent: clientSecret,
         size: item.size,
-        status: BookingStatus.InProgress,
+        status: BookingStatus.NA,
       };
 
       bookingList = bookingList.concat(bookingObj);

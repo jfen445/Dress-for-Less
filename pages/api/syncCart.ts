@@ -2,11 +2,18 @@ import { dbConnect } from "../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
 import { CartType } from "../../common/types";
 import { addToCart, getCartItem } from "../../lib/db/cart-dao";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   await dbConnect();
 
   if (req.method == "POST") {

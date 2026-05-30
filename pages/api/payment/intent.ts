@@ -20,7 +20,7 @@ export default async function handler(
   if (req.method == "POST") {
     const price = req.query.price as string;
     if (parseInt(price) < 50) {
-      res.status(404).json("Price is too low");
+      return res.status(404).json("Price is too low");
     }
     try {
       const paymentIntent = await stripe.paymentIntents.create({

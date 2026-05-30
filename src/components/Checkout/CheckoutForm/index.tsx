@@ -46,7 +46,6 @@ const CheckoutForm = () => {
     React.useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
   const [termsError, setTermsError] = React.useState<boolean>(false);
-  React.useState<boolean>(false);
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
@@ -66,12 +65,16 @@ const CheckoutForm = () => {
     const form = event.currentTarget;
 
     const formElements = form.elements as typeof form.elements & {
+      company: { value: string };
       address: { value: string };
+      apartment: { value: string };
       suburb: { value: string };
       city: { value: string };
       region: { value: string };
       postCode: { value: string };
+      billingCompany: { value: string };
       billingAddress: { value: string };
+      billingApartment: { value: string };
       billingSuburb: { value: string };
       billingCity: { value: string };
       billingRegion: { value: string };
@@ -104,7 +107,9 @@ const CheckoutForm = () => {
       deliveryOption === DeliveryType.Pickup
         ? null
         : {
+            company: formElements.company.value,
             address: formElements.address.value,
+            apartment: formElements.apartment.value,
             suburb: formElements.suburb.value,
             city: formElements.city.value,
             country: formElements.region.value,
@@ -129,7 +134,9 @@ const CheckoutForm = () => {
 
     const billingAddress: Address | null = !sameAsShipping
       ? {
+          company: formElements.billingCompany.value,
           address: formElements.billingAddress.value,
+          apartment: formElements.billingApartment.value,
           suburb: formElements.billingSuburb.value,
           city: formElements.billingCity.value,
           country: formElements.billingRegion.value,

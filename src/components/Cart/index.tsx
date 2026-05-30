@@ -46,7 +46,6 @@ const Cart = () => {
 
   const getUserCart = React.useCallback(async () => {
     setIsLoading(true);
-    setErr(false);
 
     const buildCartProducts = (cartItems: CartType[]) => {
       const items = cartItems
@@ -80,6 +79,7 @@ const Cart = () => {
         prev.filter((id) => items.some((product) => product.cartItemId === id)),
       );
       setErr(items.length === 0);
+      setIsLoading(false);
     };
 
     try {
@@ -91,6 +91,7 @@ const Cart = () => {
           setProducts([]);
           setSelectedProductIds([]);
           setErr(true);
+          setIsLoading(false);
           return;
         }
 
@@ -103,6 +104,7 @@ const Cart = () => {
         setProducts([]);
         setSelectedProductIds([]);
         setErr(true);
+        setIsLoading(false);
         return;
       }
 
@@ -111,15 +113,17 @@ const Cart = () => {
       setProducts([]);
       setSelectedProductIds([]);
       setErr(true);
-      console.error(error);
-    } finally {
       setIsLoading(false);
+      console.error(error);
     }
-  }, [getDressWithId, userInfo, getItems, allDresses]);
+  }, [getDressWithId, userInfo, getItems]);
 
   React.useEffect(() => {
+    if (status === "loading") return;
+    if (status === "authenticated" && !userInfo) return;
+    if (allDresses.length === 0) return;
     getUserCart().catch(() => setErr(true));
-  }, []);
+  }, [getUserCart, status, userInfo, allDresses.length]);
 
   const removeItem = async (cartItemId: CartItemType) => {
     if (status === "unauthenticated") {

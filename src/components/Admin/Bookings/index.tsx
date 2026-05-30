@@ -16,8 +16,14 @@ type AdminBookingsProps = {
 };
 
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
-  const { bookings, thisWeekBookings, pastBookings, isLoading, getBookings } =
-    useAdminBooking();
+  const {
+    bookings,
+    thisWeekBookings,
+    pastBookings,
+    isLoading,
+    getBookings,
+    updateBookingStatus,
+  } = useAdminBooking();
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
@@ -64,21 +70,15 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     bookingId: string,
     bookingStatus: BookingStatus,
   ) => {
-    let bookingObj: {
-      status: BookingStatus;
-    } = {
-      status: bookingStatus,
-    };
-
-    await updateBooking(bookingId, bookingObj)
+    await updateBooking(bookingId, { status: bookingStatus })
+      .then(() => updateBookingStatus(bookingId, bookingStatus))
       .catch(() =>
         setToast({
           message: "An error occurred while updating booking status",
           variant: "warning",
           show: true,
         }),
-      )
-      .finally(() => getBookings());
+      );
   };
 
   type ObjectArray = Record<string, any>[];
@@ -136,7 +136,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     return filteredThisWeekBookings?.map((booking) => ({
       name: booking.user ? booking?.user[0].name : "",
       email: booking.user ? booking?.user[0].email : "",
-      address: booking.address,
+      company: booking.address?.company ?? "",
+      address: booking.address?.address ?? "",
+      apartment: booking.address?.apartment ?? "",
+      suburb: booking.address?.suburb ?? "",
+      city: booking.address?.city ?? "",
+      postCode: booking.address?.postCode ?? "",
       deliveryType: booking.deliveryType,
       dress: booking.dress?.name,
     }));
@@ -182,12 +187,32 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   };
 
+  const getStatusBgColour = (status: BookingStatus) => {
+    switch (status) {
+      case BookingStatus.BeingReturned:
+        return "bg-purple-50";
+      case BookingStatus.Washing:
+        return "bg-blue-50";
+      case BookingStatus.Drying:
+        return "bg-lime-50";
+      case BookingStatus.Packed:
+        return "bg-orange-50";
+      case BookingStatus.Delayed:
+        return "bg-red-50";
+      case BookingStatus.Reparing:
+        return "bg-stone-50";
+      case BookingStatus.Returned:
+        return "bg-green-50";
+      case BookingStatus.NA:
+        return "bg-gray-50";
+      default:
+        return "";
+    }
+  };
+
   const getStatusColour = (status: BookingStatus) => {
     let colour = "";
     switch (status) {
-      case BookingStatus.InProgress:
-        colour = "bg-green-50 text-green-700 ring-green-600/20";
-        break;
       case BookingStatus.BeingReturned:
         colour = "bg-purple-50 text-purple-700 ring-purple-600/20";
         break;
@@ -195,10 +220,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         colour = "bg-blue-50 text-blue-700 ring-blue-600/20";
         break;
       case BookingStatus.Drying:
-        colour = "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
+        colour = "bg-lime-50 text-lime-700 ring-lime-600/20";
         break;
       case BookingStatus.Packed:
-        colour = "bg-green-50 text-green-700 ring-green-600/20";
+        colour = "bg-orange-50 text-orange-700 ring-orange-600/20";
         break;
       case BookingStatus.Delayed:
         colour = "bg-red-50 text-red-700 ring-red-600/20";
@@ -223,7 +248,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           <Fragment key={currentBooking._id}>
             {/* Main row */}
             <tr
-              className="cursor-pointer hover:bg-gray-50"
+              className={`cursor-pointer ${getStatusBgColour(currentBooking.status)}`}
               onClick={() => toggleRow(currentBooking._id)}
             >
               <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
@@ -305,19 +330,16 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
                       <p>
                         <span className="font-medium">Address:</span>{" "}
-                        {currentBooking.address.address},{" "}
+                        {currentBooking.address.apartment
+                          ? `${currentBooking.address.apartment}/${currentBooking.address.address}`
+                          : currentBooking.address.address}
+                        {", "}
                         {currentBooking.address.city},{" "}
                         {currentBooking.address.country},{" "}
                         {currentBooking.address.postCode}
                       </p>
                     </div>
                   </div>
-
-                  {/* ----- End extra content ----- */}
-                  <Dropdown
-                    bookingId={currentBooking._id}
-                    initialStatus={currentBooking.status}
-                  />
                 </td>
               </tr>
             )}

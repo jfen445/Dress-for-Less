@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Booking, UserType } from "../../common/types";
 import { getAllBookings } from "@/api/admin";
+import { BookingStatus } from "../../common/enums/BookingStatus";
 import dayjs from "dayjs";
 
 interface AdminBookingCtx {
@@ -11,6 +12,7 @@ interface AdminBookingCtx {
   pastBookings: Booking[];
   isLoading: boolean;
   getBookings: () => Promise<void>;
+  updateBookingStatus: (bookingId: string, status: BookingStatus) => void;
 }
 
 const adminBookingContext = React.createContext<AdminBookingCtx>(
@@ -70,6 +72,14 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
     setIsLoading(false);
   };
 
+  const updateBookingStatus = (bookingId: string, status: BookingStatus) => {
+    const patch = (list: Booking[]) =>
+      list.map((b) => (b._id === bookingId ? { ...b, status } : b));
+    setBookings(patch);
+    setThisWeekBookings(patch);
+    setPastBookings(patch);
+  };
+
   React.useEffect(() => {
     getBookings();
   }, []);
@@ -82,6 +92,7 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
         pastBookings,
         isLoading,
         getBookings,
+        updateBookingStatus,
       }}
     >
       {children}

@@ -92,6 +92,8 @@ export type Address = {
   city: string;
   country: string;
   postCode: string;
+  company?: string;
+  apartment?: string;
 };
 
 export type Booking = {

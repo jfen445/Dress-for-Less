@@ -41,4 +41,6 @@ export interface IAddress {
   city?: string;
   country?: string;
   postCode?: string;
+  company?: string;
+  apartment?: string;
 }

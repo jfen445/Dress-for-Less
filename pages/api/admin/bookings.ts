@@ -31,7 +31,7 @@ export default async function handler(
   const user = await findUser(userEmail?.toString() ?? "");
   console.log("User info retrieved:", user);
 
-  if (user.length > 0 && user[0].role !== AccountType.Admin) {
+  if (user.length === 0 || user[0].role !== AccountType.Admin) {
     return res.status(403).json({ message: "Forbidden: Admins only" });
   }
 

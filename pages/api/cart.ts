@@ -10,6 +10,7 @@ import {
 } from "../../lib/db/cart-dao";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import { findUser } from "../../lib/db/user-dao";
 
 export default async function handler(
   req: NextApiRequest,
@@ -25,17 +26,14 @@ export default async function handler(
   if (req.method == "GET") {
     const userId = req.query.userId as string;
 
-    const cart = await getCart(userId);
-
-    if (cart.length === 0) {
-      res.status(404).json({
-        message: "Cart is empty",
-      });
+    const [sessionUser] = await findUser(session.user.email ?? "");
+    if (!sessionUser || String(sessionUser._id) !== userId) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
-    const cartItems = cart as CartType[];
+    const cart = await getCart(userId);
 
-    res.status(200).json(cartItems);
+    res.status(200).json(cart);
   } else if (req.method == "POST") {
     const cart: CartType = req.body.cartItem;
 

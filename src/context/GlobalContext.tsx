@@ -38,9 +38,9 @@ const GlobalContextProvider = ({ children }: React.PropsWithChildren) => {
     fetchData();
   }, []);
 
-  const getDressWithId = (id: string) => {
+  const getDressWithId = React.useCallback((id: string) => {
     return allDresses.filter((dress) => dress._id == id)[0];
-  };
+  }, [allDresses]);
 
   const getHomeScreenDresses = (count: number = 7) => {
     const shuffled = [...allDresses].sort(() => Math.random() - 0.5); // Shuffle the array
