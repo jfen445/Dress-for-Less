@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Spinner from "@/components/Spinner";
+import { DeliveryType } from "../../common/enums/DeliveryType";
 
 enum Selected {
   Previous,
@@ -126,6 +127,24 @@ const Orders = () => {
                   <p className="mt-1 font-medium text-gray-900">
                     {product.price}
                   </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {product.deliveryType}
+                  </p>
+                  {product.deliveryType !== DeliveryType.Pickup && product.address && (
+                    <address className="mt-1 not-italic text-sm text-gray-500">
+                      {product.address.apartment
+                        ? `${product.address.apartment}/${product.address.address}`
+                        : product.address.address}
+                      {", "}
+                      {[
+                        product.address.suburb,
+                        product.address.city,
+                        product.address.postCode,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </address>
+                  )}
                 </div>
               </div>
             </div>
