@@ -38,7 +38,7 @@ const AdminBlockOuts = () => {
     if (allDresses && allDresses.length > 0 && !dressId) {
       setDressId(allDresses[0]._id);
     }
-  }, [allDresses]);
+  }, [allDresses, dressId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

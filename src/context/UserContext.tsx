@@ -85,7 +85,7 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
       .finally(() => {
         refreshCart();
       });
-  }, [userInfo]);
+  }, [userInfo, clearItems, getItems, refreshCart, session]);
 
   React.useEffect(() => {
     fetchData();

@@ -65,7 +65,7 @@ const Orders = () => {
     if (status === "unauthenticated") {
       router.push("/");
     }
-  }, [status]);
+  }, [status, router]);
 
   React.useEffect(() => {
     if (!userInfo?._id) return;

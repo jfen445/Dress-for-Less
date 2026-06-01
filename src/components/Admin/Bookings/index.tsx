@@ -265,6 +265,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 <div className="flex items-center">
                   <img
                     src={currentBooking.dress?.images[0]}
+                    alt={currentBooking.dress?.name ?? ""}
                     className="h-11 w-11 rounded-full cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -318,6 +319,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                   <div className="flex space-x-6">
                     <img
                       src={currentBooking.dress?.images[0]}
+                      alt={currentBooking.dress?.name ?? ""}
                       className="h-40 w-40 rounded-lg object-cover"
                     />
 

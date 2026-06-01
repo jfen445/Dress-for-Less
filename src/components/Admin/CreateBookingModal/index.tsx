@@ -69,7 +69,7 @@ const CreateBookingModal = ({
     if (allDresses && allDresses.length > 0 && !dressId) {
       setDressId(allDresses[0]._id);
     }
-  }, [allDresses]);
+  }, [allDresses, dressId]);
 
   const selectedDress = allDresses?.find((d) => d._id === dressId);
 
@@ -87,7 +87,7 @@ const CreateBookingModal = ({
     if (availableSizes.length > 0 && !availableSizes.includes(size as any)) {
       setSize(availableSizes[0]);
     }
-  }, [dressId]);
+  }, [dressId, availableSizes, size]);
 
   const needsAddress = deliveryType !== DeliveryType.Pickup;
   const dressPrice = selectedDress ? parseInt(selectedDress.price) : 0;

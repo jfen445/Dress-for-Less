@@ -11,7 +11,7 @@ const LoginPage = () => {
 
   React.useEffect(() => {
     if (status === "authenticated") router.replace("/");
-  }, [status]);
+  }, [status, router]);
 
   if (status === "loading" || status === "authenticated") return null;
 

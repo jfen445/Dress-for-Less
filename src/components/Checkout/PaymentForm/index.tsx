@@ -134,7 +134,7 @@ const PaymentForm = ({
       })
       .then(async ({ error, paymentIntent }) => {
         if (error) {
-          console.log("Payment failed:", error);
+          console.error("Payment failed:", error);
           setToast({
             ...toast,
             message:

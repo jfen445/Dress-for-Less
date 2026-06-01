@@ -51,7 +51,7 @@ const Product = () => {
 
   React.useEffect(() => {
     if (isAddedToCart) setIsAddedToCart(false);
-  }, [selectedDate, size]);
+  }, [selectedDate, size, isAddedToCart]);
 
   React.useEffect(() => {
     if (params) {
