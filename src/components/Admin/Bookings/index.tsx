@@ -5,6 +5,7 @@ import { Booking, UserType } from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
+import CreateBookingModal from "../CreateBookingModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
@@ -32,6 +33,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   });
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
+  const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
@@ -40,31 +42,40 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [expandedBookingId, setExpandedBookingId] = React.useState<
     string | null
   >(null);
+  const [selectedStatuses, setSelectedStatuses] = React.useState<
+    BookingStatus[]
+  >([]);
 
   const toggleRow = (id: string) => {
     setExpandedBookingId(expandedBookingId === id ? null : id);
   };
 
-  const filteredBookings = React.useMemo(() => {
-    if (!deliveryType || deliveryType.length === 0) return bookings;
-    return bookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType),
+  const toggleStatus = (status: BookingStatus) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
     );
-  }, [bookings, deliveryType]);
+  };
+
+  const filteredBookings = React.useMemo(() => {
+    let result = bookings;
+    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
+    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    return result;
+  }, [bookings, deliveryType, selectedStatuses]);
 
   const filteredThisWeekBookings = React.useMemo(() => {
-    if (!deliveryType || deliveryType.length === 0) return thisWeekBookings;
-    return thisWeekBookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType),
-    );
-  }, [thisWeekBookings, deliveryType]);
+    let result = thisWeekBookings;
+    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
+    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    return result;
+  }, [thisWeekBookings, deliveryType, selectedStatuses]);
 
   const filteredPastBookings = React.useMemo(() => {
-    if (!deliveryType || deliveryType.length === 0) return pastBookings;
-    return pastBookings.filter((b) =>
-      deliveryType.includes(b.deliveryType as DeliveryType),
-    );
-  }, [pastBookings, deliveryType]);
+    let result = pastBookings;
+    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
+    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    return result;
+  }, [pastBookings, deliveryType, selectedStatuses]);
 
   const updateCurrentBooking = async (
     bookingId: string,
@@ -154,7 +165,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     bookingId: string;
     initialStatus: BookingStatus;
   }) => {
-    const [status, setStatus] = React.useState<BookingStatus>(initialStatus);
+    const [status, setStatus] = React.useState<BookingStatus>(initialStatus ?? BookingStatus.NA);
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newStatus = e.target.value as BookingStatus;
@@ -204,9 +215,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       case BookingStatus.Returned:
         return "bg-green-50";
       case BookingStatus.NA:
-        return "bg-gray-50";
       default:
-        return "";
+        return "bg-gray-50";
     }
   };
 
@@ -255,6 +265,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 <div className="flex items-center">
                   <img
                     src={currentBooking.dress?.images[0]}
+                    alt={currentBooking.dress?.name ?? ""}
                     className="h-11 w-11 rounded-full cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -308,6 +319,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                   <div className="flex space-x-6">
                     <img
                       src={currentBooking.dress?.images[0]}
+                      alt={currentBooking.dress?.name ?? ""}
                       className="h-40 w-40 rounded-lg object-cover"
                     />
 
@@ -357,6 +369,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         setOpen={setUserModalOpen}
         user={selectedUser}
       ></UserModal>
+      <CreateBookingModal
+        isOpen={createModalOpen}
+        setOpen={setCreateModalOpen}
+        onCreated={() => {
+          getBookings();
+          setToast({ message: "Booking created successfully", variant: "success", show: true });
+        }}
+      />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
@@ -367,13 +387,44 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               A list of all the bookings in the system.
             </p>
           </div>
-          <Button
-            onClick={() =>
-              downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
-            }
-          >
-            Download
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setCreateModalOpen(true)}>
+              New booking
+            </Button>
+            <Button
+              onClick={() =>
+                downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
+              }
+            >
+              Download
+            </Button>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {Object.values(BookingStatus).map((status) => {
+            const isActive = selectedStatuses.includes(status);
+            return (
+              <button
+                key={status}
+                onClick={() => toggleStatus(status)}
+                className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                  isActive
+                    ? getStatusColour(status)
+                    : "bg-white text-gray-500 ring-gray-300"
+                }`}
+              >
+                {status}
+              </button>
+            );
+          })}
+          {selectedStatuses.length > 0 && (
+            <button
+              onClick={() => setSelectedStatuses([])}
+              className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
+            >
+              Clear
+            </button>
+          )}
         </div>
         {isLoading ? (
           <div className="flex justify-center">

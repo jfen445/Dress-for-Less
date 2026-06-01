@@ -5,15 +5,11 @@ const api = axios.create();
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      window.location.href = "/login"; // Force a full redirect
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      window.location.href = "/login";
     }
-
-    if (error.response?.status === 403) {
-      window.location.href = "/login"; // Force a full redirect
-    }
-
-    return Promise.reject(error);
+    const message = error.response?.data?.message ?? error.message;
+    return Promise.reject(new Error(message));
   },
 );
 

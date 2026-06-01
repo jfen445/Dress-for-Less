@@ -72,7 +72,7 @@ const OrderSuccess = ({
     };
 
     confirm();
-  }, [params, router.query, router.query.payment_intent_client_secret]);
+  }, [params, router.query, router.query.payment_intent_client_secret, paymentIntent]);
 
   React.useEffect(() => {
     refreshCart();
@@ -98,7 +98,7 @@ const OrderSuccess = ({
     fetchDressDetails(bookings).then((results) => {
       setBookingDresses(results as unknown as DressType[]);
     });
-  }, [bookings, getDressWithId]);
+  }, [bookings, getDressWithId, refreshCart]);
 
   function addStringNumbers(num1: string, num2: number) {
     // Convert strings to numbers

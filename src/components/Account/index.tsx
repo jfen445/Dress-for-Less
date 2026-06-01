@@ -59,7 +59,7 @@ const Account = () => {
 
   React.useEffect(() => {
     refreshCart();
-  }, []);
+  }, [refreshCart]);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

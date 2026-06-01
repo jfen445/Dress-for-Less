@@ -6,11 +6,46 @@ import dayjs from "dayjs";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Spinner from "@/components/Spinner";
+import { DeliveryType } from "../../common/enums/DeliveryType";
 
 enum Selected {
   Previous,
   Upcoming,
 }
+
+const Tabs = ({
+  selected,
+  onSelect,
+}: {
+  selected: Selected;
+  onSelect: (s: Selected) => void;
+}) => {
+  return (
+    <div className="mt-12 flex flex-col space-y-4 sm:mt-16 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+      <h1
+        className={`cursor-pointer text-xl font-bold tracking-tight ${
+          selected === Selected.Upcoming ? "text-gray-900" : "text-gray-200"
+        }`}
+        onClick={() => onSelect(Selected.Upcoming)}
+      >
+        Upcoming orders
+      </h1>
+
+      <h1 className="hidden text-xl font-bold tracking-tight text-gray-400 sm:block">
+        |
+      </h1>
+
+      <h1
+        className={`cursor-pointer text-xl font-bold tracking-tight ${
+          selected === Selected.Previous ? "text-gray-900" : "text-gray-200"
+        }`}
+        onClick={() => onSelect(Selected.Previous)}
+      >
+        Previous orders
+      </h1>
+    </div>
+  );
+};
 
 const Orders = () => {
   const { userInfo } = useUserContext();
@@ -27,21 +62,24 @@ const Orders = () => {
     Selected.Upcoming,
   );
 
-  if (status === "unauthenticated") {
-    router.push("/");
-  }
+  React.useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
 
   React.useEffect(() => {
+    if (!userInfo?._id) return;
+
     setIsLoading(true);
-    const fetchOrders = async () => {
-      if (!userInfo || !userInfo._id) return;
-      await getAllBookingsByUserId(userInfo._id).then((data) => {
+    getAllBookingsByUserId(userInfo._id)
+      .then((data) => {
         const userBookings = data.data as unknown as OrderHistory[];
         const today = dayjs().startOf("day");
 
         const upcoming = userBookings
           .filter((booking) => dayjs(booking.dateBooked).isAfter(today))
-          .sort((a, b) => dayjs(a.dateBooked).diff(dayjs(b.dateBooked))); // nearest upcoming first
+          .sort((a, b) => dayjs(a.dateBooked).diff(dayjs(b.dateBooked)));
 
         const previous = userBookings
           .filter(
@@ -49,14 +87,12 @@ const Orders = () => {
               dayjs(booking.dateBooked).isBefore(today) ||
               dayjs(booking.dateBooked).isSame(today),
           )
-          .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked))); // most recent past first
+          .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked)));
 
         setUpcomingOrders(upcoming);
         setPreviousOrders(previous);
-      });
-    };
-
-    fetchOrders().finally(() => setIsLoading(false));
+      })
+      .finally(() => setIsLoading(false));
   }, [userInfo]);
 
   const formatDate = (date: string) => {
@@ -91,22 +127,26 @@ const Orders = () => {
                   <p className="mt-1 font-medium text-gray-900">
                     {product.price}
                   </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {product.deliveryType}
+                  </p>
+                  {product.deliveryType !== DeliveryType.Pickup && product.address && (
+                    <address className="mt-1 not-italic text-sm text-gray-500">
+                      {product.address.apartment
+                        ? `${product.address.apartment}/${product.address.address}`
+                        : product.address.address}
+                      {", "}
+                      {[
+                        product.address.suburb,
+                        product.address.city,
+                        product.address.postCode,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </address>
+                  )}
                 </div>
               </div>
-              {/* <div className="mt-6 space-y-4 sm:mt-0 sm:ml-6 sm:w-40 sm:flex-none">
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2.5 py-2 text-sm font-medium text-white shadow-xs hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-hidden sm:w-full sm:grow-0"
-                    >
-                      Buy again
-                    </button>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-hidden sm:w-full sm:grow-0"
-                    >
-                      Shop similar
-                    </button>
-                  </div> */}
             </div>
           ))}
         </div>
@@ -114,38 +154,8 @@ const Orders = () => {
     );
   };
 
-  const Tabs = () => {
-    return (
-      <div className="mt-12 flex flex-col space-y-4 sm:mt-16 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-        <h1
-          className={`cursor-pointer text-xl font-bold tracking-tight ${
-            selectedTab === Selected.Upcoming
-              ? "text-gray-900"
-              : "text-gray-200"
-          }`}
-          onClick={() => setSelectedTab(Selected.Upcoming)}
-        >
-          Upcoming orders
-        </h1>
-
-        {/* Divider */}
-        <h1 className="hidden text-xl font-bold tracking-tight text-gray-400 sm:block">
-          |
-        </h1>
-
-        <h1
-          className={`cursor-pointer text-xl font-bold tracking-tight ${
-            selectedTab === Selected.Previous
-              ? "text-gray-900"
-              : "text-gray-200"
-          }`}
-          onClick={() => setSelectedTab(Selected.Previous)}
-        >
-          Previous orders
-        </h1>
-      </div>
-    );
-  };
+  const displayedOrders =
+    selectedTab === Selected.Upcoming ? upcomingOrders : previousOrders;
 
   return (
     <>
@@ -165,18 +175,15 @@ const Orders = () => {
             </p>
           </div>
 
-          <Tabs></Tabs>
-          {upcomingOrders.length === 0 ? (
+          <Tabs selected={selectedTab} onSelect={setSelectedTab} />
+          {displayedOrders.length === 0 ? (
             <p className="mt-4 text-sm text-gray-500">
-              No {selectedTab === Selected.Upcoming ? "upcoming" : "previous"}{" "}
+              No{" "}
+              {selectedTab === Selected.Upcoming ? "upcoming" : "previous"}{" "}
               orders
             </p>
           ) : (
-            itemList(
-              selectedTab === Selected.Upcoming
-                ? upcomingOrders
-                : previousOrders,
-            )
+            itemList(displayedOrders)
           )}
         </main>
       )}

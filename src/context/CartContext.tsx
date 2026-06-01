@@ -24,7 +24,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const [cartCount, setCartCount] = useState(0);
   const { getItems } = useLocalStorage<CartType[]>("localCart");
 
-  const refreshCart = async () => {
+  const refreshCart = React.useCallback(async () => {
     if (!userInfo?._id) {
       const localCart = getItems();
       setCartCount(localCart ? localCart.length : 0);
@@ -39,11 +39,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
     setCartCount(cart.length);
-  };
+  }, [userInfo, getItems]);
 
   useEffect(() => {
-    refreshCart(); // Only fetch once on mount
-  }, [userInfo]);
+    refreshCart();
+  }, [refreshCart]);
 
   return (
     <CartContext.Provider value={{ cartCount, refreshCart }}>

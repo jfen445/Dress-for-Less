@@ -3,17 +3,29 @@ import Tabs from "@/components/Tabs";
 import AdminUsers from "@/components/Admin/Users";
 import AdminBookings from "@/components/Admin/Bookings";
 import AdminDresses from "@/components/Admin/Dresses";
+import AdminBlockOuts from "@/components/Admin/BlockOuts";
 import { useUserContext } from "@/context/UserContext";
 import ErrorPage from "@/components/ErrorPage";
 import AdminBookingContextProvider from "@/context/AdminBookingContext";
 import { AdminTabs } from "../../common/enums/AdminTabs";
 import { DeliveryType } from "../../common/enums/DeliveryType";
+import { useSession } from "next-auth/react";
+import Spinner from "@/components/Spinner";
 
 const AdminPage = () => {
   const { userInfo } = useUserContext();
+  const { status } = useSession();
   const [selectedTab, setSelectedTab] = React.useState<String>(
     AdminTabs.DeliveryBookings
   );
+
+  if (status === "loading" || (status === "authenticated" && !userInfo)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -57,6 +69,7 @@ const AdminPage = () => {
                     )}
                     {selectedTab == AdminTabs.Users && <AdminUsers />}
                     {selectedTab == AdminTabs.Dresses && <AdminDresses />}
+                    {selectedTab == AdminTabs.BlockOuts && <AdminBlockOuts />}
                   </AdminBookingContextProvider>
                 </div>
               </div>

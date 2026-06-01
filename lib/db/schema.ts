@@ -73,4 +73,18 @@ const cartSchema = new Schema({
 
 const CartSchema = mongoose.models.Carts ?? mongoose.model("Carts", cartSchema);
 
-export { UserSchema, BookingSchema, CartSchema };
+const blockOutSchema = new Schema(
+  {
+    dressId: { type: String, required: true },
+    size: { type: String, required: true },
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
+    reason: { type: String, required: false },
+  },
+  { timestamps: true },
+);
+
+const BlockOutSchema =
+  mongoose.models.BlockOuts ?? mongoose.model("BlockOuts", blockOutSchema);
+
+export { UserSchema, BookingSchema, CartSchema, BlockOutSchema };

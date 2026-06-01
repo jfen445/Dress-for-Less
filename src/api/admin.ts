@@ -1,16 +1,39 @@
 import api from "./client";
-import { AxiosError } from "axios";
 
 export async function getAllBookings() {
-  try {
-    const response = await api.request({
-      url: `/api/admin/bookings`,
-      method: "GET",
-    });
+  return api.get(`/api/admin/bookings`);
+}
 
-    return response;
-  } catch (error) {
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
+export async function getAllAdminUsers() {
+  return api.get(`/api/admin/users`);
+}
+
+export async function getBlockOuts() {
+  return api.get(`/api/admin/blockouts`);
+}
+
+export async function createBlockOut(data: {
+  dressId: string;
+  size: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}) {
+  return api.post(`/api/admin/blockouts`, data);
+}
+
+export async function deleteBlockOut(id: string) {
+  return api.delete(`/api/admin/blockouts?id=${id}`);
+}
+
+export async function createAdminBooking(data: {
+  dressId: string;
+  userId: string;
+  dateBooked: string;
+  size: string;
+  deliveryType: string;
+  address?: object;
+  billingAddress: object;
+}) {
+  return api.post(`/api/admin/bookings`, data);
 }

@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../lib/db/db";
 import { checkDuplicateBooking } from "../../lib/db/booking-dao";
+import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { Booking } from "../../common/types";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
@@ -30,7 +31,9 @@ export default async function handler(
         dress.dateBooked,
       );
 
-      if (checkBooking.length > 0) {
+      const blockedOut = await checkBlockOut(dress.dressId, dress.size as string, dress.dateBooked);
+
+      if (checkBooking.length > 0 || blockedOut) {
         errorResponse.push(dress.dressId);
       }
     }
