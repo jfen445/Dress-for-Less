@@ -3,4 +3,5 @@ export enum AdminTabs {
   PickupBookings = "Pickup bookings",
   Users = "Users",
   Dresses = "Dresses",
+  BlockOuts = "Block outs",
 }

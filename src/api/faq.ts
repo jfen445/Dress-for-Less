@@ -1,16 +1,5 @@
 import api from "./client";
-import { AxiosError } from "axios";
 
 export async function getAllFaq() {
-  try {
-    const response = await api.request({
-      url: `/api/sanity/faq`,
-      method: "GET",
-    });
-
-    return response;
-  } catch (error) {
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
+  return api.get(`/api/sanity/faq`);
 }

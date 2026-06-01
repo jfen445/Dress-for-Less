@@ -124,6 +124,16 @@ export type Sizes = {
   xl?: string;
 };
 
+export type BlockOut = {
+  _id?: string;
+  dressId: string;
+  size: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  createdAt?: string;
+};
+
 export type Faq = {
   question: string;
   answer: string;

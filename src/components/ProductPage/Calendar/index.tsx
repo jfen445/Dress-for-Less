@@ -3,33 +3,41 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
-import { Booking, Sizes } from "../../../../common/types";
-import { getAllBookingsByDress } from "@/api/booking";
+import { BlockOut, Booking, Sizes } from "../../../../common/types";
+import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
 import { useParams } from "next/navigation";
 
 interface ICanlender {
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
   sizes: Sizes;
   selectedSize: string;
+  dressId?: string;
 }
 
-const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
+const Calendar = ({ setSelectedDate, sizes, selectedSize, dressId: dressIdProp }: ICanlender) => {
   const params = useParams<{ id: string }>();
+  const resolvedId = dressIdProp ?? params?.id ?? "";
   const [bookings, setBookings] = React.useState<Booking[]>();
+  const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
 
   React.useEffect(() => {
+    if (!resolvedId) return;
+
     const getDressBookings = async () => {
-      if (params) {
-        await getAllBookingsByDress(params.id)
-          .then((data) => {
-            setBookings(data.data);
-          })
-          .catch(() => {});
-      }
+      await getAllBookingsByDress(resolvedId)
+        .then((data) => setBookings(data.data))
+        .catch(() => {});
+    };
+
+    const getDressBlockOuts = async () => {
+      await getBlockOutsByDress(resolvedId)
+        .then((data) => setBlockOuts(data.data))
+        .catch((err) => console.error("Failed to load block outs:", err));
     };
 
     getDressBookings();
-  }, [params, selectedSize]);
+    getDressBlockOuts();
+  }, [resolvedId, selectedSize]);
 
   const selectDate = (event: Dayjs) => {
     setSelectedDate(dayjs(event).toJSON());
@@ -39,6 +47,14 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
     if (!selectedSize) {
       return true;
     }
+
+    const isBlockedOut = blockOuts.some(
+      (b) =>
+        b.size === selectedSize &&
+        !date.isBefore(dayjs(b.startDate), "day") &&
+        !date.isAfter(dayjs(b.endDate), "day"),
+    );
+    if (isBlockedOut) return true;
 
     const sizeStock = readObject(sizes, selectedSize.toLowerCase());
 
@@ -106,6 +122,7 @@ const Calendar = ({ setSelectedDate, sizes, selectedSize }: ICanlender) => {
     <div className="mt-10 ">
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <DateCalendar
+          key={`${selectedSize}-${blockOuts.map((b) => b._id).join(",")}`}
           onChange={(e) => selectDate(e)}
           shouldDisableDate={(date) => disabledDays(date)}
           timezone="system"

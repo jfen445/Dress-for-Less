@@ -1,71 +1,18 @@
 import api from "./client";
-import { AxiosError } from "axios";
 import { CartType } from "../../common/types";
 
 export async function addToCart(cartItem: CartType) {
-  try {
-    const response = await api.post(
-      "/api/cart",
-      { cartItem },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    return response;
-  } catch (error) {
-    // throw error;
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
+  return api.post(`/api/cart`, { cartItem });
 }
 
 export async function getCart(userId: string) {
-  try {
-    const response = await api.request({
-      url: `/api/cart?userId=${userId}`,
-      method: "GET",
-    });
-
-    return response;
-  } catch (error) {
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
+  return api.get(`/api/cart?userId=${userId}`);
 }
 
 export async function removeFromCart(cartItemId: string) {
-  try {
-    const response = await api.request({
-      url: `/api/cart?cartItemId=${cartItemId}`,
-      method: "DELETE",
-    });
-
-    return response;
-  } catch (error) {
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
+  return api.delete(`/api/cart?cartItemId=${cartItemId}`);
 }
 
 export async function syncCart(cart: CartType[]) {
-  try {
-    const response = await api.post(
-      "/api/syncCart",
-      { cart },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    return response;
-  } catch (error) {
-    // throw error;
-    const err = error as AxiosError;
-    throw new Error((err?.response?.data as any).message);
-  }
+  return api.post(`/api/syncCart`, { cart });
 }

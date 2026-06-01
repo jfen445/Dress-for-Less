@@ -5,6 +5,7 @@ import { Booking, UserType } from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
+import CreateBookingModal from "../CreateBookingModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType } from "@/components/Toast";
@@ -32,6 +33,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   });
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
+  const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
@@ -163,7 +165,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     bookingId: string;
     initialStatus: BookingStatus;
   }) => {
-    const [status, setStatus] = React.useState<BookingStatus>(initialStatus);
+    const [status, setStatus] = React.useState<BookingStatus>(initialStatus ?? BookingStatus.NA);
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newStatus = e.target.value as BookingStatus;
@@ -213,9 +215,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       case BookingStatus.Returned:
         return "bg-green-50";
       case BookingStatus.NA:
-        return "bg-gray-50";
       default:
-        return "";
+        return "bg-gray-50";
     }
   };
 
@@ -366,6 +367,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         setOpen={setUserModalOpen}
         user={selectedUser}
       ></UserModal>
+      <CreateBookingModal
+        isOpen={createModalOpen}
+        setOpen={setCreateModalOpen}
+        onCreated={() => {
+          getBookings();
+          setToast({ message: "Booking created successfully", variant: "success", show: true });
+        }}
+      />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
@@ -376,13 +385,18 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               A list of all the bookings in the system.
             </p>
           </div>
-          <Button
-            onClick={() =>
-              downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
-            }
-          >
-            Download
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setCreateModalOpen(true)}>
+              New booking
+            </Button>
+            <Button
+              onClick={() =>
+                downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
+              }
+            >
+              Download
+            </Button>
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {Object.values(BookingStatus).map((status) => {

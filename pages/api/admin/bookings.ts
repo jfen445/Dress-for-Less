@@ -1,11 +1,25 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../../lib/db/db";
-import { getAllBookings } from "../../../lib/db/booking-dao";
+import { getAllBookings, checkDuplicateBooking } from "../../../lib/db/booking-dao";
 import { getDress } from "../../../sanity/sanity.query";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import { findUser } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
+import { BookingSchema } from "../../../lib/db/schema";
+import { BookingStatus } from "../../../common/enums/BookingStatus";
+import { checkBlockOut } from "../../../lib/db/blockout-dao";
+import { sendEmailConfirmation } from "../payment/paymentConfirm";
+import dayjs from "dayjs";
+
+function calculateBlockOutPeriod(dateBooked: string): string[] {
+  const date = dayjs(dateBooked);
+  const day = date.day();
+  if (day === 5) return [date.toJSON(), date.add(1, "day").toJSON(), date.add(2, "day").toJSON()];
+  if (day === 6) return [date.subtract(1, "day").toJSON(), date.toJSON(), date.add(1, "day").toJSON()];
+  if (day === 0) return [date.subtract(2, "day").toJSON(), date.subtract(1, "day").toJSON(), date.toJSON()];
+  return [];
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -35,7 +49,7 @@ export default async function handler(
     return res.status(403).json({ message: "Forbidden: Admins only" });
   }
 
-  if (req.method == "GET") {
+  if (req.method === "GET") {
     const allBookings = await getAllBookings();
 
     const allBookingInfo = await Promise.all(
@@ -46,5 +60,47 @@ export default async function handler(
     );
 
     res.status(200).json(allBookingInfo);
+  } else if (req.method === "POST") {
+    const { dressId, userId, dateBooked, size, deliveryType, address, billingAddress } = req.body;
+
+    if (!dressId || !userId || !dateBooked || !size || !deliveryType) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const dress = await getDress(dressId);
+    if (!dress) return res.status(404).json({ message: "Dress not found" });
+
+    const blocked = await checkBlockOut(dressId, size, dateBooked);
+    if (blocked) return res.status(409).json({ message: "This date is blocked out for the selected size" });
+
+    const duplicate = await checkDuplicateBooking(dressId, size, dateBooked);
+    if (duplicate.length > 0) return res.status(409).json({ message: "This date is already fully booked" });
+
+    const price = parseInt(dress.price);
+    const blockOutPeriod = calculateBlockOutPeriod(dateBooked);
+
+    const booking = new BookingSchema({
+      dressId,
+      userId,
+      dateBooked,
+      blockOutPeriod,
+      address: address ?? {},
+      billingAddress: billingAddress ?? {},
+      deliveryType,
+      tracking: "",
+      isShipped: false,
+      isReturned: false,
+      paymentIntent: "ADMIN_MANUAL",
+      paymentSuccess: true,
+      size,
+      price,
+      status: BookingStatus.NA,
+    });
+
+    await booking.save();
+
+    await sendEmailConfirmation([booking.toObject()]);
+
+    res.status(201).json({ message: "Booking created", booking });
   }
 }
