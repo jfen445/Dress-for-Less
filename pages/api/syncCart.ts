@@ -35,24 +35,21 @@ export default async function handler(
       });
     }
 
-    cart.forEach(async (item) => {
-      if (item.userId == null) {
-        return;
-      }
-      const cartItem = await getCartItem(
-        item.userId,
-        item.dressId,
-        item.size,
-        item.dateBooked
-      );
+    await Promise.all(
+      cart.map(async (item) => {
+        if (item.userId == null) return;
+        const cartItem = await getCartItem(
+          item.userId,
+          item.dressId,
+          item.size,
+          item.dateBooked
+        );
+        if (!cartItem) await addToCart(item);
+      })
+    );
 
-      if (!cartItem) {
-        await addToCart(item);
-      }
-    });
-
-    res.status(200).json({ message: "Remote cart synced with local cart" });
+    return res.status(200).json({ message: "Remote cart synced with local cart" });
   }
 
-  res.end();
+  return res.end();
 }
