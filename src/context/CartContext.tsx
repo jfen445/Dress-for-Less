@@ -1,6 +1,6 @@
 // src/context/CartContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { getCart } from "@/api/cart";
+import { getCart, syncCart } from "@/api/cart";
 import { useUserContext } from "./UserContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { CartType } from "../../common/types";
@@ -22,7 +22,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { userInfo } = useUserContext();
   const [cartCount, setCartCount] = useState(0);
-  const { getItems } = useLocalStorage<CartType[]>("localCart");
+  const { getItems, clearItems } = useLocalStorage<CartType[]>("localCart");
 
   const refreshCart = React.useCallback(async () => {
     if (!userInfo?._id) {
@@ -42,8 +42,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [userInfo, getItems]);
 
   useEffect(() => {
-    refreshCart();
-  }, [refreshCart]);
+    const cartItems = getItems();
+
+    if (userInfo?._id && cartItems && cartItems.length > 0) {
+      const updatedCart = cartItems.map((item) => ({ ...item, userId: userInfo._id }));
+      syncCart(updatedCart)
+        .then(() => clearItems())
+        .then(() => refreshCart())
+        .catch(console.error);
+    } else {
+      refreshCart();
+    }
+  }, [userInfo, getItems, clearItems, refreshCart]);
 
   return (
     <CartContext.Provider value={{ cartCount, refreshCart }}>

@@ -1,12 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { CartType, UserType } from "../../common/types";
+import { UserType } from "../../common/types";
 import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
-import useLocalStorage from "@/hooks/useLocalStorage";
-import { syncCart } from "@/api/cart";
-import { useCartContext } from "./CartContext";
 
 interface UserContextProps {
   userInfo: UserType | null;
@@ -20,8 +17,6 @@ const userContext = React.createContext<UserContextProps>(
 
 const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   const [userInfo, setUserInfo] = React.useState<UserType | null>(null);
-  const { getItems, clearItems } = useLocalStorage<CartType[]>("localCart");
-  const { refreshCart } = useCartContext();
   const { data: session } = useSession();
 
   const fetchData = React.useCallback(async () => {
@@ -62,30 +57,6 @@ const UserContextProvider = ({ children }: React.PropsWithChildren) => {
   </svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   };
-
-  React.useEffect(() => {
-    const cartItems = getItems();
-
-    if (!cartItems || !session || cartItems?.length == 0) {
-      return;
-    }
-
-    const updatedCart = cartItems.map((item) => ({
-      ...item,
-      userId: userInfo?._id,
-    }));
-
-    syncCart(updatedCart)
-      .then(() => {
-        clearItems();
-      })
-      .catch((err) => {
-        console.error(err);
-      })
-      .finally(() => {
-        refreshCart();
-      });
-  }, [userInfo, clearItems, getItems, refreshCart, session]);
 
   React.useEffect(() => {
     fetchData();
