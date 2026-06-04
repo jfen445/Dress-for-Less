@@ -148,6 +148,18 @@ const Account = () => {
               />
             </div>
 
+            {!isEditMode && (
+              <div className="col-span-full md:hidden">
+                <Button
+                  onClick={() => setIsEditMode(true)}
+                  disabled={isSaving || photoWarningText}
+                  className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                >
+                  Edit
+                </Button>
+              </div>
+            )}
+
             <div className="sm:col-span-3">
               <label
                 htmlFor="first-name"
@@ -264,7 +276,7 @@ const Account = () => {
           </div>
 
           {!isEditMode ? (
-            <div className="mt-8 flex">
+            <div className="mt-8 hidden md:flex">
               <Button
                 onClick={() => setIsEditMode(true)}
                 disabled={isSaving || photoWarningText}
