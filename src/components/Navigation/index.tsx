@@ -106,7 +106,7 @@ const NavigationBar = () => {
             <div className="flex flex-1 items-center lg:hidden">
               <button
                 type="button"
-                className="flex -ml-2 rounded-md bg-white p-2 text-gray-400"
+                className="-ml-2 rounded-md bg-white p-2 text-gray-400"
                 onClick={() => setMobileNavOpen(true)}
               >
                 <span className="sr-only">Open menu</span>
