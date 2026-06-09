@@ -15,6 +15,7 @@ import {
   MagnifyingGlassIcon,
   ShoppingCartIcon,
   UserIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/16/solid";
 import AboutImage from "../../../public/aboutimg.jpg";
 import { signOut, useSession } from "next-auth/react";
@@ -105,7 +106,7 @@ const NavigationBar = () => {
             <div className="flex flex-1 items-center lg:hidden">
               <button
                 type="button"
-                className="-ml-2 rounded-md bg-white p-2 text-gray-400"
+                className="flex -ml-2 rounded-md bg-white p-2 text-gray-400"
                 onClick={() => setMobileNavOpen(true)}
               >
                 <span className="sr-only">Open menu</span>
@@ -146,7 +147,18 @@ const NavigationBar = () => {
                             )}
                           >
                             {category.sections.length > 0 ? (
-                              category.name
+                              <>
+                                {category.name}
+                                <ChevronDownIcon
+                                  className={classNames(
+                                    open
+                                      ? "transform rotate-180 text-secondary-pink"
+                                      : "text-gray-400",
+                                    "ml-1.5 h-4 w-4 transition-transform duration-200",
+                                  )}
+                                  aria-hidden="true"
+                                />
+                              </>
                             ) : (
                               <Link
                                 href={category.href}
@@ -155,6 +167,7 @@ const NavigationBar = () => {
                                 {category.name}
                               </Link>
                             )}
+
                             <span
                               className={classNames(
                                 open ? "bg-secondary-pink" : "",
