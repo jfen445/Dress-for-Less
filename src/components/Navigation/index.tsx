@@ -15,6 +15,7 @@ import {
   MagnifyingGlassIcon,
   ShoppingCartIcon,
   UserIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/16/solid";
 import AboutImage from "../../../public/aboutimg.jpg";
 import { signOut, useSession } from "next-auth/react";
@@ -146,15 +147,29 @@ const NavigationBar = () => {
                             )}
                           >
                             {category.sections.length > 0 ? (
-                              category.name
+                              <div className="relative pb-1 flex items-center after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 after:ease-in-out hover:after:scale-x-100">
+                                <span>{category.name}</span>
+                                <ChevronDownIcon
+                                  className={classNames(
+                                    open
+                                      ? "transform rotate-180 text-secondary-pink"
+                                      : "text-gray-400",
+                                    "ml-1.5 h-4 w-4 transition-transform duration-200",
+                                  )}
+                                  aria-hidden="true"
+                                />
+                              </div>
                             ) : (
                               <Link
                                 href={category.href}
                                 className="flex flex-shrink-0 items-center"
                               >
-                                {category.name}
+                                <span className="relative pb-1 after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 after:ease-in-out hover:after:scale-x-100">
+                                  {category.name}
+                                </span>
                               </Link>
                             )}
+
                             <span
                               className={classNames(
                                 open ? "bg-secondary-pink" : "",
