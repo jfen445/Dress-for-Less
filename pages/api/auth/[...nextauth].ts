@@ -63,6 +63,7 @@ export const authOptions: NextAuthOptions = {
         },
       },
       from: process.env.EMAIL_FROM,
+      maxAge: 15 * 60, // 15 minutes
       sendVerificationRequest: sendVerificationRequest,
     }),
   ],

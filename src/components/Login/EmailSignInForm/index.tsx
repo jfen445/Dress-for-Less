@@ -9,6 +9,8 @@ import Button from "@/components/Button";
 
 export default function EmailSignInForm() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [emailSent, setEmailSent] = React.useState(false);
+  const [submittedEmail, setSubmittedEmail] = React.useState("");
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") || "/account";
 
@@ -16,10 +18,21 @@ export default function EmailSignInForm() {
     setIsLoading(true);
     event.preventDefault();
     const formData = new FormData(event.target);
-    const email = formData.get("email");
-    signIn("email", { email }).finally(() => {
-      setIsLoading(false);
-    });
+    const email = formData.get("email") as string;
+    const result = await signIn("email", { email, redirect: false });
+    setIsLoading(false);
+    if (!result?.error) {
+      setSubmittedEmail(email);
+      setEmailSent(true);
+    }
+  }
+
+  if (emailSent) {
+    return (
+      <p className="text-sm text-center text-gray-600">
+        Check your inbox — we sent a magic link to <strong>{submittedEmail}</strong>
+      </p>
+    );
   }
 
   return (
