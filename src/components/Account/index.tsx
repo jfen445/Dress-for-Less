@@ -240,7 +240,7 @@ const Account = () => {
                     }
                     id="mobile"
                     name="mobile"
-                    type="number"
+                    type="tel"
                     disabled={!isEditMode}
                     className=""
                     required
