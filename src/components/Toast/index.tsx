@@ -83,7 +83,7 @@ const Toast: React.FC<NotificationProps> = ({
                       </p>
                     )}
 
-                    {toast.variant === "success" && (
+                    {toast.variant !== "error" && (
                       <Link
                         href="/cart"
                         className="absolute inset-0 z-0"
