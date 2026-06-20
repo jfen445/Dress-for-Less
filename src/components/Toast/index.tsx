@@ -20,7 +20,7 @@ export type ToastType = {
 const Toast: React.FC<NotificationProps> = ({
   toast,
   setToast,
-  duration = 3000,
+  duration = 3500,
 }) => {
   React.useEffect(() => {
     if (toast?.show) {
