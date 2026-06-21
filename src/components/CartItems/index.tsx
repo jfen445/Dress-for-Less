@@ -102,6 +102,7 @@ const CartItems = ({
   };
 
   const formatDate = (date: string) => {
+    console.log("date", date);
     return dayjs(date).format("dddd, D MMMM YYYY");
   };
 

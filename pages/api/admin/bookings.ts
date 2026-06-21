@@ -20,22 +20,26 @@ function calculateBlockOutPeriod(dateBooked: string): string[] {
   const day = date.day();
   if (day === 5)
     return [
-      date.toJSON(),
-      date.add(1, "day").toJSON(),
-      date.add(2, "day").toJSON(),
+      date.format("YYYY-MM-DD"),
+      date.add(1, "day").format("YYYY-MM-DD"),
+      date.add(2, "day").format("YYYY-MM-DD"),
     ];
   if (day === 6)
     return [
-      date.subtract(1, "day").toJSON(),
-      date.toJSON(),
-      date.add(1, "day").toJSON(),
+      date.subtract(1, "day").format("YYYY-MM-DD"),
+      date.format("YYYY-MM-DD"),
+      date.add(1, "day").format("YYYY-MM-DD"),
     ];
   if (day === 0)
     return [
-      date.subtract(2, "day").toJSON(),
-      date.subtract(1, "day").toJSON(),
-      date.toJSON(),
+      date.subtract(2, "day").format("YYYY-MM-DD"),
+      date.subtract(1, "day").format("YYYY-MM-DD"),
+      date.format("YYYY-MM-DD"),
     ];
+  if (day >= 1 && day <= 4) {
+    const monday = date.subtract(day - 1, "day");
+    return Array.from({ length: 7 }, (_, i) => monday.add(i, "day").format("YYYY-MM-DD"));
+  }
   return [];
 }
 

@@ -52,28 +52,48 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
   const toggleStatus = (status: BookingStatus) => {
     setSelectedStatuses((prev) =>
-      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status],
     );
   };
 
   const filteredBookings = React.useMemo(() => {
     let result = bookings;
-    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
-    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        deliveryType.includes(b.deliveryType as DeliveryType),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
     return result;
   }, [bookings, deliveryType, selectedStatuses]);
 
   const filteredThisWeekBookings = React.useMemo(() => {
     let result = thisWeekBookings;
-    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
-    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        deliveryType.includes(b.deliveryType as DeliveryType),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
     return result;
   }, [thisWeekBookings, deliveryType, selectedStatuses]);
 
   const filteredPastBookings = React.useMemo(() => {
     let result = pastBookings;
-    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
-    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        deliveryType.includes(b.deliveryType as DeliveryType),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
     return result;
   }, [pastBookings, deliveryType, selectedStatuses]);
 
@@ -91,6 +111,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         }),
       );
   };
+
+  console.log("fewafaef", filteredBookings);
 
   type ObjectArray = Record<string, any>[];
 
@@ -165,7 +187,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     bookingId: string;
     initialStatus: BookingStatus;
   }) => {
-    const [status, setStatus] = React.useState<BookingStatus>(initialStatus ?? BookingStatus.NA);
+    const [status, setStatus] = React.useState<BookingStatus>(
+      initialStatus ?? BookingStatus.NA,
+    );
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newStatus = e.target.value as BookingStatus;
@@ -295,6 +319,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
               </td>
 
+              <td className="px-3 py-5 text-sm text-gray-500">
+                {currentBooking.size}
+              </td>
+
               <td className="px-3 py-5 text-sm">
                 {/* <span
                   className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
@@ -374,7 +402,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         setOpen={setCreateModalOpen}
         onCreated={() => {
           getBookings();
-          setToast({ message: "Booking created successfully", variant: ToastVariant.SUCCESS, show: true });
+          setToast({
+            message: "Booking created successfully",
+            variant: ToastVariant.SUCCESS,
+            show: true,
+          });
         }}
       />
       <div className="p-4 sm:px-6 lg:px-8">
@@ -454,6 +486,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
                         Date Booked
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Size
                       </th>
                       <th
                         scope="col"

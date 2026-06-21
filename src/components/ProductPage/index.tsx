@@ -123,6 +123,8 @@ const Product = () => {
       size: size,
     };
 
+    console.log("cartItem", cartItem);
+
     if (!session || !user) {
       const localCart = getItems() || ([] as CartType[]);
 

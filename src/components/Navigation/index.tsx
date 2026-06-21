@@ -376,7 +376,7 @@ const NavigationBar = () => {
                       <MenuItem>
                         <a
                           href={
-                            pathname.includes("/admin")
+                            pathname?.includes("/admin")
                               ? "javascript:void(0)"
                               : "/admin"
                           }
@@ -389,7 +389,7 @@ const NavigationBar = () => {
                     <MenuItem>
                       <a
                         href={
-                          pathname.includes("/account")
+                          pathname?.includes("/account")
                             ? "javascript:void(0)"
                             : "/account"
                         }
@@ -402,7 +402,7 @@ const NavigationBar = () => {
                       <MenuItem>
                         <a
                           href={
-                            pathname.includes("order")
+                            pathname?.includes("order")
                               ? "javascript:void(0)"
                               : "/order-history"
                           }
