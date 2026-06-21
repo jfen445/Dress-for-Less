@@ -7,7 +7,7 @@ import { DressType } from "../../../../common/types";
 const HeroSection = () => {
   const { allDresses, getHomeScreenDresses } = useGlobalContext();
   const [dresses, setDresses] = React.useState<DressType[]>(
-    getHomeScreenDresses()
+    getHomeScreenDresses(),
   );
 
   React.useEffect(() => {
@@ -28,7 +28,7 @@ const HeroSection = () => {
         autoFill={false}
       >
         {"Auckland Pick-Up || Postage NZ-Wide || Postage closes Tuesday 8pm for the weekend || ".repeat(
-          100
+          100,
         )}
       </Marquee>
       {dresses && dresses.length != 0 && (
@@ -116,7 +116,7 @@ const HeroSection = () => {
 
                   <Link
                     href="/dresses"
-                    className="inline-block rounded-md border border-transparent bg-primary-pink px-8 py-3 text-center font-medium text-white hover:bg-secondary-pink"
+                    className="inline-block rounded-md border border-transparent bg-primary-pink px-8 py-3 text-center font-semibold text-white hover:bg-secondary-pink"
                   >
                     Shop Collection
                   </Link>
