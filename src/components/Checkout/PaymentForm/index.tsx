@@ -13,7 +13,7 @@ import { Address, Booking } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import { checkValidBooking, createBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
-import Toast, { ToastType } from "@/components/Toast";
+import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
 import { useCartContext } from "@/context/CartContext";
@@ -41,7 +41,7 @@ const PaymentForm = ({
   const [errorMessage, setErrorMessage] = React.useState<string>();
   const [toast, setToast] = React.useState<ToastType>({
     message: "A payment error occured. Please try again",
-    variant: "error",
+    variant: ToastVariant.ERROR,
     show: false,
   });
 
@@ -55,7 +55,7 @@ const PaymentForm = ({
         ...toast,
         message:
           "Something went wrong with the payment. Please refresh and try again",
-        variant: "error",
+        variant: ToastVariant.ERROR,
         show: true,
       });
       setIsLoading(false);
@@ -113,7 +113,7 @@ const PaymentForm = ({
         setToast({
           ...toast,
           message: err.message,
-          variant: "error",
+          variant: ToastVariant.ERROR,
           show: true,
         });
         isValid = false;
@@ -139,7 +139,7 @@ const PaymentForm = ({
             ...toast,
             message:
               error?.message ?? "A payment error occured. Please try again",
-            variant: "error",
+            variant: ToastVariant.ERROR,
             show: true,
           });
         }
@@ -154,7 +154,7 @@ const PaymentForm = ({
               setToast({
                 ...toast,
                 message: err.message,
-                variant: "error",
+                variant: ToastVariant.ERROR,
                 show: true,
               });
             });
