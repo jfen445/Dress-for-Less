@@ -40,9 +40,15 @@ const CreateBookingModal = ({
 }: ICreateBookingModal) => {
   const { allDresses } = useGlobalContext();
   const [users, setUsers] = React.useState<UserType[]>([]);
+  const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
+    "existing",
+  );
   const [dressId, setDressId] = React.useState("");
   const [size, setSize] = React.useState("");
   const [userId, setUserId] = React.useState("");
+  const [newUserEmail, setNewUserEmail] = React.useState("");
+  const [newUserFirstName, setNewUserFirstName] = React.useState("");
+  const [newUserLastName, setNewUserLastName] = React.useState("");
   const [dateBooked, setDateBooked] = React.useState("");
   const [deliveryType, setDeliveryType] = React.useState<DeliveryType>(
     DeliveryType.Delivery,
@@ -116,7 +122,11 @@ const CreateBookingModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dressId || !userId || !dateBooked || !size) {
+    const customerInvalid =
+      customerMode === "existing"
+        ? !userId
+        : !newUserEmail || !newUserFirstName || !newUserLastName;
+    if (!dressId || customerInvalid || !dateBooked || !size) {
       setToast({
         message: "Please fill in all required fields including a date",
         variant: ToastVariant.WARNING,
@@ -128,7 +138,15 @@ const CreateBookingModal = ({
     try {
       await createAdminBooking({
         dressId,
-        userId,
+        ...(customerMode === "existing"
+          ? { userId }
+          : {
+              newUser: {
+                email: newUserEmail,
+                firstName: newUserFirstName,
+                lastName: newUserLastName,
+              },
+            }),
         dateBooked,
         size,
         deliveryType,
@@ -249,22 +267,82 @@ const CreateBookingModal = ({
               </select>
             </div>
 
-            {/* User */}
+            {/* Customer toggle */}
             <div className="sm:col-span-2">
               <label className={labelCls}>Customer</label>
-              <select
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className={inputCls}
-                required
-              >
-                <option value="">Select a customer…</option>
-                {users.map((u) => (
-                  <option key={u._id ?? u.email} value={u._id ?? ""}>
-                    {u.name} — {u.email}
-                  </option>
+              <div className="flex gap-4 mb-3">
+                {(["existing", "new"] as const).map((mode) => (
+                  <label
+                    key={mode}
+                    className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="customerMode"
+                      value={mode}
+                      checked={customerMode === mode}
+                      onChange={() => {
+                        setCustomerMode(mode);
+                        setUserId("");
+                        setNewUserEmail("");
+                        setNewUserFirstName("");
+                        setNewUserLastName("");
+                      }}
+                    />
+                    {mode === "existing" ? "Existing customer" : "New customer"}
+                  </label>
                 ))}
-              </select>
+              </div>
+
+              {customerMode === "existing" ? (
+                <select
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  className={inputCls}
+                  required
+                >
+                  <option value="">Select a customer…</option>
+                  {users.map((u) => (
+                    <option key={u._id ?? u.email} value={u._id ?? ""}>
+                      {u.name} — {u.email}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>Email</label>
+                    <input
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      required
+                      className={inputCls}
+                      placeholder="customer@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>First name</label>
+                    <input
+                      type="text"
+                      value={newUserFirstName}
+                      onChange={(e) => setNewUserFirstName(e.target.value)}
+                      required
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Last name</label>
+                    <input
+                      type="text"
+                      value={newUserLastName}
+                      onChange={(e) => setNewUserLastName(e.target.value)}
+                      required
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

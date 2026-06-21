@@ -4,10 +4,10 @@ import {
   getAllBookings,
   checkDuplicateBooking,
 } from "../../../lib/db/booking-dao";
+import { createUser, findUser } from "../../../lib/db/user-dao";
 import { getDress } from "../../../sanity/sanity.query";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
-import { findUser } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
 import { BookingSchema } from "../../../lib/db/schema";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
@@ -80,7 +80,8 @@ export default async function handler(
   } else if (req.method === "POST") {
     const {
       dressId,
-      userId,
+      userId: bodyUserId,
+      newUser,
       dateBooked,
       size,
       deliveryType,
@@ -88,8 +89,28 @@ export default async function handler(
       billingAddress,
     } = req.body;
 
-    if (!dressId || !userId || !dateBooked || !size || !deliveryType) {
+    if (!dressId || !dateBooked || !size || !deliveryType) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+    if (!bodyUserId && !newUser) {
+      return res
+        .status(400)
+        .json({ message: "A customer or new customer details are required" });
+    }
+
+    let userId = bodyUserId;
+    if (!userId && newUser) {
+      const result = await createUser({
+        email: newUser.email,
+        name: `${newUser.firstName} ${newUser.lastName}`,
+        mobileNumber: "",
+        instagramHandle: "",
+        role: "user",
+      });
+      userId =
+        "insertedId" in result
+          ? result.insertedId.toString()
+          : result._id.toString();
     }
 
     const dress = await getDress(dressId);

@@ -112,8 +112,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       );
   };
 
-  console.log("fewafaef", filteredBookings);
-
   type ObjectArray = Record<string, any>[];
 
   const convertToCSV = (objArray: ObjectArray): string => {
