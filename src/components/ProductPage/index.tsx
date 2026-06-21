@@ -15,7 +15,7 @@ import Button from "@/components/Button";
 import Calendar from "./Calendar";
 import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
-import Toast, { ToastType } from "../Toast";
+import Toast, { ToastType, ToastVariant } from "../Toast";
 import { addToCart } from "@/api/cart";
 import Spinner from "../Spinner";
 import CoverFlow from "../Swiper";
@@ -37,7 +37,7 @@ const Product = () => {
   const [isAddedToCart, setIsAddedToCart] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
-    variant: "success",
+    variant: ToastVariant.SUCCESS,
     show: false,
   });
   const params = useParams<{ id: string }>();
@@ -109,7 +109,7 @@ const Product = () => {
     if (!params?.id || !user) {
       setToast({
         message: "An error occurred while adding to cart",
-        variant: "error",
+        variant: ToastVariant.ERROR,
         show: true,
       });
       setIsLoading(false);
@@ -133,14 +133,14 @@ const Product = () => {
       if (itemAlreadyInCart) {
         setToast({
           message: "Item already in cart",
-          variant: "warning",
+          variant: ToastVariant.WARNING,
           show: true,
         });
       } else {
         setItems([...localCart, cartItem]);
         setToast({
           message: "Added to cart",
-          variant: "success",
+          variant: ToastVariant.SUCCESS,
           show: true,
         });
         refreshCart();
@@ -151,7 +151,7 @@ const Product = () => {
         .then((data) => {
           setToast({
             message: data?.data.message,
-            variant: "success",
+            variant: ToastVariant.SUCCESS,
             show: true,
           });
           refreshCart();
@@ -159,7 +159,7 @@ const Product = () => {
         .catch((err) => {
           setToast({
             message: err.message,
-            variant: "warning",
+            variant: ToastVariant.WARNING,
             show: true,
           });
         })
@@ -202,7 +202,7 @@ const Product = () => {
 
   return (
     <div className="bg-white">
-      <Toast toast={toast} setToast={setToast} />
+      <Toast toast={toast} setToast={setToast} href={"/cart"} />
       {!dress ? (
         <div className="h-screen flex items-center justify-center">
           <Spinner />

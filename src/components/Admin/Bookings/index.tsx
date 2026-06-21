@@ -8,7 +8,7 @@ import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
-import Toast, { ToastType } from "@/components/Toast";
+import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
@@ -28,7 +28,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
-    variant: "warning",
+    variant: ToastVariant.WARNING,
     show: false,
   });
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
@@ -86,7 +86,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       .catch(() =>
         setToast({
           message: "An error occurred while updating booking status",
-          variant: "warning",
+          variant: ToastVariant.WARNING,
           show: true,
         }),
       );
@@ -374,7 +374,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         setOpen={setCreateModalOpen}
         onCreated={() => {
           getBookings();
-          setToast({ message: "Booking created successfully", variant: "success", show: true });
+          setToast({ message: "Booking created successfully", variant: ToastVariant.SUCCESS, show: true });
         }}
       />
       <div className="p-4 sm:px-6 lg:px-8">

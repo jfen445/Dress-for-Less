@@ -7,13 +7,13 @@ import { SignupButton } from "../SignupButton";
 import Button from "../Button";
 import { UserType } from "../../../common/types";
 import { useRouter } from "next/navigation";
-import Toast, { ToastType } from "../Toast";
+import Toast, { ToastType, ToastVariant } from "../Toast";
 
 const CreateAccountComponent = () => {
   const router = useRouter();
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
-    variant: "success",
+    variant: ToastVariant.SUCCESS,
     show: false,
   });
   const [errorMessage, setErrorMessage] = React.useState<string>("");
@@ -67,7 +67,7 @@ const CreateAccountComponent = () => {
           ...toast,
           show: true,
           message: data.message,
-          variant: "warning",
+          variant: ToastVariant.WARNING,
         });
       })
       .catch((err) => {

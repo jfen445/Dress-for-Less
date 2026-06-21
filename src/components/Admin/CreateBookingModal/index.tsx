@@ -6,7 +6,7 @@ import { useGlobalContext } from "@/context/GlobalContext";
 import { getAllAdminUsers, createAdminBooking } from "@/api/admin";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { UserType, Address, Sizes } from "../../../../common/types";
-import Toast, { ToastType } from "@/components/Toast";
+import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 
 const DELIVERY_FEES: Record<DeliveryType, number> = {
   [DeliveryType.Delivery]: 15,
@@ -54,7 +54,7 @@ const CreateBookingModal = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
-    variant: "warning",
+    variant: ToastVariant.WARNING,
     show: false,
   });
 
@@ -119,7 +119,7 @@ const CreateBookingModal = ({
     if (!dressId || !userId || !dateBooked || !size) {
       setToast({
         message: "Please fill in all required fields including a date",
-        variant: "warning",
+        variant: ToastVariant.WARNING,
         show: true,
       });
       return;
@@ -141,7 +141,7 @@ const CreateBookingModal = ({
       setDateBooked("");
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Failed to create booking";
-      setToast({ message: msg, variant: "warning", show: true });
+      setToast({ message: msg, variant: ToastVariant.WARNING, show: true });
     } finally {
       setIsSubmitting(false);
     }

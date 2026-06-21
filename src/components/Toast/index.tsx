@@ -7,19 +7,27 @@ import Link from "next/link";
 type NotificationProps = {
   toast: ToastType;
   setToast: (toast: ToastType) => void;
+  href?: string;
   duration?: number;
 };
+
+export enum ToastVariant {
+  SUCCESS = "success",
+  ERROR = "error",
+  WARNING = "warning",
+}
 
 export type ToastType = {
   message: string;
   text?: string;
-  variant: "success" | "error" | "warning";
+  variant: ToastVariant;
   show: boolean;
 };
 
 const Toast: React.FC<NotificationProps> = ({
   toast,
   setToast,
+  href,
   duration = 3500,
 }) => {
   React.useEffect(() => {
@@ -36,9 +44,9 @@ const Toast: React.FC<NotificationProps> = ({
   }
 
   const getColour = () => {
-    if (toast.variant === "success") {
+    if (toast.variant === ToastVariant.SUCCESS) {
       return "bg-green-500";
-    } else if (toast.variant === "error") {
+    } else if (toast.variant === ToastVariant.ERROR) {
       return "bg-red-500";
     } else {
       return "bg-orange-400";
@@ -83,9 +91,9 @@ const Toast: React.FC<NotificationProps> = ({
                       </p>
                     )}
 
-                    {toast.variant !== "error" && (
+                    {href != null && toast.variant !== "error" && (
                       <Link
-                        href="/cart"
+                        href={href}
                         className="absolute inset-0 z-0"
                         aria-label="View cart"
                       />
