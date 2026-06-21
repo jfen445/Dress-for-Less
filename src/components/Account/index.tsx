@@ -83,11 +83,15 @@ const Account = () => {
 
     await updateUserAccount(user)
       .then(() => {
-        setToast({ message: "Account saved", variant: ToastVariant.SUCCESS, show: true });
+        setToast({
+          message: "Account saved",
+          variant: ToastVariant.SUCCESS,
+          show: true,
+        });
         fetchData();
       })
       .catch((err) => {
-        console.log("Error saving account", err);
+        console.error("Error saving account", err);
         setToast({
           message: "Error saving account",
           variant: ToastVariant.ERROR,

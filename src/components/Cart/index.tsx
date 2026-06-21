@@ -38,8 +38,6 @@ const Cart = () => {
       ? true
       : false;
 
-  console.log("products", products);
-
   const query = React.useCallback(() => {
     const params = new URLSearchParams();
     selectedProductIds.forEach((id) => params.append("id", id.toString()));
