@@ -23,6 +23,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <div className="min-h-screen bg-white">
               <Head>
                 <title>Dress for Less</title>
+                <link rel="icon" href="/favicon.ico" />
               </Head>
               {isComingSoon === "true" ? (
                 <ComingSoon />
