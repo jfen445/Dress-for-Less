@@ -31,7 +31,7 @@ const DressGrid = () => {
               </div>
               <div className="mt-4 flex items-center justify-between text-base font-medium text-gray-900">
                 <h3>{dress.name}</h3>
-                <p>{dress.price}</p>
+                <p className="text-gray-500 text-sm">${dress.price}</p>
               </div>
             </a>
           ))}

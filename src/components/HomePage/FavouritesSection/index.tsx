@@ -50,7 +50,7 @@ const FavouritesSection = () => {
                       {dress.name}
                     </a>
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">{dress.price}</p>
+                  <p className="mt-1 text-sm text-gray-500">${dress.price}</p>
                 </div>
               ))}
             </div>
