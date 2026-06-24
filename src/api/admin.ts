@@ -38,3 +38,7 @@ export async function createAdminBooking(data: {
 }) {
   return api.post(`/api/admin/bookings`, data);
 }
+
+export async function sendBookingEmails(bookingIds: string[]) {
+  return api.post(`/api/admin/sendBookingEmails`, { bookingIds });
+}

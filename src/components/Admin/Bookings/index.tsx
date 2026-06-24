@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
+import EmailBookingsModal from "../EmailBookingsModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -34,6 +35,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
+  const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
@@ -407,6 +409,17 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           });
         }}
       />
+      <EmailBookingsModal
+        isOpen={emailModalOpen}
+        setOpen={setEmailModalOpen}
+        bookings={filteredThisWeekBookings}
+        onSent={(message) =>
+          setToast({ message, variant: ToastVariant.SUCCESS, show: true })
+        }
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
+      />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
@@ -418,6 +431,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setEmailModalOpen(true)}>Email</Button>
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
