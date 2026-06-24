@@ -28,7 +28,8 @@ export async function deleteBlockOut(id: string) {
 
 export async function createAdminBooking(data: {
   dressId: string;
-  userId: string;
+  userId?: string;
+  newUser?: { email: string; firstName: string; lastName: string };
   dateBooked: string;
   size: string;
   deliveryType: string;
@@ -36,4 +37,8 @@ export async function createAdminBooking(data: {
   billingAddress: object;
 }) {
   return api.post(`/api/admin/bookings`, data);
+}
+
+export async function sendBookingEmails(bookingIds: string[]) {
+  return api.post(`/api/admin/sendBookingEmails`, { bookingIds });
 }

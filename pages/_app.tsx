@@ -1,5 +1,8 @@
 import { AppProps } from "next/app";
 import React from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import "../styles/global.css";
 import MobileNav from "@/components/MobileNav";
 import NavigationBar from "@/components/Navigation";
@@ -12,6 +15,9 @@ import GlobalContextProvider from "@/context/GlobalContext";
 import ComingSoon from "@/components/ComingSoon";
 import { CartProvider } from "@/context/CartContext";
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 export default function App({ Component, pageProps }: AppProps) {
   const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON;
 
@@ -23,6 +29,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <div className="min-h-screen bg-white">
               <Head>
                 <title>Dress for Less</title>
+                <link rel="icon" href="/favicon.ico" />
               </Head>
               {isComingSoon === "true" ? (
                 <ComingSoon />

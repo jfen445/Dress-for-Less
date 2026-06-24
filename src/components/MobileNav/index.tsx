@@ -1,9 +1,12 @@
 "use client";
 
 import { useNavigationContext } from "@/context/NavigationContext";
+import { useGlobalContext } from "@/context/GlobalContext";
+import { useDressSearch } from "@/hooks/useDressSearch";
+import SearchResultsList from "@/components/Search/SearchResultsList";
 import { Dialog, Tab, Transition } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/16/solid";
-import { Fragment, useState } from "react";
+import { XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
+import { Fragment } from "react";
 
 const navigation = {
   categories: [
@@ -119,6 +122,9 @@ function classNames(...classes: string[]) {
 
 const MobileNav = () => {
   const { mobileNavOpen, setMobileNavOpen } = useNavigationContext();
+  const { allDresses } = useGlobalContext();
+  const { searchQuery, setSearchQuery, searchResults } =
+    useDressSearch(allDresses);
 
   return (
     <Transition.Root show={mobileNavOpen} as={Fragment}>
@@ -162,93 +168,102 @@ const MobileNav = () => {
                 </button>
               </div>
 
-              {/* Links */}
-              <Tab.Group as="div" className="mt-2">
-                <div className="border-b border-gray-200">
-                  <Tab.List className="-mb-px flex space-x-8 px-4">
-                    {navigation.categories.map((category) => (
-                      <Tab
-                        key={category.name}
-                        className={({ selected }) =>
-                          classNames(
-                            selected
-                              ? "border-secondary-pink text-secondary-pink"
-                              : "border-transparent text-gray-900",
-                            "flex-1 whitespace-nowrap border-b-2 px-1 py-4 text-base font-medium"
-                          )
-                        }
-                      >
-                        {category.name}
-                      </Tab>
-                    ))}
-                  </Tab.List>
-                </div>
-                <Tab.Panels as={Fragment}>
-                  {navigation.categories.map((category) => (
-                    <Tab.Panel
-                      key={category.name}
-                      className="space-y-10 px-4 pb-8 pt-10"
+              {/* Search */}
+              <div className="px-4 pt-4 pb-2">
+                <div className="flex items-center border-b border-gray-300 focus-within:border-gray-500">
+                  <MagnifyingGlassIcon
+                    className="h-5 w-5 flex-shrink-0 text-gray-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search dresses..."
+                    className="flex-1 py-2 pl-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="p-1 text-gray-400 hover:text-gray-600"
                     >
-                      {/* <div className="grid grid-cols-2 gap-x-4">
-                        {category.featured.map((item) => (
-                          <div
-                            key={item.name}
-                            className="group relative text-sm"
-                          >
-                            <div className="aspect-h-1 aspect-w-1 overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
-                              <img
-                                src={item.imageSrc}
-                                alt={item.imageAlt}
-                                className="object-cover object-center"
-                              />
-                            </div>
+                      <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Links */}
+              {searchQuery.trim() ? (
+                <div className="mt-2">
+                  <SearchResultsList
+                    results={searchResults}
+                    onSelect={() => {
+                      setSearchQuery("");
+                      setMobileNavOpen(false);
+                    }}
+                  />
+                </div>
+              ) : (
+                <Tab.Group as="div" className="mt-2">
+                  <div className="border-b border-gray-200">
+                    <Tab.List className="-mb-px flex space-x-8 px-4">
+                      {navigation.categories.map((category) => (
+                        <Tab
+                          key={category.name}
+                          className={({ selected }) =>
+                            classNames(
+                              selected
+                                ? "border-secondary-pink text-secondary-pink"
+                                : "border-transparent text-gray-900",
+                              "flex-1 whitespace-nowrap border-b-2 px-1 py-4 text-base font-medium",
+                            )
+                          }
+                        >
+                          {category.name}
+                        </Tab>
+                      ))}
+                    </Tab.List>
+                  </div>
+                  <Tab.Panels as={Fragment}>
+                    {navigation.categories.map((category) => (
+                      <Tab.Panel
+                        key={category.name}
+                        className="space-y-10 px-4 pb-8 pt-10"
+                      >
+                        {category.sections.map((section) => (
+                          <div key={section.name}>
                             <a
-                              href={item.href}
-                              className="mt-6 block font-medium text-gray-900"
+                              href={"/dresses"}
+                              id={`${category.id}-${section.id}-heading-mobile`}
+                              className="font-medium text-gray-900"
                             >
-                              <span
-                                className="absolute inset-0 z-10"
-                                aria-hidden="true"
-                              />
-                              {item.name}
+                              {section.name}
                             </a>
-                            <p aria-hidden="true" className="mt-1">
-                              Shop now
-                            </p>
+                            <ul
+                              role="list"
+                              aria-labelledby={`${category.id}-${section.id}-heading-mobile`}
+                              className="mt-6 flex flex-col space-y-6"
+                            >
+                              {section.items.map((item) => (
+                                <li key={item.name} className="flow-root">
+                                  <a
+                                    href={item.href}
+                                    className="-m-2 block p-2 text-gray-500"
+                                  >
+                                    {item.name}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         ))}
-                      </div> */}
-                      {category.sections.map((section) => (
-                        <div key={section.name}>
-                          <a
-                            href={"/dresses"}
-                            id={`${category.id}-${section.id}-heading-mobile`}
-                            className="font-medium text-gray-900"
-                          >
-                            {section.name}
-                          </a>
-                          <ul
-                            role="list"
-                            aria-labelledby={`${category.id}-${section.id}-heading-mobile`}
-                            className="mt-6 flex flex-col space-y-6"
-                          >
-                            {section.items.map((item) => (
-                              <li key={item.name} className="flow-root">
-                                <a
-                                  href={item.href}
-                                  className="-m-2 block p-2 text-gray-500"
-                                >
-                                  {item.name}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </Tab.Panel>
-                  ))}
-                </Tab.Panels>
-              </Tab.Group>
+                      </Tab.Panel>
+                    ))}
+                  </Tab.Panels>
+                </Tab.Group>
+              )}
 
               <div className="space-y-6 border-t border-gray-200 px-4 py-6">
                 {navigation.pages.map((page) => (

@@ -2,24 +2,33 @@ import * as React from "react";
 import { Fragment } from "react";
 import { Transition } from "@headlessui/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import Link from "next/link";
 
 type NotificationProps = {
   toast: ToastType;
   setToast: (toast: ToastType) => void;
+  href?: string;
   duration?: number;
 };
+
+export enum ToastVariant {
+  SUCCESS = "success",
+  ERROR = "error",
+  WARNING = "warning",
+}
 
 export type ToastType = {
   message: string;
   text?: string;
-  variant: "success" | "error" | "warning";
+  variant: ToastVariant;
   show: boolean;
 };
 
 const Toast: React.FC<NotificationProps> = ({
   toast,
   setToast,
-  duration = 3000,
+  href,
+  duration = 3500,
 }) => {
   React.useEffect(() => {
     if (toast?.show) {
@@ -31,31 +40,30 @@ const Toast: React.FC<NotificationProps> = ({
   }, [toast, duration, setToast]);
 
   if (!toast) {
-    return null; // Return null instead of undefined to avoid rendering issues
+    return null;
   }
 
   const getColour = () => {
-    if (toast.variant == "success") {
+    if (toast.variant === ToastVariant.SUCCESS) {
       return "bg-green-500";
-    } else if (toast.variant == "error") {
+    } else if (toast.variant === ToastVariant.ERROR) {
       return "bg-red-500";
     } else {
       return "bg-orange-400";
     }
   };
+
   return (
     <>
-      {/* Global notification live region, render this permanently at the end of the document */}
       <div
         aria-live="assertive"
         className="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start z-[9999]"
       >
         <div className="w-full flex flex-col items-center space-y-4 sm:items-end">
-          {/* Notification panel, dynamically insert this into the live region when it needs to be displayed */}
           <Transition
             show={toast.show}
             as={Fragment}
-            enter="transform ease-out duration-3f00 transition"
+            enter="transform ease-out duration-300 transition"
             enterFrom="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
             enterTo="translate-y-0 opacity-100 sm:translate-x-0"
             leave="transition ease-in duration-100"
@@ -63,7 +71,7 @@ const Toast: React.FC<NotificationProps> = ({
             leaveTo="opacity-0"
           >
             <div
-              className={`${getColour()} max-w-sm w-full shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden`}
+              className={`${getColour()} relative max-w-sm w-full shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden`}
             >
               <div className="p-4">
                 <div className="flex items-start">
@@ -74,15 +82,29 @@ const Toast: React.FC<NotificationProps> = ({
                     />
                   </div>
                   <div className="ml-3 w-0 flex-1 pt-0.5">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-white">
                       {toast.message}
                     </p>
-                    <p className="mt-1 text-sm text-gray-500">{toast.text}</p>
+                    {toast.text && (
+                      <p className="mt-1 text-sm text-green-100">
+                        {toast.text}
+                      </p>
+                    )}
+
+                    {href != null && toast.variant !== "error" && (
+                      <Link
+                        href={href}
+                        className="absolute inset-0 z-0"
+                        aria-label="View cart"
+                      />
+                    )}
                   </div>
-                  <div className="ml-4 flex-shrink-0 flex">
+
+                  <div className="ml-4 flex-shrink-0 flex relative z-10">
                     <button
                       className={`${getColour()} rounded-md inline-flex text-white hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setToast({ ...toast, show: false });
                       }}
                     >

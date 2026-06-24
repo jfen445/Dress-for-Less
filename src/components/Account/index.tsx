@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import Button from "../Button";
 import { UserType } from "../../../common/types";
 import { getUser, updateUserAccount } from "@/api/user";
-import Toast, { ToastType } from "../Toast";
+import Toast, { ToastType, ToastVariant } from "../Toast";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "../Spinner";
 import { useCartContext } from "@/context/CartContext";
@@ -27,7 +27,7 @@ const Account = () => {
   const [instagramHandle, setInstagramHandle] = React.useState<string>("");
   const [toast, setToast] = React.useState<ToastType>({
     message: "Account saved",
-    variant: "success",
+    variant: ToastVariant.SUCCESS,
     show: false,
   });
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
@@ -83,14 +83,18 @@ const Account = () => {
 
     await updateUserAccount(user)
       .then(() => {
-        setToast({ message: "Account saved", variant: "success", show: true });
+        setToast({
+          message: "Account saved",
+          variant: ToastVariant.SUCCESS,
+          show: true,
+        });
         fetchData();
       })
       .catch((err) => {
-        console.log("Error saving account", err);
+        console.error("Error saving account", err);
         setToast({
           message: "Error saving account",
-          variant: "error",
+          variant: ToastVariant.ERROR,
           show: true,
         });
       })
@@ -240,7 +244,7 @@ const Account = () => {
                     }
                     id="mobile"
                     name="mobile"
-                    type="number"
+                    type="tel"
                     disabled={!isEditMode}
                     className=""
                     required

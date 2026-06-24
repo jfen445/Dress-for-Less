@@ -21,10 +21,13 @@ import AboutImage from "../../../public/aboutimg.jpg";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
-import { Fragment } from "react";
+import { Fragment, useState, useRef, useEffect } from "react";
 import { navigationSections } from "@/model/navigation";
 import { Navigation } from "../../../common/types/navigation";
 import { useCartContext } from "@/context/CartContext";
+import { useGlobalContext } from "@/context/GlobalContext";
+import { useDressSearch } from "@/hooks/useDressSearch";
+import SearchResultsList from "@/components/Search/SearchResultsList";
 import { usePathname } from "next/navigation";
 
 const navigation: Navigation = {
@@ -94,9 +97,37 @@ function classNames(...classes: string[]) {
 const NavigationBar = () => {
   const { userInfo, getUserProfileImage } = useUserContext();
   const { cartCount } = useCartContext();
+  const { allDresses } = useGlobalContext();
   const { data: session } = useSession();
   const { setMobileNavOpen } = useNavigationContext();
   const pathname = usePathname();
+
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const { searchQuery, setSearchQuery, searchResults } =
+    useDressSearch(allDresses);
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  useEffect(() => {
+    if (isSearchOpen) searchInputRef.current?.focus();
+  }, [isSearchOpen]);
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!searchContainerRef.current?.contains(e.target as Node)) {
+        closeSearch();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isSearchOpen]);
 
   return (
     <header className="sticky top-0 z-50 bg-white">
@@ -107,18 +138,18 @@ const NavigationBar = () => {
               <button
                 type="button"
                 className="-ml-2 rounded-md bg-white p-2 text-gray-400"
-                onClick={() => setMobileNavOpen(true)}
+                onClick={() => setMobileNavOpen((prev) => !prev)}
               >
                 <span className="sr-only">Open menu</span>
                 <Bars3Icon className="h-6 w-6" aria-hidden="true" />
               </button>
-              <a
+              {/* <a
                 href="#"
                 className="ml-2 p-2 text-gray-400 hover:text-gray-500"
               >
                 <span className="sr-only">Search</span>
                 <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-              </a>
+              </a> */}
             </div>
 
             {/* Flyout menus */}
@@ -321,13 +352,57 @@ const NavigationBar = () => {
 
             <div className="flex flex-1 items-center justify-end">
               {/* Search */}
-              {/* <Link
-                href="#"
-                className="ml-6 hidden p-2 text-gray-400 hover:text-gray-500 lg:block"
+              <div
+                ref={searchContainerRef}
+                className="ml-6 hidden lg:block relative"
               >
-                <span className="sr-only">Search</span>
-                <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-              </Link> */}
+                <div className="flex items-center">
+                  <div
+                    className={classNames(
+                      "overflow-hidden transition-all duration-300 ease-in-out",
+                      isSearchOpen ? "w-56 opacity-100" : "w-0 opacity-0",
+                    )}
+                  >
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+                      placeholder="Search dresses..."
+                      className="w-full border-b border-gray-300 py-1 px-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="p-2 text-gray-400 hover:text-gray-500"
+                    onClick={() =>
+                      isSearchOpen ? closeSearch() : setIsSearchOpen(true)
+                    }
+                  >
+                    <span className="sr-only">Search</span>
+                    <MagnifyingGlassIcon
+                      className="h-6 w-6"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+
+                {isSearchOpen && searchQuery.trim().length > 0 && (
+                  <div className="absolute right-0 top-full z-20 w-96">
+                    <div
+                      className="absolute inset-0 top-1/2 bg-white shadow"
+                      aria-hidden="true"
+                    />
+                    <div className="relative bg-white shadow-lg border-t border-gray-100">
+                      <SearchResultsList
+                        results={searchResults}
+                        onSelect={closeSearch}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Cart */}
 
@@ -376,7 +451,7 @@ const NavigationBar = () => {
                       <MenuItem>
                         <a
                           href={
-                            pathname.includes("/admin")
+                            pathname?.includes("/admin")
                               ? "javascript:void(0)"
                               : "/admin"
                           }
@@ -389,7 +464,7 @@ const NavigationBar = () => {
                     <MenuItem>
                       <a
                         href={
-                          pathname.includes("/account")
+                          pathname?.includes("/account")
                             ? "javascript:void(0)"
                             : "/account"
                         }
@@ -402,7 +477,7 @@ const NavigationBar = () => {
                       <MenuItem>
                         <a
                           href={
-                            pathname.includes("order")
+                            pathname?.includes("order")
                               ? "javascript:void(0)"
                               : "/order-history"
                           }

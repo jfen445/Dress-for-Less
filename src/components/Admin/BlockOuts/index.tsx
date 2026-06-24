@@ -5,7 +5,7 @@ import { getBlockOuts, createBlockOut, deleteBlockOut } from "@/api/admin";
 import { BlockOut } from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
-import Toast, { ToastType } from "@/components/Toast";
+import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 
 const SIZES = ["XS", "S", "M", "L", "XL"];
 
@@ -13,7 +13,7 @@ const AdminBlockOuts = () => {
   const { allDresses } = useGlobalContext();
   const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [toast, setToast] = React.useState<ToastType>({ message: "", variant: "warning", show: false });
+  const [toast, setToast] = React.useState<ToastType>({ message: "", variant: ToastVariant.WARNING, show: false });
 
   const [dressId, setDressId] = React.useState("");
   const [size, setSize] = React.useState(SIZES[0]);
@@ -26,7 +26,7 @@ const AdminBlockOuts = () => {
     setIsLoading(true);
     getBlockOuts()
       .then((res) => setBlockOuts(res.data as BlockOut[]))
-      .catch(() => setToast({ message: "Failed to load block outs", variant: "warning", show: true }))
+      .catch(() => setToast({ message: "Failed to load block outs", variant: ToastVariant.WARNING, show: true }))
       .finally(() => setIsLoading(false));
   };
 
@@ -44,20 +44,20 @@ const AdminBlockOuts = () => {
     e.preventDefault();
     if (!dressId || !size || !startDate || !endDate) return;
     if (startDate > endDate) {
-      setToast({ message: "Start date must be on or before end date", variant: "warning", show: true });
+      setToast({ message: "Start date must be on or before end date", variant: ToastVariant.WARNING, show: true });
       return;
     }
     setIsSubmitting(true);
     createBlockOut({ dressId, size, startDate, endDate, reason: reason || undefined })
       .then(() => { setReason(""); fetchBlockOuts(); })
-      .catch(() => setToast({ message: "Failed to add block out", variant: "warning", show: true }))
+      .catch(() => setToast({ message: "Failed to add block out", variant: ToastVariant.WARNING, show: true }))
       .finally(() => setIsSubmitting(false));
   };
 
   const handleDelete = (id: string) => {
     deleteBlockOut(id)
       .then(() => setBlockOuts((prev) => prev.filter((b) => b._id !== id)))
-      .catch(() => setToast({ message: "Failed to remove block out", variant: "warning", show: true }));
+      .catch(() => setToast({ message: "Failed to remove block out", variant: ToastVariant.WARNING, show: true }));
   };
 
   const selectedDress = allDresses?.find((d) => d._id === dressId);

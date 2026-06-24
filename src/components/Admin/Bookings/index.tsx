@@ -6,9 +6,10 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
+import EmailBookingsModal from "../EmailBookingsModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
-import Toast, { ToastType } from "@/components/Toast";
+import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
@@ -28,12 +29,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
-    variant: "warning",
+    variant: ToastVariant.WARNING,
     show: false,
   });
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
+  const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
@@ -52,28 +54,48 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
   const toggleStatus = (status: BookingStatus) => {
     setSelectedStatuses((prev) =>
-      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status],
     );
   };
 
   const filteredBookings = React.useMemo(() => {
     let result = bookings;
-    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
-    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        deliveryType.includes(b.deliveryType as DeliveryType),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
     return result;
   }, [bookings, deliveryType, selectedStatuses]);
 
   const filteredThisWeekBookings = React.useMemo(() => {
     let result = thisWeekBookings;
-    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
-    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        deliveryType.includes(b.deliveryType as DeliveryType),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
     return result;
   }, [thisWeekBookings, deliveryType, selectedStatuses]);
 
   const filteredPastBookings = React.useMemo(() => {
     let result = pastBookings;
-    if (deliveryType?.length) result = result.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType));
-    if (selectedStatuses.length) result = result.filter((b) => selectedStatuses.includes(b.status as BookingStatus));
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        deliveryType.includes(b.deliveryType as DeliveryType),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
     return result;
   }, [pastBookings, deliveryType, selectedStatuses]);
 
@@ -86,7 +108,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       .catch(() =>
         setToast({
           message: "An error occurred while updating booking status",
-          variant: "warning",
+          variant: ToastVariant.WARNING,
           show: true,
         }),
       );
@@ -165,7 +187,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     bookingId: string;
     initialStatus: BookingStatus;
   }) => {
-    const [status, setStatus] = React.useState<BookingStatus>(initialStatus ?? BookingStatus.NA);
+    const [status, setStatus] = React.useState<BookingStatus>(
+      initialStatus ?? BookingStatus.NA,
+    );
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newStatus = e.target.value as BookingStatus;
@@ -295,6 +319,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
               </td>
 
+              <td className="px-3 py-5 text-sm text-gray-500">
+                {currentBooking.size}
+              </td>
+
               <td className="px-3 py-5 text-sm">
                 {/* <span
                   className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
@@ -374,8 +402,23 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         setOpen={setCreateModalOpen}
         onCreated={() => {
           getBookings();
-          setToast({ message: "Booking created successfully", variant: "success", show: true });
+          setToast({
+            message: "Booking created successfully",
+            variant: ToastVariant.SUCCESS,
+            show: true,
+          });
         }}
+      />
+      <EmailBookingsModal
+        isOpen={emailModalOpen}
+        setOpen={setEmailModalOpen}
+        bookings={filteredThisWeekBookings}
+        onSent={(message) =>
+          setToast({ message, variant: ToastVariant.SUCCESS, show: true })
+        }
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
       />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
@@ -388,6 +431,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setEmailModalOpen(true)}>Email</Button>
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
@@ -454,6 +498,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
                         Date Booked
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Size
                       </th>
                       <th
                         scope="col"
