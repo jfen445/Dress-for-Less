@@ -1,0 +1,16 @@
+name: Weekly Return Reminder
+
+on:
+  schedule:
+    # 9am Monday NZST (UTC+12). Runs at 10am during NZDT (UTC+13) — one hour drift is acceptable.
+    - cron: '0 21 * * 0'
+  workflow_dispatch: # allow manual trigger for testing
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send return reminder emails
+        run: |
+          curl -f -X POST https://${{ secrets.APP_URL }}/api/cron/send-return-reminders \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
