@@ -51,3 +51,22 @@ export async function getAllBookings() {
     },
   ]);
 }
+
+export async function getBookingsByDateRange(startDate: string, endDate: string) {
+  return BookingSchema.aggregate([
+    {
+      $match: {
+        dateBooked: { $gte: startDate, $lte: endDate },
+        paymentSuccess: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "allusers",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+  ]);
+}
