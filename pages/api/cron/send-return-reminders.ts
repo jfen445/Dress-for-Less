@@ -15,9 +15,7 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
 
   const token = req.headers["authorization"]?.replace("Bearer ", "");
-  console.log("CRON_SECRET set:", !!process.env.CRON_SECRET);
-  console.log("Token set:", !!token);
-  console.log("Token set:", process.env.CRON_SECRET, token);
+
   if (!token || token !== process.env.CRON_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
 
