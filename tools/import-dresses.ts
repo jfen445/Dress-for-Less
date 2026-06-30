@@ -125,7 +125,7 @@ async function main() {
   console.log(`Found ${rows.length} dress(es) to import`);
 
   for (const row of rows) {
-    const doc: Record<string, unknown> = {
+    const doc: { _type: string } & Record<string, unknown> = {
       _type: "dress",
       name: row.name,
     };
