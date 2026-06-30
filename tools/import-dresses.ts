@@ -114,7 +114,6 @@ function toArr(val: string): string[] {
 }
 
 async function main() {
-  console.log("here we are", process.env.NEXT_PUBLIC_SANITY_PROJECT_ID);
   const csvPath = path.resolve(process.cwd(), "dress-import.csv");
   if (!fs.existsSync(csvPath)) {
     console.error("dress-import.csv not found in project root");
