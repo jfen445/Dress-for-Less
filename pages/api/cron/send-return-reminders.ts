@@ -16,6 +16,8 @@ export default async function handler(
 
   const token = req.headers["authorization"]?.replace("Bearer ", "");
   console.log("CRON_SECRET set:", !!process.env.CRON_SECRET);
+  console.log("Token set:", !!token);
+  console.log("Token set:", process.env.CRON_SECRET, token);
   if (!token || token !== process.env.CRON_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
 
@@ -42,7 +44,8 @@ export default async function handler(
     bookings.map(async (booking) => {
       const dress = await getDress(booking.dressId);
       const recipient = booking.user?.[0];
-      if (!recipient?.email) throw new Error(`No email for booking ${booking._id}`);
+      if (!recipient?.email)
+        throw new Error(`No email for booking ${booking._id}`);
 
       await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
@@ -69,7 +72,7 @@ export default async function handler(
   if (failed > 0)
     return res.status(207).json({ message: `${sent} sent, ${failed} failed` });
 
-  return res
-    .status(200)
-    .json({ message: `${sent} reminder${sent !== 1 ? "s" : ""} sent successfully` });
+  return res.status(200).json({
+    message: `${sent} reminder${sent !== 1 ? "s" : ""} sent successfully`,
+  });
 }
