@@ -118,7 +118,7 @@ const Filters = () => {
   // update the filters that are shown
   const activeFilters = React.useCallback(() => {
     const areAnyFiltersActive = (
-      currentFilters: typeof defaultFilters
+      currentFilters: typeof defaultFilters,
     ): boolean => {
       // Loop through each filter category
       for (const filter of currentFilters) {
@@ -134,7 +134,7 @@ const Filters = () => {
   }, [filters]);
 
   const onFilterClicked = (
-    e: React.MouseEvent<HTMLInputElement, MouseEvent>
+    e: React.MouseEvent<HTMLInputElement, MouseEvent>,
   ) => {
     const event = e.target as HTMLInputElement;
     updateFilters([event.value], event.checked);
@@ -153,13 +153,13 @@ const Filters = () => {
       const newFilterObject = filters.map((filter) => ({
         ...filter,
         options: filter.options.map((option) =>
-          values.includes(option.value) ? { ...option, checked } : option
+          values.includes(option.value) ? { ...option, checked } : option,
         ),
       }));
       setFilters(newFilterObject);
       setIsLoading(false);
     },
-    [filters, setIsLoading]
+    [filters, setIsLoading],
   );
 
   const addFilterToQueryParams = (newFilter: string) => {
@@ -204,7 +204,7 @@ const Filters = () => {
           const sortedDressesTime = [...filteredDressList].sort(
             (a: DressType, b: DressType) => {
               return dayjs(a._updatedAt).isAfter(dayjs(b._updatedAt)) ? -1 : 1;
-            }
+            },
           );
           setFilteredDressList(sortedDressesTime);
           break;
@@ -216,7 +216,7 @@ const Filters = () => {
               const diff =
                 parseFloat(priceA.toString()) - parseFloat(priceB.toString());
               return diff > 0 ? 1 : -1;
-            }
+            },
           );
           setFilteredDressList(sortedDressesLH);
           break;
@@ -228,19 +228,19 @@ const Filters = () => {
               const diff =
                 parseFloat(priceA.toString()) - parseFloat(priceB.toString());
               return diff > 0 ? -1 : 1;
-            }
+            },
           );
           setFilteredDressList(sortedDressesHL);
           break;
         default:
       }
     },
-    [filteredDressList, setFilteredDressList]
+    [filteredDressList, setFilteredDressList],
   );
 
   React.useEffect(() => {
     const currentSortOption = defaultSortOptions.find(
-      (option) => option.current === true
+      (option) => option.current === true,
     );
 
     if (currentSortOption) {
@@ -264,7 +264,7 @@ const Filters = () => {
           acc: {
             [key: string]: string[];
           },
-          filter
+          filter,
         ) => {
           const selected = filter.options
             .filter((option) => option.checked)
@@ -275,11 +275,11 @@ const Filters = () => {
 
           return acc;
         },
-        {}
+        {},
       );
 
       return allDresses.filter((dress) => {
-        var filteredTags = dress.tags.map(function (item) {
+        var filteredTags = dress.tags?.map(function (item) {
           return item as unknown as string;
         });
 
@@ -470,7 +470,7 @@ const Filters = () => {
                           option.current
                             ? "font-medium text-gray-900"
                             : "text-gray-500",
-                          "cursor-pointer block px-4 py-2 text-sm data-[focus]:bg-gray-100 data-[focus]:outline-none"
+                          "cursor-pointer block px-4 py-2 text-sm data-[focus]:bg-gray-100 data-[focus]:outline-none",
                         )}
                       >
                         {option.name}
@@ -619,7 +619,7 @@ const Filters = () => {
                             </svg>
                           </button>
                         </span>
-                      ))
+                      )),
                   )}
                 </div>
               </div>
