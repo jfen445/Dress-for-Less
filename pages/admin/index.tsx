@@ -5,6 +5,7 @@ import AdminBookings from "@/components/Admin/Bookings";
 import AdminDresses from "@/components/Admin/Dresses";
 import AdminBlockOuts from "@/components/Admin/BlockOuts";
 import AdminTryOns from "@/components/Admin/TryOns";
+import AdminCoupons from "@/components/Admin/Coupons";
 import { useUserContext } from "@/context/UserContext";
 import ErrorPage from "@/components/ErrorPage";
 import AdminBookingContextProvider from "@/context/AdminBookingContext";
@@ -72,6 +73,7 @@ const AdminPage = () => {
                     {selectedTab == AdminTabs.Dresses && <AdminDresses />}
                     {selectedTab == AdminTabs.BlockOuts && <AdminBlockOuts />}
                     {selectedTab == AdminTabs.TryOns && <AdminTryOns />}
+                    {selectedTab == AdminTabs.Coupons && <AdminCoupons />}
                   </AdminBookingContextProvider>
                 </div>
               </div>

@@ -175,6 +175,15 @@ export type TryOnBooking = {
   createdAt?: string;
 };
 
+export type Coupon = {
+  _id?: string;
+  userId: string;
+  discountAmount: number;
+  expiryDate: string;
+  isRedeemed: boolean;
+  createdAt?: string;
+};
+
 export type OrderReceipt = {
   _id?: string;
   dressId: string;

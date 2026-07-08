@@ -112,10 +112,24 @@ const TryOnBookingSchema =
   mongoose.models.TryOnBookings ??
   mongoose.model("TryOnBookings", tryOnBookingSchema);
 
+const couponSchema = new Schema(
+  {
+    userId: { type: mongoose.Schema.ObjectId, required: true },
+    discountAmount: { type: Number, required: true },
+    expiryDate: { type: String, required: true },
+    isRedeemed: { type: Boolean, required: true, default: false },
+  },
+  { timestamps: true },
+);
+
+const CouponSchema =
+  mongoose.models.Coupons ?? mongoose.model("Coupons", couponSchema);
+
 export {
   UserSchema,
   BookingSchema,
   CartSchema,
   BlockOutSchema,
   TryOnBookingSchema,
+  CouponSchema,
 };

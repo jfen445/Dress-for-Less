@@ -5,4 +5,5 @@ export enum AdminTabs {
   Dresses = "Dresses",
   BlockOuts = "Block outs",
   TryOns = "Try-Ons",
+  Coupons = "Coupons",
 }

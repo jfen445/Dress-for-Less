@@ -6,6 +6,7 @@ import {
   TruckIcon,
   NoSymbolIcon,
   CalendarIcon,
+  TicketIcon,
 } from "@heroicons/react/20/solid";
 import { AdminTabs } from "../../../common/enums/AdminTabs";
 
@@ -26,6 +27,7 @@ const initialTabList = [
   { name: AdminTabs.Dresses, href: "#", icon: AcademicCapIcon, current: false },
   { name: AdminTabs.BlockOuts, href: "#", icon: NoSymbolIcon, current: false },
   { name: AdminTabs.TryOns, href: "#", icon: CalendarIcon, current: false },
+  { name: AdminTabs.Coupons, href: "#", icon: TicketIcon, current: false },
 ];
 
 function classNames(...classes: string[]) {
