@@ -242,23 +242,17 @@ const Product = () => {
 
               <div className="mt-5">
                 <RadioGroup className="block text-sm font-medium text-gray-700">
-                  Size on tag: {dress?.size}
-                </RadioGroup>
-                <RadioGroup className="block text-sm font-medium text-gray-700">
                   Stretch: {dress?.stretch}
                 </RadioGroup>
-                {dress && dress.recommendedSize ? (
-                  <RadioGroup className="block text-sm font-medium text-gray-700">
-                    Recommended Size: {dress?.recommendedSize.sort().join(", ")}
-                  </RadioGroup>
-                ) : null}
               </div>
 
-              <div className="mt-5">
-                <RadioGroup className="block text-sm italic text-gray-700">
-                  Notes: {dress?.notes}
-                </RadioGroup>
-              </div>
+              {dress?.notes && (
+                <div className="mt-5">
+                  <RadioGroup className="block text-sm italic text-gray-700">
+                    Notes: {dress?.notes}
+                  </RadioGroup>
+                </div>
+              )}
 
               {/* <ImageSelector images={images} classname="md:hidden py-10" /> */}
               <CoverFlow images={images} classname="lg:hidden" />

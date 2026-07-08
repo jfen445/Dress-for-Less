@@ -42,7 +42,7 @@ export type DressType = {
   brand: string;
   rrp: string;
   stretch: string;
-  recommendedSize: string[];
+  recommendedSize?: string[];
   notes?: string;
   xs: string;
   s: string;
