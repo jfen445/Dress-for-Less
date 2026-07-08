@@ -104,6 +104,43 @@ function toNum(val: string): number | undefined {
   return isNaN(n) || val.trim() === "" ? undefined : n;
 }
 
+const TAG_MAP: Record<string, string> = {
+  "Birthday": "birthday",
+  "Wedding Guest": "wedding_guest",
+  "Cocktail": "cocktail",
+  "Day Events": "day_events",
+  "Ball": "ball",
+  "Graduation": "graduation",
+  "Black Tie": "black_tie",
+  "Festival": "festival",
+  "Black": "black",
+  "White": "white",
+  "Red": "red",
+  "Orange": "orange",
+  "Yellow": "yellow",
+  "Green": "green",
+  "Blue": "blue",
+  "Purple": "purple",
+  "Pink": "pink",
+  "Grey": "grey",
+  "Brown": "brown",
+  "Multicolour": "multicolour",
+  "Mini": "mini",
+  "Midi": "midi",
+  "Maxi": "maxi",
+  "Sets": "sets",
+  "Off-the-Shoulder": "off_the_shoulder",
+  "Sleeveless": "sleeveless",
+  "Short sleeve": "short_sleeve",
+  "Long sleeve": "long_sleeve",
+  "Trending Now": "trending_now",
+  "New Arrivals": "new_arrivals",
+  "Customer Faves": "customer_faves",
+  "Holiday": "holiday",
+  "Race Day": "race_day",
+  "Strapless": "strapless",
+};
+
 function toArr(val: string): string[] {
   return val
     ? val
@@ -111,6 +148,45 @@ function toArr(val: string): string[] {
         .map((s) => s.trim())
         .filter(Boolean)
     : [];
+}
+
+function toTags(val: string): string[] {
+  return toArr(val).map((t) => TAG_MAP[t] ?? t);
+}
+
+const IMAGES_DIR = path.resolve(process.cwd(), "tools/images");
+
+async function uploadImages(folder: string): Promise<
+  { _type: "image"; _key: string; asset: { _type: "reference"; _ref: string } }[]
+> {
+  const folderPath = path.join(IMAGES_DIR, folder);
+  if (!fs.existsSync(folderPath)) {
+    console.warn(`  Image folder not found, skipping: ${folder}`);
+    return [];
+  }
+  const files = fs.readdirSync(folderPath).filter((f) =>
+    /\.(jpe?g|png|webp|gif)$/i.test(f)
+  );
+  if (!files.length) {
+    console.warn(`  No images found in folder: ${folder}`);
+    return [];
+  }
+  const results = [];
+  for (const filename of files) {
+    const filePath = path.join(folderPath, filename);
+    const asset = await client.assets.upload(
+      "image",
+      fs.createReadStream(filePath),
+      { filename }
+    );
+    console.log(`  Uploaded: ${folder}/${filename} → ${asset._id}`);
+    results.push({
+      _type: "image" as const,
+      _key: asset._id,
+      asset: { _type: "reference" as const, _ref: asset._id },
+    });
+  }
+  return results;
 }
 
 async function main() {
@@ -156,8 +232,12 @@ async function main() {
     const recommendedSize = toArr(row.recommendedSize);
     if (recommendedSize.length) doc.recommendedSize = recommendedSize;
 
-    const tags = toArr(row.tags);
+    const tags = toTags(row.tags);
     if (tags.length) doc.tags = tags;
+
+    if (row.images) {
+      doc.images = await uploadImages(row.images.trim());
+    }
 
     const created = await client.create(doc);
     console.log(`Created: ${created._id} — ${row.name}`);
