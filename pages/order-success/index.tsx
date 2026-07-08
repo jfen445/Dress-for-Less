@@ -33,6 +33,7 @@ const OrderSuccess = ({
   const [bookings, setBookings] = React.useState<Booking[]>([]);
   const [deliveryCost, setDeliveryCost] = React.useState<number>(0);
   const [bookingDresses, setBookingDresses] = React.useState<DressType[]>([]);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const price = React.useCallback(() => {
     const totalPrice = bookings.reduce(
       (partialSum, { price }) => partialSum + price,
@@ -67,7 +68,10 @@ const OrderSuccess = ({
               setDeliveryCost(7.5);
             }
           })
-          .catch((err) => console.log(err));
+          .catch((err) => {
+            console.log(err);
+            setIsLoading(false);
+          });
       }
     };
 
@@ -76,6 +80,8 @@ const OrderSuccess = ({
 
   React.useEffect(() => {
     refreshCart();
+
+    if (bookings.length === 0) return;
 
     async function fetchDressDetails(bookings: Booking[]) {
       const dressDetails = await Promise.all(
@@ -97,6 +103,7 @@ const OrderSuccess = ({
 
     fetchDressDetails(bookings).then((results) => {
       setBookingDresses(results as unknown as DressType[]);
+      setIsLoading(false);
     });
   }, [bookings, getDressWithId, refreshCart]);
 
@@ -118,7 +125,7 @@ const OrderSuccess = ({
 
   return (
     <>
-      {!bookings && !bookingDresses ? (
+      {isLoading ? (
         <div className="h-screen flex items-center justify-center">
           <Spinner />
         </div>
@@ -290,10 +297,25 @@ const OrderSuccess = ({
                     <dt className="font-medium text-gray-900">Shipping</dt>
                     <dd className="text-gray-700">${deliveryCost}</dd>
                   </div>
+                  {(bookingDetails?.discountAmount ?? 0) > 0 && (
+                    <div className="flex justify-between">
+                      <dt className="font-medium text-gray-900">
+                        Coupon discount
+                      </dt>
+                      <dd className="text-gray-700">
+                        -${(bookingDetails?.discountAmount ?? 0).toFixed(2)}
+                      </dd>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <dt className="font-medium text-gray-900">Total</dt>
                     <dd className="text-gray-900">
-                      ${addStringNumbers(price(), deliveryCost)}
+                      $
+                      {Math.max(
+                        0,
+                        addStringNumbers(price(), deliveryCost) -
+                          (bookingDetails?.discountAmount ?? 0),
+                      )}
                     </dd>
                   </div>
                 </dl>

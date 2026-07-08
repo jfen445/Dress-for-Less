@@ -1,8 +1,12 @@
 import api from "./client";
 import { Booking } from "../../common/types";
 
-export async function createBooking(booking: Booking[], paymentIntent: string) {
-  return api.post(`/api/booking`, { booking, paymentIntent });
+export async function createBooking(
+  booking: Booking[],
+  paymentIntent: string,
+  couponIds?: string[],
+) {
+  return api.post(`/api/booking`, { booking, paymentIntent, couponIds });
 }
 
 export async function confirmBooking(intent: string) {

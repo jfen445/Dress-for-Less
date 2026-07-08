@@ -6,8 +6,10 @@ import { Address } from "../../../../common/types";
 import Input from "@/components/Input";
 import { useSession } from "next-auth/react";
 import PaymentForm from "../PaymentForm";
+import FreeCheckoutConfirmation from "../FreeCheckoutConfirmation";
 import Button from "@/components/Button";
 import React from "react";
+import dayjs from "dayjs";
 import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
 import AddressForm from "./AddressForm";
@@ -28,18 +30,26 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
 const CheckoutForm = () => {
   const { data: session } = useSession();
-  const { products, deliveryOption, setDeliveryOption, totalPrice } =
-    React.useContext(ProductContext);
+  const {
+    products,
+    deliveryOption,
+    setDeliveryOption,
+    totalPrice,
+    availableCoupons,
+    selectedCouponIds,
+    setSelectedCouponIds,
+  } = React.useContext(ProductContext);
   const [clientSecret, setClientSecret] = React.useState<string>();
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>();
 
   const [isSubmitted, setIsSubmitted] = React.useState(false);
   const [payment, setPayment] = React.useState(false);
+  const [isFreeCheckout, setIsFreeCheckout] = React.useState(false);
   const [userAddress, setUserAddress] = React.useState<Address | null>(null);
   const [sameAsShipping, setSameAsShipping] = React.useState(true);
   const [billingAddress, setBillingAddress] = React.useState<Address | null>(
-    null
+    null,
   );
   const [addressError, setAddressError] = React.useState<boolean>(false);
   const [billingAddressError, setBillingAddressError] =
@@ -151,7 +161,13 @@ const CheckoutForm = () => {
     setTermsError(false);
 
     setPayment(true);
-    getSecret();
+
+    if (totalPrice <= 0) {
+      setIsFreeCheckout(true);
+    } else {
+      setIsFreeCheckout(false);
+      getSecret();
+    }
   };
 
   const isBeforeWednesdayNoon = () => {
@@ -206,6 +222,14 @@ const CheckoutForm = () => {
     if (id === DeliveryType.Pickup) {
       setSameAsShipping(false);
     }
+  };
+
+  const toggleCoupon = (couponId: string) => {
+    setSelectedCouponIds((prev) =>
+      prev.includes(couponId)
+        ? prev.filter((id) => id !== couponId)
+        : [...prev, couponId],
+    );
   };
 
   const RadioGroup = () => {
@@ -297,6 +321,38 @@ const CheckoutForm = () => {
               </h2>
               <RadioGroup />
             </section>
+
+            {availableCoupons.length > 0 && (
+              <section aria-labelledby="coupons-heading" className="mt-10">
+                <h2
+                  id="coupons-heading"
+                  className="text-lg font-medium text-gray-900"
+                >
+                  Coupons
+                </h2>
+                <ul role="list" className="mt-6 space-y-4">
+                  {availableCoupons.map((coupon) => (
+                    <li key={coupon._id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`coupon-${coupon._id}`}
+                        checked={selectedCouponIds.includes(coupon._id ?? "")}
+                        onChange={() => toggleCoupon(coupon._id ?? "")}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label
+                        htmlFor={`coupon-${coupon._id}`}
+                        className="ml-3 block text-sm font-medium leading-6 text-gray-900"
+                      >
+                        ${coupon.discountAmount.toFixed(2)} off &mdash; expires{" "}
+                        {dayjs(coupon.expiryDate).format("MMM D, YYYY h:mma")}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {isBookingValid() && (
               <>
                 {deliveryOption !== DeliveryType.Pickup && (
@@ -423,16 +479,23 @@ const CheckoutForm = () => {
           </h2>
 
           <div className="mt-6">
-            {clientSecret && (
-              <Elements options={{ clientSecret }} stripe={stripePromise}>
-                <PaymentForm
-                  clientSecret={clientSecret}
-                  stripePromise={stripePromise}
-                  isSubmitted={isSubmitted}
-                  address={userAddress}
-                  billingAddress={billingAddress}
-                />
-              </Elements>
+            {isFreeCheckout ? (
+              <FreeCheckoutConfirmation
+                address={userAddress}
+                billingAddress={billingAddress}
+              />
+            ) : (
+              clientSecret && (
+                <Elements options={{ clientSecret }} stripe={stripePromise}>
+                  <PaymentForm
+                    clientSecret={clientSecret}
+                    stripePromise={stripePromise}
+                    isSubmitted={isSubmitted}
+                    address={userAddress}
+                    billingAddress={billingAddress}
+                  />
+                </Elements>
+              )
             )}
           </div>
         </section>

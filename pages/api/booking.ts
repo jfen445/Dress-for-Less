@@ -15,6 +15,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import dayjs from "dayjs";
 import { sendEmailConfirmation } from "./payment/paymentConfirm";
+import { findUser } from "../../lib/db/user-dao";
+import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
+
+const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 
 // Returns the full Fri/Sat/Sun window for any weekend booking date.
 function calculateBlockOutPeriod(dateBooked: string): string[] {
@@ -88,16 +92,68 @@ export default async function handler(
     }
 
     const dresses = req.body.booking as Booking[];
-    const paymentIntent = req.body.paymentIntent;
+    const paymentIntent = req.body.paymentIntent as string;
+    const couponIds = (req.body.couponIds as string[] | undefined) ?? [];
 
     var errorResponse: String[] = [];
 
-    const payment = await stripe.paymentIntents.retrieve(paymentIntent);
+    let discountAmount = 0;
 
-    if (payment.status !== "succeeded") {
-      return res.status(400).json({
-        message: "Payment not confirmed. Please try again.",
-      });
+    if (couponIds.length > 0) {
+      if (!session.user?.email) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const users = await findUser(session.user.email);
+      const user = users[0];
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const coupons = await getCouponsByIds(couponIds);
+
+      if (coupons.length !== couponIds.length) {
+        return res
+          .status(400)
+          .json({ message: "One or more coupons could not be found" });
+      }
+
+      const now = dayjs().toISOString();
+      const invalidCoupon = coupons.find(
+        (c) =>
+          c.userId.toString() !== user._id.toString() ||
+          c.isRedeemed ||
+          c.expiryDate < now,
+      );
+
+      if (invalidCoupon) {
+        return res
+          .status(400)
+          .json({ message: "One or more coupons are invalid or already used" });
+      }
+
+      discountAmount = coupons.reduce((sum, c) => sum + c.discountAmount, 0);
+    }
+
+    const isFreeCouponCheckout = paymentIntent.startsWith(
+      FREE_COUPON_CHECKOUT_PREFIX,
+    );
+
+    if (isFreeCouponCheckout) {
+      const sumPrices = dresses.reduce((sum, d) => sum + d.price, 0);
+      if (discountAmount < sumPrices) {
+        return res
+          .status(400)
+          .json({ message: "Coupons do not cover the total price" });
+      }
+    } else {
+      const payment = await stripe.paymentIntents.retrieve(paymentIntent);
+
+      if (payment.status !== "succeeded") {
+        return res.status(400).json({
+          message: "Payment not confirmed. Please try again.",
+        });
+      }
     }
 
     for (const dress of dresses) {
@@ -153,6 +209,8 @@ export default async function handler(
         paymentSuccess: false,
         size: dress.size,
         status: dress.status,
+        couponIds,
+        discountAmount,
       };
 
       bookedDresses = bookedDresses.concat(booking);
@@ -166,6 +224,10 @@ export default async function handler(
       const options = { upsert: true };
 
       await BookingSchema.updateOne(filter, booking, options);
+    }
+
+    if (couponIds.length > 0) {
+      await redeemCoupons(couponIds);
     }
 
     res

@@ -2,7 +2,7 @@
 
 import React from "react";
 import OrderSummary from "./OrderSummary";
-import { CartItemType } from "../../../common/types";
+import { CartItemType, Coupon } from "../../../common/types";
 import CheckoutForm from "./CheckoutForm";
 import { DeliveryType } from "../../../common/enums/DeliveryType";
 
@@ -13,6 +13,12 @@ interface ProductCtx {
   setDeliveryOption: React.Dispatch<React.SetStateAction<DeliveryType>>;
   totalPrice: number;
   setTotalPrice: React.Dispatch<React.SetStateAction<number>>;
+  selectedCouponIds: string[];
+  setSelectedCouponIds: React.Dispatch<React.SetStateAction<string[]>>;
+  discountAmount: number;
+  setDiscountAmount: React.Dispatch<React.SetStateAction<number>>;
+  availableCoupons: Coupon[];
+  setAvailableCoupons: React.Dispatch<React.SetStateAction<Coupon[]>>;
 }
 
 export const ProductContext = React.createContext<ProductCtx>({} as ProductCtx);
@@ -24,6 +30,13 @@ const Checkout = () => {
 
   const [totalPrice, setTotalPrice] = React.useState<number>(0);
   const [products, setProducts] = React.useState<CartItemType[]>([]);
+  const [selectedCouponIds, setSelectedCouponIds] = React.useState<string[]>(
+    [],
+  );
+  const [discountAmount, setDiscountAmount] = React.useState<number>(0);
+  const [availableCoupons, setAvailableCoupons] = React.useState<Coupon[]>(
+    [],
+  );
 
   return (
     <ProductContext.Provider
@@ -34,6 +47,12 @@ const Checkout = () => {
         setDeliveryOption,
         totalPrice,
         setTotalPrice,
+        selectedCouponIds,
+        setSelectedCouponIds,
+        discountAmount,
+        setDiscountAmount,
+        availableCoupons,
+        setAvailableCoupons,
       }}
     >
       <div className="bg-white">

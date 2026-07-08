@@ -7,8 +7,9 @@ import {
 } from "@headlessui/react";
 import { ChevronUpIcon } from "@heroicons/react/20/solid";
 import { useUserContext } from "@/context/UserContext";
-import { CartItemType, CartType } from "../../../../common/types";
+import { CartItemType, CartType, Coupon } from "../../../../common/types";
 import { getCart } from "@/api/cart";
+import { getUserCoupons } from "@/api/coupon";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
@@ -16,8 +17,16 @@ import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const OrderSummary = () => {
   const { userInfo } = useUserContext();
-  const { products, setProducts, deliveryOption, setTotalPrice } =
-    React.useContext(ProductContext);
+  const {
+    products,
+    setProducts,
+    deliveryOption,
+    setTotalPrice,
+    selectedCouponIds,
+    setDiscountAmount,
+    availableCoupons,
+    setAvailableCoupons,
+  } = React.useContext(ProductContext);
 
   const shippingCost = React.useCallback(() => {
     if (deliveryOption === DeliveryType.Delivery) {
@@ -66,6 +75,20 @@ const OrderSummary = () => {
     getUserCart();
   }, [setProducts, userInfo]);
 
+  React.useEffect(() => {
+    if (!userInfo?._id) return;
+
+    getUserCoupons()
+      .then((data) => setAvailableCoupons(data.data as Coupon[]))
+      .catch((err) => console.error(err));
+  }, [userInfo]);
+
+  const couponDiscount = (): number => {
+    return availableCoupons
+      .filter((c) => selectedCouponIds.includes(c._id ?? ""))
+      .reduce((sum, c) => sum + c.discountAmount, 0);
+  };
+
   const formatDate = (date: string) => {
     return dayjs(date).format("D MMMM YYYY");
   };
@@ -77,8 +100,10 @@ const OrderSummary = () => {
   const sumTotalPrices = () => {
     const subtotal = parseFloat(sumPrices());
     const shipping = parseFloat(shippingCost());
-    const total = subtotal + shipping;
+    const discount = couponDiscount();
+    const total = Math.max(0, subtotal + shipping - discount);
     setTotalPrice(Math.round(total * 100)); // Store as cents if needed
+    setDiscountAmount(discount);
     return total.toFixed(2);
   };
 
@@ -132,6 +157,13 @@ const OrderSummary = () => {
               <dd>${shippingCost()}</dd>
             </div>
 
+            {couponDiscount() > 0 && (
+              <div className="flex items-center justify-between">
+                <dt className="text-gray-600">Coupon discount</dt>
+                <dd>-${couponDiscount().toFixed(2)}</dd>
+              </div>
+            )}
+
             <div className="flex items-center justify-between border-t border-gray-200 pt-6">
               <dt className="text-base">Total</dt>
               <dd className="text-base">${sumTotalPrices()}</dd>
@@ -171,6 +203,13 @@ const OrderSummary = () => {
                   <dt className="text-gray-600">Shipping</dt>
                   <dd>${shippingCost()}</dd>
                 </div>
+
+                {couponDiscount() > 0 && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-gray-600">Coupon discount</dt>
+                    <dd>-${couponDiscount().toFixed(2)}</dd>
+                  </div>
+                )}
               </dl>
             </PopoverPanel>
           </Popover>

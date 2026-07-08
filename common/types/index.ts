@@ -115,6 +115,8 @@ export type Booking = {
   dress?: DressType;
   user?: UserType[];
   status: BookingStatus;
+  couponIds?: string[];
+  discountAmount?: number;
 };
 
 export type Sizes = {
