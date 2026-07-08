@@ -30,7 +30,8 @@ export default function EmailSignInForm() {
   if (emailSent) {
     return (
       <p className="text-sm text-center text-gray-600">
-        Check your inbox — we sent a magic link to <strong>{submittedEmail}</strong>
+        Check your inbox - we sent a magic link to{" "}
+        <strong>{submittedEmail}</strong>
       </p>
     );
   }

@@ -1,6 +1,7 @@
 import { PortableTextBlock } from "sanity";
 import { BookingStatus } from "../enums/BookingStatus";
 import { DeliveryType } from "../enums/DeliveryType";
+import { TryOnStatus } from "../enums/TryOnStatus";
 
 export type ProfileType = {
   _id: string;
@@ -42,7 +43,7 @@ export type DressType = {
   brand: string;
   rrp: string;
   stretch: string;
-  recommendedSize: string[];
+  recommendedSize?: string[];
   notes?: string;
   xs: string;
   s: string;
@@ -114,6 +115,8 @@ export type Booking = {
   dress?: DressType;
   user?: UserType[];
   status: BookingStatus;
+  couponIds?: string[];
+  discountAmount?: number;
 };
 
 export type Sizes = {
@@ -156,6 +159,31 @@ export type OrderHistory = {
   dressName: string;
   dressDescription: string;
   dressImages: string;
+};
+
+export type TryOnBooking = {
+  _id?: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  date: string;
+  timeSlot: string;
+  price: number;
+  paymentIntent: string;
+  paymentSuccess: boolean;
+  status: TryOnStatus;
+  user?: UserType[];
+  createdAt?: string;
+};
+
+export type Coupon = {
+  _id?: string;
+  userId: string;
+  discountAmount: number;
+  expiryDate: string;
+  isRedeemed: boolean;
+  createdAt?: string;
 };
 
 export type OrderReceipt = {

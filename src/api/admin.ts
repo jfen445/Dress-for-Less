@@ -42,3 +42,32 @@ export async function createAdminBooking(data: {
 export async function sendBookingEmails(bookingIds: string[]) {
   return api.post(`/api/admin/sendBookingEmails`, { bookingIds });
 }
+
+export async function getAllTryOnBookings() {
+  return api.get(`/api/admin/tryOnBookings`);
+}
+
+export async function updateTryOnBookingStatus(
+  bookingId: string,
+  status: string,
+) {
+  return api.patch(`/api/admin/tryOnBookings?bookingId=${bookingId}`, {
+    status,
+  });
+}
+
+export async function getCoupons() {
+  return api.get(`/api/admin/coupons`);
+}
+
+export async function createCoupon(data: {
+  userId: string;
+  discountAmount: number;
+  expiryHours: number;
+}) {
+  return api.post(`/api/admin/coupons`, data);
+}
+
+export async function deleteCoupon(id: string) {
+  return api.delete(`/api/admin/coupons?id=${id}`);
+}

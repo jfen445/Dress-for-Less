@@ -33,6 +33,8 @@ export interface IBooking {
   paymentSuccess: boolean;
   size: String;
   status: BookingStatus;
+  couponIds?: string[];
+  discountAmount?: number;
 }
 
 export interface IAddress {

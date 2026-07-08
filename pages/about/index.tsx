@@ -46,7 +46,7 @@ const AboutPage = () => {
                 We pride ourselves on making luxury accessible, and our easy
                 online booking system allows us to cater to customers all across
                 New Zealand. Browse our curated collection and let us help you
-                shine on your special day—without breaking the bank.
+                shine on your special day - without breaking the bank.
               </p>
             </div>
             <div className="aspect-h-2 aspect-w-3 overflow-hidden rounded-lg bg-gray-100">

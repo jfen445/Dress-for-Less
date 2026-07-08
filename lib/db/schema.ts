@@ -57,6 +57,8 @@ const bookingSchema = new Schema(
     size: { type: String, required: true },
     price: { type: Number, required: true },
     status: { type: String, required: true },
+    couponIds: { type: [String], required: false, default: [] },
+    discountAmount: { type: Number, required: false, default: 0 },
   },
   { timestamps: true },
 );
@@ -87,4 +89,49 @@ const blockOutSchema = new Schema(
 const BlockOutSchema =
   mongoose.models.BlockOuts ?? mongoose.model("BlockOuts", blockOutSchema);
 
-export { UserSchema, BookingSchema, CartSchema, BlockOutSchema };
+const tryOnBookingSchema = new Schema(
+  {
+    userId: { type: mongoose.Schema.ObjectId, required: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: false },
+    date: { type: String, required: true },
+    timeSlot: { type: String, required: true },
+    price: { type: Number, required: true },
+    paymentIntent: { type: String, required: true },
+    paymentSuccess: { type: Boolean, required: true, default: false },
+    status: { type: String, required: true, default: "Booked" },
+  },
+  { timestamps: true },
+);
+
+tryOnBookingSchema.index(
+  { date: 1, timeSlot: 1 },
+  { unique: true, partialFilterExpression: { paymentSuccess: true } },
+);
+
+const TryOnBookingSchema =
+  mongoose.models.TryOnBookings ??
+  mongoose.model("TryOnBookings", tryOnBookingSchema);
+
+const couponSchema = new Schema(
+  {
+    userId: { type: mongoose.Schema.ObjectId, required: true },
+    discountAmount: { type: Number, required: true },
+    expiryDate: { type: String, required: true },
+    isRedeemed: { type: Boolean, required: true, default: false },
+  },
+  { timestamps: true },
+);
+
+const CouponSchema =
+  mongoose.models.Coupons ?? mongoose.model("Coupons", couponSchema);
+
+export {
+  UserSchema,
+  BookingSchema,
+  CartSchema,
+  BlockOutSchema,
+  TryOnBookingSchema,
+  CouponSchema,
+};

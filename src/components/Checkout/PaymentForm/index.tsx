@@ -9,14 +9,14 @@ import React, { FormEvent } from "react";
 import { ProductContext } from "..";
 import { Stripe } from "@stripe/stripe-js";
 import Button from "@/components/Button";
-import { Address, Booking } from "../../../../common/types";
+import { Address } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import { checkValidBooking, createBooking } from "@/api/booking";
-import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
 import { useCartContext } from "@/context/CartContext";
+import { buildBookingList } from "../buildBookingList";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -34,7 +34,8 @@ const PaymentForm = ({
   const router = useRouter();
   const { userInfo } = useUserContext();
   const { refreshCart } = useCartContext();
-  const { products, deliveryOption } = React.useContext(ProductContext);
+  const { products, deliveryOption, selectedCouponIds } =
+    React.useContext(ProductContext);
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -63,46 +64,14 @@ const PaymentForm = ({
       return;
     }
 
-    var bookingList: Booking[] = [];
-
-    products.forEach((item) => {
-      const date = item.dateBooked;
-
-      const bookingObj: Booking = {
-        userId: userInfo?._id ?? "",
-        dressId: item._id,
-        dateBooked: date,
-        blockOutPeriod: [],
-        price: parseInt(item.price),
-        address: {
-          company: address?.company ?? "",
-          address: address?.address ?? "",
-          apartment: address?.apartment ?? "",
-          suburb: address?.suburb ?? "",
-          city: address?.city ?? "",
-          country: address?.country ?? "",
-          postCode: address?.postCode ?? "",
-        },
-        billingAddress: {
-          company: billingAddress?.company ?? "",
-          address: billingAddress?.address ?? "",
-          apartment: billingAddress?.apartment ?? "",
-          suburb: billingAddress?.suburb ?? "",
-          city: billingAddress?.city ?? "",
-          country: billingAddress?.country ?? "",
-          postCode: billingAddress?.postCode ?? "",
-        },
-        deliveryType: deliveryOption,
-        tracking: "",
-        isShipped: false,
-        isReturned: false,
-        paymentIntent: clientSecret,
-        size: item.size,
-        status: BookingStatus.NA,
-      };
-
-      bookingList = bookingList.concat(bookingObj);
-    });
+    const bookingList = buildBookingList(
+      products,
+      deliveryOption,
+      userInfo?._id ?? "",
+      address,
+      billingAddress,
+      clientSecret,
+    );
 
     let isValid = true;
 
@@ -145,7 +114,7 @@ const PaymentForm = ({
         }
 
         if (paymentIntent && paymentIntent.status === "succeeded") {
-          await createBooking(bookingList, paymentIntent.id)
+          await createBooking(bookingList, paymentIntent.id, selectedCouponIds)
             .then(() => {
               router.push("/order-success?paymentIntent=" + paymentIntent.id);
             })

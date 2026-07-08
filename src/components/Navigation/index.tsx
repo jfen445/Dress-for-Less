@@ -77,6 +77,13 @@ const navigation: Navigation = {
       sections: [],
     },
     {
+      id: "try-on",
+      name: "Book a Try-On",
+      href: "/try-on",
+      featured: [],
+      sections: [],
+    },
+    {
       id: "policies",
       name: "T&Cs",
       href: "/policies",

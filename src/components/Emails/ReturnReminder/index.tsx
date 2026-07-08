@@ -184,7 +184,7 @@ const ReturnReminderEmail = ({
           <Hr style={hr} />
           <Section style={footerSection}>
             <Text style={footerText}>
-              Dress for Less NZ — dressforlessnz.com
+              Dress for Less NZ - dressforlessnz.com
             </Text>
           </Section>
         </Container>
