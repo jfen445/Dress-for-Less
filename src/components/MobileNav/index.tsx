@@ -112,6 +112,7 @@ const navigation = {
   ],
   pages: [
     { name: "FAQ", href: "/faq" },
+    { name: "Book a Try-On", href: "/try-on" },
     { name: "Policy", href: "/policies" },
   ],
 };

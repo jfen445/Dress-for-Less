@@ -42,3 +42,16 @@ export async function createAdminBooking(data: {
 export async function sendBookingEmails(bookingIds: string[]) {
   return api.post(`/api/admin/sendBookingEmails`, { bookingIds });
 }
+
+export async function getAllTryOnBookings() {
+  return api.get(`/api/admin/tryOnBookings`);
+}
+
+export async function updateTryOnBookingStatus(
+  bookingId: string,
+  status: string,
+) {
+  return api.patch(`/api/admin/tryOnBookings?bookingId=${bookingId}`, {
+    status,
+  });
+}

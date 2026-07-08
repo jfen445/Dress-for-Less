@@ -304,7 +304,7 @@ const CreateBookingModal = ({
                   <option value="">Select a customer…</option>
                   {users.map((u) => (
                     <option key={u._id ?? u.email} value={u._id ?? ""}>
-                      {u.name} — {u.email}
+                      {u.name} - {u.email}
                     </option>
                   ))}
                 </select>

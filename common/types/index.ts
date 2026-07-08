@@ -1,6 +1,7 @@
 import { PortableTextBlock } from "sanity";
 import { BookingStatus } from "../enums/BookingStatus";
 import { DeliveryType } from "../enums/DeliveryType";
+import { TryOnStatus } from "../enums/TryOnStatus";
 
 export type ProfileType = {
   _id: string;
@@ -156,6 +157,22 @@ export type OrderHistory = {
   dressName: string;
   dressDescription: string;
   dressImages: string;
+};
+
+export type TryOnBooking = {
+  _id?: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  date: string;
+  timeSlot: string;
+  price: number;
+  paymentIntent: string;
+  paymentSuccess: boolean;
+  status: TryOnStatus;
+  user?: UserType[];
+  createdAt?: string;
 };
 
 export type OrderReceipt = {

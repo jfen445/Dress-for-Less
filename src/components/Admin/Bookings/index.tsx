@@ -298,9 +298,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     }}
                   />
                   <div className="ml-4">
-                    <div>{currentBooking.dress.name}</div>
+                    <div>{currentBooking.dress?.name}</div>
                     <div className="text-gray-500">
-                      {currentBooking.dress.brand}
+                      {currentBooking.dress?.brand}
                     </div>
                   </div>
                 </div>
