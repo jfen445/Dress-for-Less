@@ -9,6 +9,10 @@ export const TRY_ON_TIME_SLOTS = [
 
 export const TRY_ON_FEE = 15;
 
+export const TRY_ON_COUPON_AMOUNT = 10;
+
+export const TRY_ON_COUPON_VALID_DAYS = 2;
+
 export function formatTryOnTimeSlot(timeSlot: string): string {
   const [hourStr, minuteStr] = timeSlot.split(":");
   const hour = parseInt(hourStr, 10);

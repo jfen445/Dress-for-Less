@@ -7,6 +7,7 @@ import { TryOnBookingSchema } from "../../lib/db/schema";
 import {
   getTakenTryOnSlots,
   checkTryOnSlotTaken,
+  grantTryOnCoupon,
 } from "../../lib/db/tryon-booking-dao";
 import { findUser } from "../../lib/db/user-dao";
 import { TryOnStatus } from "../../common/enums/TryOnStatus";
@@ -91,6 +92,8 @@ export default async function handler(
 
       await booking.save();
 
+      await grantTryOnCoupon(user._id, date);
+
       await sendTryOnConfirmationEmail({
         email: session.user.email,
         name,
@@ -113,7 +116,7 @@ export default async function handler(
   return res.status(405).json({ message: "Method not allowed" });
 }
 
-async function sendTryOnConfirmationEmail({
+export async function sendTryOnConfirmationEmail({
   email,
   name,
   date,

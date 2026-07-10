@@ -181,6 +181,7 @@ export type Coupon = {
   _id?: string;
   userId: string;
   discountAmount: number;
+  startDate: string;
   expiryDate: string;
   isRedeemed: boolean;
   createdAt?: string;

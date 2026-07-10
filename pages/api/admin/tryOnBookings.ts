@@ -2,12 +2,18 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import { dbConnect } from "../../../lib/db/db";
-import { findUser } from "../../../lib/db/user-dao";
+import { createUser, findUser, findUserById } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
 import {
   getAllTryOnBookings,
   updateTryOnBookingStatus,
+  checkTryOnSlotTaken,
+  grantTryOnCoupon,
 } from "../../../lib/db/tryon-booking-dao";
+import { TryOnBookingSchema } from "../../../lib/db/schema";
+import { TryOnStatus } from "../../../common/enums/TryOnStatus";
+import { TRY_ON_FEE, TRY_ON_TIME_SLOTS } from "../../../common/constants/tryOn";
+import { sendTryOnConfirmationEmail } from "../tryOnBooking";
 
 export default async function handler(
   req: NextApiRequest,
@@ -40,6 +46,98 @@ export default async function handler(
 
     await updateTryOnBookingStatus(bookingId, status);
     return res.status(200).json({ message: "Status updated" });
+  }
+
+  if (req.method === "POST") {
+    const {
+      userId: bodyUserId,
+      newUser,
+      phone,
+      date,
+      timeSlot,
+    } = req.body;
+
+    if (!date || !timeSlot) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    if (!bodyUserId && !newUser) {
+      return res
+        .status(400)
+        .json({ message: "A customer or new customer details are required" });
+    }
+    if (!TRY_ON_TIME_SLOTS.includes(timeSlot)) {
+      return res.status(400).json({ message: "Invalid time slot" });
+    }
+
+    try {
+      let userId = bodyUserId;
+      let name: string;
+      let email: string;
+
+      if (userId) {
+        const existingUser = await findUserById(userId);
+        if (!existingUser) {
+          return res.status(404).json({ message: "Customer not found" });
+        }
+        name = existingUser.name;
+        email = existingUser.email;
+      } else {
+        const result = await createUser({
+          email: newUser.email,
+          name: `${newUser.firstName} ${newUser.lastName}`,
+          mobileNumber: "",
+          instagramHandle: "",
+          role: "user",
+        });
+        userId =
+          "insertedId" in result
+            ? result.insertedId.toString()
+            : result._id.toString();
+        name = `${newUser.firstName} ${newUser.lastName}`;
+        email = newUser.email;
+      }
+
+      const alreadyTaken = await checkTryOnSlotTaken(date, timeSlot);
+      if (alreadyTaken.length > 0) {
+        return res
+          .status(409)
+          .json({ message: "This time slot has already been booked" });
+      }
+
+      const booking = new TryOnBookingSchema({
+        userId,
+        name,
+        email,
+        phone: phone ?? "",
+        date,
+        timeSlot,
+        price: TRY_ON_FEE,
+        paymentIntent: "ADMIN_MANUAL",
+        paymentSuccess: true,
+        status: TryOnStatus.Booked,
+      });
+
+      await booking.save();
+
+      await grantTryOnCoupon(userId, date);
+
+      await sendTryOnConfirmationEmail({
+        email,
+        name,
+        date,
+        timeSlot,
+        price: TRY_ON_FEE,
+      });
+
+      return res.status(201).json({ message: "Try-on booking created", booking });
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        return res
+          .status(409)
+          .json({ message: "This time slot has already been booked" });
+      }
+      return res.status(500).json({ message: "Booking error", error: err });
+    }
   }
 
   return res.status(405).json({ message: "Method not allowed" });

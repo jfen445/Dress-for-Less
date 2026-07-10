@@ -123,7 +123,8 @@ export default async function handler(
         (c) =>
           c.userId.toString() !== user._id.toString() ||
           c.isRedeemed ||
-          c.expiryDate < now,
+          c.expiryDate < now ||
+          c.startDate > now,
       );
 
       if (invalidCoupon) {

@@ -43,17 +43,18 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { userId, discountAmount, expiryHours } = req.body;
+    const { userId, discountAmount, startDate, durationDays } = req.body;
 
     if (
       !userId ||
       discountAmount === undefined ||
       discountAmount === null ||
-      expiryHours === undefined ||
-      expiryHours === null
+      !startDate ||
+      durationDays === undefined ||
+      durationDays === null
     ) {
       return res.status(400).json({
-        message: "userId, discountAmount, and expiryHours are required",
+        message: "userId, discountAmount, startDate, and durationDays are required",
       });
     }
 
@@ -64,16 +65,27 @@ export default async function handler(
         .json({ message: "discountAmount must be a positive number" });
     }
 
-    const hours = Number(expiryHours);
-    if (!Number.isInteger(hours) || hours <= 0) {
-      return res
-        .status(400)
-        .json({ message: "expiryHours must be a positive whole number" });
+    const start = dayjs(startDate);
+    if (!start.isValid()) {
+      return res.status(400).json({ message: "startDate must be a valid date" });
     }
 
-    const expiryDate = dayjs().add(hours, "hour").toISOString();
+    const days = Number(durationDays);
+    if (!Number.isInteger(days) || days <= 0) {
+      return res
+        .status(400)
+        .json({ message: "durationDays must be a positive whole number" });
+    }
 
-    const created = await createCoupon({ userId, discountAmount: amount, expiryDate });
+    const normalizedStart = start.startOf("day");
+    const expiryDate = normalizedStart.add(days, "day").endOf("day").toISOString();
+
+    const created = await createCoupon({
+      userId,
+      discountAmount: amount,
+      startDate: normalizedStart.toISOString(),
+      expiryDate,
+    });
     return res.status(201).json(created);
   }
 

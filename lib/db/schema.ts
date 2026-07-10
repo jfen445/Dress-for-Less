@@ -118,6 +118,7 @@ const couponSchema = new Schema(
   {
     userId: { type: mongoose.Schema.ObjectId, required: true },
     discountAmount: { type: Number, required: true },
+    startDate: { type: String, required: true },
     expiryDate: { type: String, required: true },
     isRedeemed: { type: Boolean, required: true, default: false },
   },

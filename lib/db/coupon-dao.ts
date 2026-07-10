@@ -7,6 +7,7 @@ export async function getAllCoupons() {
 export async function createCoupon(data: {
   userId: string;
   discountAmount: number;
+  startDate: string;
   expiryDate: string;
 }) {
   return CouponSchema.create(data);
@@ -17,10 +18,12 @@ export async function deleteCoupon(id: string) {
 }
 
 export async function getActiveCouponsByUser(userId: string) {
+  const now = new Date().toISOString();
   return CouponSchema.find({
     userId,
     isRedeemed: false,
-    expiryDate: { $gt: new Date().toISOString() },
+    startDate: { $lte: now },
+    expiryDate: { $gt: now },
   });
 }
 
