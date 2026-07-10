@@ -1,4 +1,11 @@
-export const TRY_ON_TIME_SLOTS = ["18:00", "18:30", "19:00"];
+export const TRY_ON_TIME_SLOTS = [
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+  "20:30",
+];
 
 export const TRY_ON_FEE = 15;
 
