@@ -1,9 +1,9 @@
 import { BookingSchema } from "./schema";
 
-export async function getBookingsByDress(dressId: String) {
+export async function getBookingAvailabilityByDress(dressId: String) {
   return BookingSchema.find(
     { dressId },
-    "dressId userId address blockOutPeriod city createdAt dateBooked deliveryType isReturned isShipped paymentSuccess postCode tracking size"
+    "dressId size dateBooked blockOutPeriod"
   );
 }
 
