@@ -56,7 +56,6 @@ const defaultFilters = [
       { value: "sets", label: "Sets", checked: false },
       { value: "off_the_shoulder", label: "Off-the-Shoulder", checked: false },
       { value: "sleeveless", label: "Sleeveless", checked: false },
-      { value: "short_sleeve", label: "Short Sleeve", checked: false },
       { value: "long_sleeve", label: "Long Sleeve", checked: false },
       { value: "trending_now", label: "Trending Now", checked: false },
       { value: "new_arrivals", label: "New Arrivals", checked: false },
@@ -427,7 +426,7 @@ const Filters = () => {
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          A dress for any ocassion
+          A dress for any occassion
         </h1>
         <p className="mt-4 max-w-xl text-sm text-gray-700">
           Find the perfect dress for any occasion! Whether you are attending a

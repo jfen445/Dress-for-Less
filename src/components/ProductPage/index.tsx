@@ -212,6 +212,7 @@ const Product = () => {
           {/* Product details */}
           <div className="lg:max-w-lg lg:self-end">
             <div className="mt-4">
+              <p className="text-sm text-gray-500">{dress?.brand}</p>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 {dress?.name}
               </h1>

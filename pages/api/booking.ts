@@ -4,17 +4,14 @@ import { BookingSchema } from "../../lib/db/schema";
 import { IBooking } from "../../common/interfaces/user";
 import {
   checkDuplicateBooking,
-  getAllBookings,
-  getBookingsByDress,
+  getBookingAvailabilityByDress,
   getBookingsById,
 } from "../../lib/db/booking-dao";
-import { Booking } from "../../common/types";
-import { getDress } from "../../sanity/sanity.query";
+import { Booking, BookingAvailability } from "../../common/types";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import dayjs from "dayjs";
-import { sendEmailConfirmation } from "./payment/paymentConfirm";
 import { findUser } from "../../lib/db/user-dao";
 import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
 
@@ -62,20 +59,12 @@ export default async function handler(
     const dressId = req.query.dressId as string;
 
     if (!dressId) {
-      const allBookings = await getAllBookings();
-
-      const allBookingInfo = await Promise.all(
-        allBookings.map(async (booking) => {
-          const dressInfo = await getDress(booking.dressId);
-          return { ...booking, dress: dressInfo };
-        }),
-      );
-      res.status(200).json(allBookingInfo);
-
-      return;
+      return res
+        .status(400)
+        .json({ message: "dressId query param is required" });
     }
 
-    const bookings = await getBookingsByDress(dressId);
+    const bookings = await getBookingAvailabilityByDress(dressId);
 
     if (bookings.length === 0) {
       res.status(404).json({
@@ -83,7 +72,7 @@ export default async function handler(
       });
     }
 
-    const bookingItems = bookings as Booking[];
+    const bookingItems = bookings as BookingAvailability[];
 
     res.status(200).json(bookingItems);
   } else if (req.method == "POST") {
@@ -123,7 +112,8 @@ export default async function handler(
         (c) =>
           c.userId.toString() !== user._id.toString() ||
           c.isRedeemed ||
-          c.expiryDate < now,
+          c.expiryDate < now ||
+          c.startDate > now,
       );
 
       if (invalidCoupon) {

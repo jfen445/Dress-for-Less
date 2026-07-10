@@ -5,7 +5,7 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { BlockOut, Booking, Sizes } from "../../../../common/types";
+import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
 import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
 import { useParams } from "next/navigation";
 
@@ -33,7 +33,7 @@ const Calendar = ({
 }: ICanlender) => {
   const params = useParams<{ id: string }>();
   const resolvedId = dressIdProp ?? params?.id ?? "";
-  const [bookings, setBookings] = React.useState<Booking[]>();
+  const [bookings, setBookings] = React.useState<BookingAvailability[]>();
   const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
 
   React.useEffect(() => {

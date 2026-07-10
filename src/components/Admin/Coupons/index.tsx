@@ -23,7 +23,8 @@ const AdminCoupons = () => {
 
   const [userId, setUserId] = React.useState("");
   const [discountAmount, setDiscountAmount] = React.useState("");
-  const [expiryHours, setExpiryHours] = React.useState("");
+  const [startDate, setStartDate] = React.useState("");
+  const [durationDays, setDurationDays] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const fetchCoupons = () => {
@@ -50,7 +51,7 @@ const AdminCoupons = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!userId || !discountAmount || !expiryHours) return;
+    if (!userId || !discountAmount || !startDate || !durationDays) return;
 
     const amount = Number(discountAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -62,10 +63,10 @@ const AdminCoupons = () => {
       return;
     }
 
-    const hours = Number(expiryHours);
-    if (!Number.isInteger(hours) || hours <= 0) {
+    const days = Number(durationDays);
+    if (!Number.isInteger(days) || days <= 0) {
       setToast({
-        message: "Expiry hours must be a positive whole number",
+        message: "Duration must be a positive whole number of days",
         variant: ToastVariant.WARNING,
         show: true,
       });
@@ -73,10 +74,11 @@ const AdminCoupons = () => {
     }
 
     setIsSubmitting(true);
-    createCoupon({ userId, discountAmount: amount, expiryHours: hours })
+    createCoupon({ userId, discountAmount: amount, startDate, durationDays: days })
       .then(() => {
         setDiscountAmount("");
-        setExpiryHours("");
+        setStartDate("");
+        setDurationDays("");
         fetchCoupons();
       })
       .catch(() =>
@@ -106,9 +108,13 @@ const AdminCoupons = () => {
     return u ? `${u.name} - ${u.email}` : id;
   };
 
-  const getStatus = (c: Coupon): "Active" | "Expired" | "Redeemed" => {
+  const getStatus = (
+    c: Coupon,
+  ): "Scheduled" | "Active" | "Expired" | "Redeemed" => {
     if (c.isRedeemed) return "Redeemed";
-    if (c.expiryDate < dayjs().toISOString()) return "Expired";
+    const now = dayjs().toISOString();
+    if (c.expiryDate < now) return "Expired";
+    if (c.startDate > now) return "Scheduled";
     return "Active";
   };
 
@@ -117,7 +123,9 @@ const AdminCoupons = () => {
       ? "text-green-700 bg-green-50"
       : status === "Expired"
         ? "text-gray-500 bg-gray-100"
-        : "text-blue-700 bg-blue-50";
+        : status === "Scheduled"
+          ? "text-amber-700 bg-amber-50"
+          : "text-blue-700 bg-blue-50";
 
   return (
     <>
@@ -136,7 +144,7 @@ const AdminCoupons = () => {
 
         <form
           onSubmit={handleSubmit}
-          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end"
+          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 items-end"
         >
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -174,14 +182,27 @@ const AdminCoupons = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Expires in (hours)
+              Start date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration (days)
             </label>
             <input
               type="number"
               min="1"
               step="1"
-              value={expiryHours}
-              onChange={(e) => setExpiryHours(e.target.value)}
+              value={durationDays}
+              onChange={(e) => setDurationDays(e.target.value)}
               className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
               required
             />
@@ -223,6 +244,12 @@ const AdminCoupons = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Starts
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         Expires
                       </th>
                       <th
@@ -244,6 +271,9 @@ const AdminCoupons = () => {
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             ${c.discountAmount.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {dayjs(c.startDate).format("MMM D, YYYY h:mma")}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             {dayjs(c.expiryDate).format("MMM D, YYYY h:mma")}

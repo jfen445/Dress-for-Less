@@ -9,9 +9,12 @@ import dayjs from "dayjs";
 import TryOnCalendar from "./Calendar";
 import SlotPicker from "./SlotPicker";
 import TryOnPaymentForm from "./PaymentForm";
-import Input from "@/components/Input";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
+import Modal from "@/components/Modal";
+import { DialogTitle } from "@headlessui/react";
+import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { useUserContext } from "@/context/UserContext";
 import { getClientSecret } from "@/api/payment";
 import { TRY_ON_FEE, formatTryOnTimeSlot } from "../../../common/constants/tryOn";
 
@@ -19,11 +22,10 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
 const TryOn = () => {
   const { data: session, status } = useSession();
+  const { userInfo } = useUserContext();
 
   const [selectedDate, setSelectedDate] = React.useState("");
   const [selectedSlot, setSelectedSlot] = React.useState("");
-  const [name, setName] = React.useState("");
-  const [phone, setPhone] = React.useState("");
   const [termsAccepted, setTermsAccepted] = React.useState(false);
   const [termsError, setTermsError] = React.useState(false);
 
@@ -32,11 +34,23 @@ const TryOn = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isBooked, setIsBooked] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>();
+  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
 
-  const canContinue =
-    selectedDate !== "" && selectedSlot !== "" && name.trim() !== "";
+  const isUserValid: boolean =
+    userInfo?.name &&
+    userInfo?.email &&
+    userInfo.instagramHandle &&
+    userInfo.mobileNumber
+      ? true
+      : false;
+
+  const canContinue = selectedDate !== "" && selectedSlot !== "";
 
   const onContinueToPayment = async () => {
+    if (!isUserValid) {
+      setIsProfileModalOpen(true);
+      return;
+    }
     if (!termsAccepted) {
       setTermsError(true);
       return;
@@ -95,6 +109,42 @@ const TryOn = () => {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-0">
+      <Modal isOpen={isProfileModalOpen} setOpen={setIsProfileModalOpen}>
+        <div>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+            <ExclamationCircleIcon
+              aria-hidden="true"
+              className="h-6 w-6 text-red-600"
+            />
+          </div>
+          <div className="mt-3 text-center sm:mt-5">
+            <DialogTitle
+              as="h3"
+              className="text-base font-semibold leading-6 text-gray-900"
+            >
+              Profile Incomplete
+            </DialogTitle>
+            <div className="mt-2">
+              <p className="text-sm text-gray-500">
+                To book a try-on, you must update your profile with your
+                mobile number and Instagram handle.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 sm:mt-6">
+          <Link href={"/account"}>
+            <Button
+              type="button"
+              onClick={() => setIsProfileModalOpen(false)}
+              className="inline-flex w-full justify-center"
+            >
+              Go to Account Settings
+            </Button>
+          </Link>
+        </div>
+      </Modal>
+
       <h1 className="text-2xl font-bold text-gray-900">
         Book a Try-On Session
       </h1>
@@ -112,45 +162,6 @@ const TryOn = () => {
             selectedSlot={selectedSlot}
             setSelectedSlot={setSelectedSlot}
           />
-
-          <div className="mt-8 space-y-4">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Full name
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e: any) => setName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Phone number
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e: any) => setPhone(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
 
           <div className="mt-6 flex items-start">
             <input
@@ -211,13 +222,13 @@ const TryOn = () => {
             {formatTryOnTimeSlot(selectedSlot)} &mdash; ${TRY_ON_FEE}
           </p>
           <div className="mt-6">
-            {clientSecret && (
+            {clientSecret && userInfo && (
               <Elements options={{ clientSecret }} stripe={stripePromise}>
                 <TryOnPaymentForm
                   date={selectedDate}
                   timeSlot={selectedSlot}
-                  name={name}
-                  phone={phone}
+                  name={userInfo.name}
+                  phone={userInfo.mobileNumber}
                   onSuccess={() => setIsBooked(true)}
                 />
               </Elements>

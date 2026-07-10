@@ -1,6 +1,17 @@
-export const TRY_ON_TIME_SLOTS = ["18:00", "18:30", "19:00"];
+export const TRY_ON_TIME_SLOTS = [
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+  "20:30",
+];
 
 export const TRY_ON_FEE = 15;
+
+export const TRY_ON_COUPON_AMOUNT = 10;
+
+export const TRY_ON_COUPON_VALID_DAYS = 2;
 
 export function formatTryOnTimeSlot(timeSlot: string): string {
   const [hourStr, minuteStr] = timeSlot.split(":");

@@ -47,6 +47,16 @@ export async function getAllTryOnBookings() {
   return api.get(`/api/admin/tryOnBookings`);
 }
 
+export async function createAdminTryOnBooking(data: {
+  userId?: string;
+  newUser?: { email: string; firstName: string; lastName: string };
+  phone?: string;
+  date: string;
+  timeSlot: string;
+}) {
+  return api.post(`/api/admin/tryOnBookings`, data);
+}
+
 export async function updateTryOnBookingStatus(
   bookingId: string,
   status: string,
@@ -63,7 +73,8 @@ export async function getCoupons() {
 export async function createCoupon(data: {
   userId: string;
   discountAmount: number;
-  expiryHours: number;
+  startDate: string;
+  durationDays: number;
 }) {
   return api.post(`/api/admin/coupons`, data);
 }

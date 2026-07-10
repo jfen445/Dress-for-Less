@@ -32,6 +32,10 @@ const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
       return true;
     }
 
+    if (date.day() !== 2) {
+      return true;
+    }
+
     return false;
   };
 

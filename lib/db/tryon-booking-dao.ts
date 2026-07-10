@@ -1,4 +1,10 @@
+import dayjs from "dayjs";
 import { TryOnBookingSchema } from "./schema";
+import { createCoupon } from "./coupon-dao";
+import {
+  TRY_ON_COUPON_AMOUNT,
+  TRY_ON_COUPON_VALID_DAYS,
+} from "../../common/constants/tryOn";
 
 export async function getTakenTryOnSlots(date: String) {
   return TryOnBookingSchema.find(
@@ -44,4 +50,18 @@ export async function updateTryOnBookingStatus(
   status: String,
 ) {
   return TryOnBookingSchema.updateOne({ _id: bookingId }, { $set: { status } });
+}
+
+export async function grantTryOnCoupon(userId: string, date: string) {
+  const startDate = dayjs(date).startOf("day");
+  const expiryDate = startDate
+    .add(TRY_ON_COUPON_VALID_DAYS, "day")
+    .endOf("day");
+
+  return createCoupon({
+    userId,
+    discountAmount: TRY_ON_COUPON_AMOUNT,
+    startDate: startDate.toISOString(),
+    expiryDate: expiryDate.toISOString(),
+  });
 }

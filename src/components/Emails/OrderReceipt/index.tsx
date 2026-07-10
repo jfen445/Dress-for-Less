@@ -13,7 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import type * as React from "react";
-import DFLLogo from "../../.../../../../public/dfl-logo-transparent.jpeg";
+import DFLLogo from "../../.../../../../public/dfl-logo.png";
 import { OrderReceipt } from "../../../../common/types";
 import dayjs from "dayjs";
 
@@ -36,9 +36,7 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
           <Hr style={global.hr} />
           <Section style={message}>
             <Img
-              src={
-                baseUrl ? `${baseUrl}/dfl-logo-transparent.jpeg` : DFLLogo.src
-              }
+              src={baseUrl ? `${baseUrl}/dfl-logo.png` : DFLLogo.src}
               width="160"
               height="22"
               alt="Dres for Less"

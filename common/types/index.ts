@@ -119,6 +119,13 @@ export type Booking = {
   discountAmount?: number;
 };
 
+export type BookingAvailability = {
+  dressId: string;
+  size: String;
+  dateBooked: string;
+  blockOutPeriod: string[];
+};
+
 export type Sizes = {
   xs?: string;
   s?: string;
@@ -181,6 +188,7 @@ export type Coupon = {
   _id?: string;
   userId: string;
   discountAmount: number;
+  startDate: string;
   expiryDate: string;
   isRedeemed: boolean;
   createdAt?: string;

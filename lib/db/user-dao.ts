@@ -34,6 +34,13 @@ export async function findUser(email: String) {
   );
 }
 
+export async function findUserById(id: string) {
+  return UserSchema.findById(
+    id,
+    "__id name email mobileNumber instagramHandle photo role",
+  );
+}
+
 export async function findAllUsers() {
   return UserSchema.find(
     {},
