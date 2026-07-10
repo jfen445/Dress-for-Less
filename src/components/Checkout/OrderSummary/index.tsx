@@ -81,7 +81,7 @@ const OrderSummary = () => {
     getUserCoupons()
       .then((data) => setAvailableCoupons(data.data as Coupon[]))
       .catch((err) => console.error(err));
-  }, [userInfo]);
+  }, [userInfo, setAvailableCoupons]);
 
   const couponDiscount = (): number => {
     return availableCoupons

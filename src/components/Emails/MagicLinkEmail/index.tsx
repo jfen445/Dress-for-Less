@@ -13,7 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
-import DFLLogo from "../../../../public/dfl-logo-transparent.jpeg";
+import DFLLogo from "../../../../public/dfl-logo.png";
 
 interface MagicLinkEmailProps {
   url?: string;
@@ -31,7 +31,7 @@ export const MagicLinkEmail = ({ url, host }: MagicLinkEmailProps) => (
     <Body style={main}>
       <Container style={container}>
         <Img
-          src={baseUrl ? `${baseUrl}/dfl-logo-transparent.jpeg` : DFLLogo.src}
+          src={baseUrl ? `${baseUrl}/dfl-logo.png` : DFLLogo.src}
           width="90"
           alt="Dress for Less"
           style={logo}

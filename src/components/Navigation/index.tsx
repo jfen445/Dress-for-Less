@@ -21,7 +21,7 @@ import AboutImage from "../../../public/aboutimg.jpg";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import DFLLogo from "../../../public/dfl-logo-transparent.jpeg";
-import { Fragment, useState, useRef, useEffect } from "react";
+import { Fragment, useState, useRef, useEffect, useCallback } from "react";
 import { navigationSections } from "@/model/navigation";
 import { Navigation } from "../../../common/types/navigation";
 import { useCartContext } from "@/context/CartContext";
@@ -116,10 +116,10 @@ const NavigationBar = () => {
   const { searchQuery, setSearchQuery, searchResults } =
     useDressSearch(allDresses);
 
-  const closeSearch = () => {
+  const closeSearch = useCallback(() => {
     setIsSearchOpen(false);
     setSearchQuery("");
-  };
+  }, [setSearchQuery]);
 
   useEffect(() => {
     if (isSearchOpen) searchInputRef.current?.focus();
@@ -134,7 +134,7 @@ const NavigationBar = () => {
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isSearchOpen]);
+  }, [isSearchOpen, closeSearch]);
 
   return (
     <header className="sticky top-0 z-50 bg-white">

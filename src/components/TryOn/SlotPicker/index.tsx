@@ -27,7 +27,7 @@ const SlotPicker = ({ date, selectedSlot, setSelectedSlot }: ISlotPicker) => {
       .then((data) => setTakenSlots(data.data.takenSlots ?? []))
       .catch(() => setTakenSlots([]))
       .finally(() => setIsLoading(false));
-  }, [date]);
+  }, [date, setSelectedSlot]);
 
   if (!date) {
     return (
