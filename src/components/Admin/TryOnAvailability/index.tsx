@@ -3,7 +3,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import { PickersDay, PickersDayProps } from "@mui/x-date-pickers/PickersDay";
+import { PickerDay, PickerDayProps } from "@mui/x-date-pickers/PickerDay";
 import {
   getTryOnAvailability,
   upsertTryOnAvailability,
@@ -29,20 +29,20 @@ type TryOnBookingRow = {
   status: TryOnStatus;
 };
 
-interface IDayWithIndicators extends PickersDayProps<Dayjs> {
+interface IDayWithIndicators extends PickerDayProps {
   availableDates?: Set<string>;
   bookedDates?: Set<string>;
 }
 
 const DayWithIndicators = (props: IDayWithIndicators) => {
   const { availableDates, bookedDates, day, ...other } = props;
-  const dateStr = day.format("YYYY-MM-DD");
+  const dateStr = dayjs(day).format("YYYY-MM-DD");
   const hasAvailability = availableDates?.has(dateStr) ?? false;
   const hasBookings = bookedDates?.has(dateStr) ?? false;
 
   return (
     <span style={{ position: "relative", display: "inline-block" }}>
-      <PickersDay {...other} day={day} />
+      <PickerDay {...other} day={day} />
       {(hasAvailability || hasBookings) && (
         <span
           style={{
@@ -162,7 +162,8 @@ const AdminTryOnAvailability = () => {
     [bookings],
   );
 
-  const selectDate = (date: Dayjs) => {
+  const selectDate = (date: Dayjs | null) => {
+    if (!date) return;
     const dateStr = date.format("YYYY-MM-DD");
     setSelectedDate(dateStr);
     setTimeSlots(availabilityByDate.get(dateStr)?.timeSlots ?? []);

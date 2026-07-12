@@ -55,7 +55,8 @@ const Calendar = ({
     getDressBlockOuts();
   }, [resolvedId, selectedSize]);
 
-  const selectDate = (event: Dayjs) => {
+  const selectDate = (event: Dayjs | null) => {
+    if (!event) return;
     setSelectedDate(event.format("YYYY-MM-DD"));
   };
 
