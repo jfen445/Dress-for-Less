@@ -7,6 +7,9 @@ import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
 import EmailBookingsModal from "../EmailBookingsModal";
+import DownloadBookingsModal from "../DownloadBookingsModal";
+import BookingHistoryModal from "../BookingHistoryModal";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -37,6 +40,20 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
+  const [downloadModalOpen, setDownloadModalOpen] =
+    React.useState<boolean>(false);
+
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [isSearchOpen, setIsSearchOpen] = React.useState<boolean>(false);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
+  const [historyModalOpen, setHistoryModalOpen] =
+    React.useState<boolean>(false);
+  const [historyTarget, setHistoryTarget] = React.useState<{
+    title: string;
+    subtitle?: string;
+    image?: string;
+    bookings: Booking[];
+  } | null>(null);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
@@ -59,6 +76,98 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         ? prev.filter((s) => s !== status)
         : [...prev, status],
     );
+  };
+
+  const closeSearch = React.useCallback(() => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  }, []);
+
+  React.useEffect(() => {
+    if (!isSearchOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!searchContainerRef.current?.contains(e.target as Node)) {
+        closeSearch();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isSearchOpen, closeSearch]);
+
+  const allBookingsHistory = React.useMemo(
+    () => [...thisWeekBookings, ...bookings, ...pastBookings],
+    [thisWeekBookings, bookings, pastBookings],
+  );
+
+  const dressSearchResults = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const seen = new Set<string>();
+    const results: { dressId: string; name: string; brand: string; image?: string }[] =
+      [];
+    for (const booking of allBookingsHistory) {
+      const dressId = booking.dressId;
+      const dress = booking.dress;
+      if (!dress || seen.has(dressId)) continue;
+      if (
+        dress.name?.toLowerCase().includes(q) ||
+        dress.brand?.toLowerCase().includes(q)
+      ) {
+        seen.add(dressId);
+        results.push({
+          dressId,
+          name: dress.name,
+          brand: dress.brand,
+          image: dress.images?.[0],
+        });
+      }
+    }
+    return results.slice(0, 8);
+  }, [allBookingsHistory, searchQuery]);
+
+  const userSearchResults = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const seen = new Set<string>();
+    const results: { userId: string; name?: string; email?: string }[] = [];
+    for (const booking of allBookingsHistory) {
+      const user = (booking as any).user?.[0];
+      const userId = booking.userId;
+      if (!user || seen.has(userId)) continue;
+      if (
+        user.name?.toLowerCase().includes(q) ||
+        user.email?.toLowerCase().includes(q)
+      ) {
+        seen.add(userId);
+        results.push({ userId, name: user.name, email: user.email });
+      }
+    }
+    return results.slice(0, 8);
+  }, [allBookingsHistory, searchQuery]);
+
+  const openDressHistory = (dressId: string, name: string, brand?: string, image?: string) => {
+    const dressBookings = allBookingsHistory.filter(
+      (b) => b.dressId === dressId,
+    );
+    setHistoryTarget({
+      title: name,
+      subtitle: brand,
+      image,
+      bookings: dressBookings,
+    });
+    setHistoryModalOpen(true);
+    closeSearch();
+  };
+
+  const openUserHistory = (userId: string, name?: string, email?: string) => {
+    const userBookings = allBookingsHistory.filter((b) => b.userId === userId);
+    setHistoryTarget({
+      title: name || email || "User",
+      subtitle: name ? email : undefined,
+      bookings: userBookings,
+    });
+    setHistoryModalOpen(true);
+    closeSearch();
   };
 
   const filteredBookings = React.useMemo(() => {
@@ -166,8 +275,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     document.body.removeChild(downloadLink);
   };
 
-  const extractObj = () => {
-    return filteredThisWeekBookings?.map((booking) => ({
+  const extractObj = (bookingsToExport: Booking[]) => {
+    return bookingsToExport?.map((booking) => ({
       name: booking.user ? booking?.user[0].name : "",
       email: booking.user ? booking?.user[0].email : "",
       company: booking.address?.company ?? "",
@@ -421,6 +530,22 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           setToast({ message, variant: ToastVariant.WARNING, show: true })
         }
       />
+      <DownloadBookingsModal
+        isOpen={downloadModalOpen}
+        setOpen={setDownloadModalOpen}
+        bookings={filteredThisWeekBookings}
+        onDownload={(bookingsToExport) =>
+          downloadCSV(convertToCSV(extractObj(bookingsToExport) ?? []), "bookings.csv")
+        }
+      />
+      <BookingHistoryModal
+        isOpen={historyModalOpen}
+        setOpen={setHistoryModalOpen}
+        title={historyTarget?.title ?? ""}
+        subtitle={historyTarget?.subtitle}
+        image={historyTarget?.image}
+        bookings={historyTarget?.bookings ?? []}
+      />
       <AdminBookingsCalendar deliveryType={deliveryType} />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
@@ -432,16 +557,117 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               A list of all the bookings in the system.
             </p>
           </div>
+          <div
+            ref={searchContainerRef}
+            className="relative mt-4 sm:mt-0 sm:ml-4 sm:mr-4"
+          >
+            <div className="relative">
+              <MagnifyingGlassIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                onFocus={() => setIsSearchOpen(true)}
+                onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+                placeholder="Search dress or customer..."
+                className="w-64 rounded-md border-0 py-1.5 pl-8 pr-3 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-pink-500"
+              />
+            </div>
+
+            {isSearchOpen && searchQuery.trim().length > 0 && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-96 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                {dressSearchResults.length === 0 &&
+                userSearchResults.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-gray-500">
+                    No dresses or customers found.
+                  </p>
+                ) : (
+                  <>
+                    {dressSearchResults.length > 0 && (
+                      <div className="py-2">
+                        <p className="px-4 pb-1 text-xs font-semibold uppercase text-gray-400">
+                          Dresses
+                        </p>
+                        <ul>
+                          {dressSearchResults.map((dress) => (
+                            <li key={dress.dressId}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openDressHistory(
+                                    dress.dressId,
+                                    dress.name,
+                                    dress.brand,
+                                    dress.image,
+                                  )
+                                }
+                                className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-gray-50"
+                              >
+                                {dress.image && (
+                                  <img
+                                    src={dress.image}
+                                    alt={dress.name}
+                                    className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
+                                  />
+                                )}
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-gray-900">
+                                    {dress.name}
+                                  </p>
+                                  <p className="truncate text-xs text-gray-500">
+                                    {dress.brand}
+                                  </p>
+                                </div>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {userSearchResults.length > 0 && (
+                      <div className="border-t border-gray-100 py-2">
+                        <p className="px-4 pb-1 text-xs font-semibold uppercase text-gray-400">
+                          Customers
+                        </p>
+                        <ul>
+                          {userSearchResults.map((user) => (
+                            <li key={user.userId}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openUserHistory(
+                                    user.userId,
+                                    user.name,
+                                    user.email,
+                                  )
+                                }
+                                className="flex w-full flex-col items-start px-4 py-2 text-left hover:bg-gray-50"
+                              >
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                  {user.name}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">
+                                  {user.email}
+                                </p>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button onClick={() => setEmailModalOpen(true)}>Email</Button>
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
-            <Button
-              onClick={() =>
-                downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
-              }
-            >
+            <Button onClick={() => setDownloadModalOpen(true)}>
               Download
             </Button>
           </div>

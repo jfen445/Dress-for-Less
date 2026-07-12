@@ -68,7 +68,9 @@ const Product = () => {
           }))(currentDress as any);
 
           let pickedSizes = Object.fromEntries(
-            Object.entries(dressSizes).filter(([_, v]) => v != null),
+            Object.entries(dressSizes).filter(
+              ([_, v]) => v != null && Number(v) > 0,
+            ),
           );
 
           setSizes(pickedSizes);

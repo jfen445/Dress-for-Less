@@ -43,24 +43,15 @@ const navigation: Navigation = {
           imageSrc: AboutImage.src,
           imageAlt: "Dress for Less collection",
         },
-        // {
-        //   name: "Basic Tees",
-        //   href: "#",
-        //   imageSrc:
-        //     "https://tailwindui.com/img/ecommerce-images/mega-menu-category-02.jpg",
-        //   imageAlt:
-        //     "Close up of Basic Tee fall bundle with off-white, ochre, olive, and black tees.",
-        // },
-        // {
-        //   name: "Accessories",
-        //   href: "#",
-        //   imageSrc:
-        //     "https://tailwindui.com/img/ecommerce-images/mega-menu-category-03.jpg",
-        //   imageAlt:
-        //     "Model wearing minimalist watch with black wristband and white watch face.",
-        // },
       ],
       sections: navigationSections,
+    },
+    {
+      id: "try-on",
+      name: "Book a Try-On",
+      href: "/try-on",
+      featured: [],
+      sections: [],
     },
     {
       id: "about",
@@ -76,13 +67,7 @@ const navigation: Navigation = {
       featured: [],
       sections: [],
     },
-    {
-      id: "try-on",
-      name: "Book a Try-On",
-      href: "/try-on",
-      featured: [],
-      sections: [],
-    },
+
     {
       id: "policies",
       name: "T&Cs",
