@@ -22,7 +22,7 @@ const DressGrid = () => {
               href={`/dresses/products/${dress._id}`}
               className="group"
             >
-              <div className="aspect-[9/16] w-full overflow-hidden rounded-lg">
+              <div className="aspect-[3/4] w-full overflow-hidden rounded-lg">
                 <img
                   src={dress.images[0]}
                   alt="test"

@@ -7,6 +7,7 @@ import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
 import EmailBookingsModal from "../EmailBookingsModal";
+import DownloadBookingsModal from "../DownloadBookingsModal";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -37,6 +38,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
+  const [downloadModalOpen, setDownloadModalOpen] =
+    React.useState<boolean>(false);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
@@ -166,8 +169,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     document.body.removeChild(downloadLink);
   };
 
-  const extractObj = () => {
-    return filteredThisWeekBookings?.map((booking) => ({
+  const extractObj = (bookingsToExport: Booking[]) => {
+    return bookingsToExport?.map((booking) => ({
       name: booking.user ? booking?.user[0].name : "",
       email: booking.user ? booking?.user[0].email : "",
       company: booking.address?.company ?? "",
@@ -421,6 +424,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           setToast({ message, variant: ToastVariant.WARNING, show: true })
         }
       />
+      <DownloadBookingsModal
+        isOpen={downloadModalOpen}
+        setOpen={setDownloadModalOpen}
+        bookings={filteredThisWeekBookings}
+        onDownload={(bookingsToExport) =>
+          downloadCSV(convertToCSV(extractObj(bookingsToExport) ?? []), "bookings.csv")
+        }
+      />
       <AdminBookingsCalendar deliveryType={deliveryType} />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
@@ -437,11 +448,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
-            <Button
-              onClick={() =>
-                downloadCSV(convertToCSV(extractObj() ?? []), "bookings.csv")
-              }
-            >
+            <Button onClick={() => setDownloadModalOpen(true)}>
               Download
             </Button>
           </div>
