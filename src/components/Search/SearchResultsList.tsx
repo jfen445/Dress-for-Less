@@ -36,6 +36,7 @@ const SearchResultsList = ({ results, onSelect, emptyQuery }: Props) => {
               <p className="text-sm font-medium text-gray-900 truncate">
                 {dress.name}
               </p>
+              <p className="text-xs text-gray-500 truncate">{dress.brand}</p>
               <p className="text-xs text-gray-500">${dress.price}</p>
             </div>
           </Link>
