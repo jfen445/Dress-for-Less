@@ -35,6 +35,12 @@ const getStatusColour = (status: TryOnStatus) => {
   }
 };
 
+const previousMonday = (d = dayjs()) => {
+  // dayjs().day(): Sunday = 0, Monday = 1, ..., Saturday = 6
+  const daysToSubtract = (d.day() + 6) % 7; // 0 when Monday, 1 when Tuesday, ..., 6 when Sunday
+  return d.subtract(daysToSubtract, "day").startOf("day");
+};
+
 const AdminTryOns = () => {
   const [bookings, setBookings] = React.useState<TryOnBookingRow[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -44,6 +50,10 @@ const AdminTryOns = () => {
     variant: ToastVariant.WARNING,
     show: false,
   });
+
+  const [showThisWeek, setShowThisWeek] = React.useState(true);
+  const [showUpcoming, setShowUpcoming] = React.useState(true);
+  const [showPrevious, setShowPrevious] = React.useState(true);
 
   const fetchBookings = () => {
     setIsLoading(true);
@@ -74,6 +84,85 @@ const AdminTryOns = () => {
         variant: ToastVariant.WARNING,
         show: true,
       }),
+    );
+  };
+
+  const { thisWeekBookings, upcomingBookings, pastBookings } =
+    React.useMemo(() => {
+      const now = dayjs();
+      const currentSunday = (
+        now.day() === 0 ? now : now.add(7 - now.day(), "day")
+      )
+        .hour(23)
+        .minute(59)
+        .second(59)
+        .millisecond(999);
+      const monday = previousMonday();
+
+      const sorted = [...bookings].sort((a, b) =>
+        dayjs(a.date).diff(dayjs(b.date)),
+      );
+
+      const thisWeek = sorted.filter(
+        (b) =>
+          dayjs(b.date).isBefore(currentSunday) &&
+          dayjs(b.date).isAfter(monday),
+      );
+      const upcoming = sorted.filter((b) =>
+        dayjs(b.date).isAfter(currentSunday),
+      );
+      const past = sorted
+        .filter((b) => dayjs(b.date).isBefore(monday))
+        .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+
+      return {
+        thisWeekBookings: thisWeek,
+        upcomingBookings: upcoming,
+        pastBookings: past,
+      };
+    }, [bookings]);
+
+  const renderTryOnRow = (bookingList: TryOnBookingRow[]) => {
+    return (
+      <>
+        {bookingList.map((booking) => (
+          <tr key={booking._id}>
+            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0">
+              <div className="font-medium">{booking.name}</div>
+              <div className="text-gray-500">{booking.email}</div>
+              {booking.phone && (
+                <div className="text-gray-500">{booking.phone}</div>
+              )}
+            </td>
+            <td className="px-3 py-4 text-sm text-gray-500">
+              {dayjs(booking.date).format("MMMM D, YYYY")}
+            </td>
+            <td className="px-3 py-4 text-sm text-gray-500">
+              {formatTryOnTimeSlot(booking.timeSlot)}
+            </td>
+            <td className="px-3 py-4 text-sm text-gray-500">
+              ${booking.price.toFixed(2)}
+            </td>
+            <td className="px-3 py-4 text-sm">
+              <select
+                value={booking.status}
+                onChange={(e) =>
+                  onStatusChange(booking._id, e.target.value as TryOnStatus)
+                }
+                className={`block rounded-md border-0 py-1.5 pl-3 pr-8 text-sm ring-1 ring-inset sm:leading-6 ${getStatusColour(
+                  booking.status,
+                )}`}
+              >
+                {Object.values(TryOnStatus).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </td>
+          </tr>
+        ))}
+      </>
     );
   };
 
@@ -154,48 +243,48 @@ const AdminTryOns = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {bookings.map((booking) => (
-                      <tr key={booking._id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0">
-                          <div className="font-medium">{booking.name}</div>
-                          <div className="text-gray-500">{booking.email}</div>
-                          {booking.phone && (
-                            <div className="text-gray-500">
-                              {booking.phone}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-3 py-4 text-sm text-gray-500">
-                          {dayjs(booking.date).format("MMMM D, YYYY")}
-                        </td>
-                        <td className="px-3 py-4 text-sm text-gray-500">
-                          {formatTryOnTimeSlot(booking.timeSlot)}
-                        </td>
-                        <td className="px-3 py-4 text-sm text-gray-500">
-                          ${booking.price.toFixed(2)}
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          <select
-                            value={booking.status}
-                            onChange={(e) =>
-                              onStatusChange(
-                                booking._id,
-                                e.target.value as TryOnStatus,
-                              )
-                            }
-                            className={`block rounded-md border-0 py-1.5 pl-3 pr-8 text-sm ring-1 ring-inset sm:leading-6 ${getStatusColour(
-                              booking.status,
-                            )}`}
-                          >
-                            {Object.values(TryOnStatus).map((status) => (
-                              <option key={status} value={status}>
-                                {status}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
+                    <tr
+                      className="border-t border-gray-200 cursor-pointer"
+                      onClick={() => setShowThisWeek(!showThisWeek)}
+                    >
+                      <th
+                        scope="colgroup"
+                        colSpan={5}
+                        className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                      >
+                        This week try-ons
+                      </th>
+                    </tr>
+                    {showThisWeek && renderTryOnRow(thisWeekBookings)}
+
+                    <tr
+                      className="border-t border-gray-200 cursor-pointer"
+                      onClick={() => setShowUpcoming(!showUpcoming)}
+                    >
+                      <th
+                        scope="colgroup"
+                        colSpan={5}
+                        className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                      >
+                        Upcoming try-ons
+                      </th>
+                    </tr>
+                    {showUpcoming && renderTryOnRow(upcomingBookings)}
+
+                    <tr
+                      className="border-t border-gray-200 cursor-pointer"
+                      onClick={() => setShowPrevious(!showPrevious)}
+                    >
+                      <th
+                        scope="colgroup"
+                        colSpan={5}
+                        className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                      >
+                        Previous try-ons
+                      </th>
+                    </tr>
+                    {showPrevious && renderTryOnRow(pastBookings)}
+
                     {bookings.length === 0 && (
                       <tr>
                         <td
