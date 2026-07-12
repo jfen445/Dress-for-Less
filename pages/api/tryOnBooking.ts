@@ -9,9 +9,10 @@ import {
   checkTryOnSlotTaken,
   grantTryOnCoupon,
 } from "../../lib/db/tryon-booking-dao";
+import { getAvailabilityForDate } from "../../lib/db/tryon-availability-dao";
 import { findUser } from "../../lib/db/user-dao";
 import { TryOnStatus } from "../../common/enums/TryOnStatus";
-import { TRY_ON_FEE, TRY_ON_TIME_SLOTS } from "../../common/constants/tryOn";
+import { TRY_ON_FEE } from "../../common/constants/tryOn";
 import { Resend } from "resend";
 import TryOnConfirmationEmail from "@/components/Emails/TryOnConfirmation";
 
@@ -32,10 +33,16 @@ export default async function handler(
       return res.status(400).json({ message: "date is required" });
     }
 
-    const taken = await getTakenTryOnSlots(date);
+    const [taken, availability] = await Promise.all([
+      getTakenTryOnSlots(date),
+      getAvailabilityForDate(date),
+    ]);
     const takenSlots = taken.map((booking) => booking.timeSlot);
+    const availableSlots = (availability?.timeSlots ?? []).filter(
+      (slot: string) => !takenSlots.includes(slot),
+    );
 
-    return res.status(200).json({ takenSlots });
+    return res.status(200).json({ takenSlots, availableSlots });
   }
 
   if (req.method === "POST") {
@@ -50,8 +57,11 @@ export default async function handler(
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    if (!TRY_ON_TIME_SLOTS.includes(timeSlot)) {
-      return res.status(400).json({ message: "Invalid time slot" });
+    const availability = await getAvailabilityForDate(date);
+    if (!availability || !availability.timeSlots.includes(timeSlot)) {
+      return res
+        .status(400)
+        .json({ message: "This time slot is not available on the selected date" });
     }
 
     try {

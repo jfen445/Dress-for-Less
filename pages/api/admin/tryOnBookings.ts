@@ -10,9 +10,10 @@ import {
   checkTryOnSlotTaken,
   grantTryOnCoupon,
 } from "../../../lib/db/tryon-booking-dao";
+import { getAvailabilityForDate } from "../../../lib/db/tryon-availability-dao";
 import { TryOnBookingSchema } from "../../../lib/db/schema";
 import { TryOnStatus } from "../../../common/enums/TryOnStatus";
-import { TRY_ON_FEE, TRY_ON_TIME_SLOTS } from "../../../common/constants/tryOn";
+import { TRY_ON_FEE } from "../../../common/constants/tryOn";
 import { sendTryOnConfirmationEmail } from "../tryOnBooking";
 
 export default async function handler(
@@ -65,8 +66,11 @@ export default async function handler(
         .status(400)
         .json({ message: "A customer or new customer details are required" });
     }
-    if (!TRY_ON_TIME_SLOTS.includes(timeSlot)) {
-      return res.status(400).json({ message: "Invalid time slot" });
+    const availability = await getAvailabilityForDate(date);
+    if (!availability || !availability.timeSlots.includes(timeSlot)) {
+      return res
+        .status(400)
+        .json({ message: "This time slot is not available on the selected date" });
     }
 
     try {

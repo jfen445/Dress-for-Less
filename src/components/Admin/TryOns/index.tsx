@@ -5,6 +5,7 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import CreateTryOnBookingModal from "@/components/Admin/CreateTryOnBookingModal";
+import AdminTryOnAvailability from "@/components/Admin/TryOnAvailability";
 import { TryOnStatus } from "../../../../common/enums/TryOnStatus";
 import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
 
@@ -91,6 +92,7 @@ const AdminTryOns = () => {
           });
         }}
       />
+      <AdminTryOnAvailability />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">

@@ -114,6 +114,18 @@ const TryOnBookingSchema =
   mongoose.models.TryOnBookings ??
   mongoose.model("TryOnBookings", tryOnBookingSchema);
 
+const tryOnAvailabilitySchema = new Schema(
+  {
+    date: { type: String, required: true, unique: true },
+    timeSlots: { type: [String], required: true, default: [] },
+  },
+  { timestamps: true },
+);
+
+const TryOnAvailabilitySchema =
+  mongoose.models.TryOnAvailabilities ??
+  mongoose.model("TryOnAvailabilities", tryOnAvailabilitySchema);
+
 const couponSchema = new Schema(
   {
     userId: { type: mongoose.Schema.ObjectId, required: true },
@@ -134,5 +146,6 @@ export {
   CartSchema,
   BlockOutSchema,
   TryOnBookingSchema,
+  TryOnAvailabilitySchema,
   CouponSchema,
 };
