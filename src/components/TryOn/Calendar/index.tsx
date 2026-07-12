@@ -7,6 +7,7 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { getAvailableTryOnDates } from "@/api/tryOnBooking";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -16,7 +17,16 @@ interface ITryOnCalendar {
 }
 
 const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
-  const selectDate = (event: Dayjs) => {
+  const [availableDates, setAvailableDates] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    getAvailableTryOnDates()
+      .then((res) => setAvailableDates(res.data.dates ?? []))
+      .catch(() => setAvailableDates([]));
+  }, []);
+
+  const selectDate = (event: Dayjs | null) => {
+    if (!event) return;
     setSelectedDate(event.format("YYYY-MM-DD"));
   };
 
@@ -32,7 +42,7 @@ const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
       return true;
     }
 
-    if (date.day() !== 2) {
+    if (!availableDates.includes(date.format("YYYY-MM-DD"))) {
       return true;
     }
 

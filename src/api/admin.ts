@@ -66,6 +66,21 @@ export async function updateTryOnBookingStatus(
   });
 }
 
+export async function getTryOnAvailability() {
+  return api.get(`/api/admin/tryOnAvailability`);
+}
+
+export async function upsertTryOnAvailability(data: {
+  date: string;
+  timeSlots: string[];
+}) {
+  return api.post(`/api/admin/tryOnAvailability`, data);
+}
+
+export async function deleteTryOnAvailability(date: string) {
+  return api.delete(`/api/admin/tryOnAvailability?date=${date}`);
+}
+
 export async function getCoupons() {
   return api.get(`/api/admin/coupons`);
 }

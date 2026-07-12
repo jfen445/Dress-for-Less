@@ -2,12 +2,10 @@ import React from "react";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import { getAllAdminUsers, createAdminTryOnBooking } from "@/api/admin";
+import { getTakenTryOnSlots } from "@/api/tryOnBooking";
 import { UserType } from "../../../../common/types";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
-import {
-  TRY_ON_TIME_SLOTS,
-  formatTryOnTimeSlot,
-} from "../../../../common/constants/tryOn";
+import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
 
 interface ICreateTryOnBookingModal {
   isOpen: boolean;
@@ -31,6 +29,7 @@ const CreateTryOnBookingModal = ({
   const [phone, setPhone] = React.useState("");
   const [date, setDate] = React.useState("");
   const [timeSlot, setTimeSlot] = React.useState("");
+  const [availableSlots, setAvailableSlots] = React.useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
@@ -44,6 +43,17 @@ const CreateTryOnBookingModal = ({
       .then((res) => setUsers(res.data as UserType[]))
       .catch(() => {});
   }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!date) {
+      setAvailableSlots([]);
+      return;
+    }
+    setTimeSlot("");
+    getTakenTryOnSlots(date)
+      .then((res) => setAvailableSlots(res.data.availableSlots ?? []))
+      .catch(() => setAvailableSlots([]));
+  }, [date]);
 
   const resetForm = () => {
     setUserId("");
@@ -216,10 +226,17 @@ const CreateTryOnBookingModal = ({
                 value={timeSlot}
                 onChange={(e) => setTimeSlot(e.target.value)}
                 className={inputCls}
+                disabled={!date || availableSlots.length === 0}
                 required
               >
-                <option value="">Select a time…</option>
-                {TRY_ON_TIME_SLOTS.map((slot) => (
+                <option value="">
+                  {!date
+                    ? "Select a date first…"
+                    : availableSlots.length === 0
+                      ? "No slots available for this date"
+                      : "Select a time…"}
+                </option>
+                {availableSlots.map((slot) => (
                   <option key={slot} value={slot}>
                     {formatTryOnTimeSlot(slot)}
                   </option>

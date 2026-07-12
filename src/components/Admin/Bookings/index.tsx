@@ -12,6 +12,7 @@ import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
+import AdminBookingsCalendar from "@/components/Admin/BookingsCalendar";
 
 type AdminBookingsProps = {
   deliveryType: DeliveryType[];
@@ -420,6 +421,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           setToast({ message, variant: ToastVariant.WARNING, show: true })
         }
       />
+      <AdminBookingsCalendar deliveryType={deliveryType} />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">

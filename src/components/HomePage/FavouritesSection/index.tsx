@@ -27,7 +27,7 @@ const FavouritesSection = () => {
               </h2>
               <Link
                 href="/dresses?filter=customer_faves"
-                className="hidden text-sm font-semibold text-indigo-600 hover:text-indigo-500 sm:block"
+                className="hidden text-sm font-semibold text-secondary-pink hover:text-primary-pink sm:block"
               >
                 Browse all favorites
                 <span aria-hidden="true"> &rarr;</span>
@@ -44,7 +44,8 @@ const FavouritesSection = () => {
                       className="w-full h-[500px] object-cover object-center group-hover:opacity-75"
                     />
                   </div>
-                  <h3 className="mt-4 text-base font-semibold text-gray-900">
+                  <p className="mt-4 text-sm text-gray-500">{dress.brand}</p>
+                  <h3 className="text-base font-semibold text-gray-900">
                     <a href={`/dresses/products/${dress._id}`}>
                       <span className="absolute inset-0" />
                       {dress.name}

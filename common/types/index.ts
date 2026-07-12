@@ -144,6 +144,13 @@ export type BlockOut = {
   createdAt?: string;
 };
 
+export type TryOnAvailability = {
+  _id?: string;
+  date: string;
+  timeSlots: string[];
+  createdAt?: string;
+};
+
 export type Faq = {
   question: string;
   answer: string;

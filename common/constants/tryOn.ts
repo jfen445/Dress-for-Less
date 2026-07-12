@@ -1,3 +1,6 @@
+// Suggested defaults for the admin "quick add" buttons when configuring
+// try-on availability. No longer used for slot validation — see
+// lib/db/tryon-availability-dao.ts for the source of truth.
 export const TRY_ON_TIME_SLOTS = [
   "18:00",
   "18:30",
