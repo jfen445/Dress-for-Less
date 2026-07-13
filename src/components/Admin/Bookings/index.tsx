@@ -6,10 +6,15 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
+import DeleteBookingModal from "../DeleteBookingModal";
 import EmailBookingsModal from "../EmailBookingsModal";
 import DownloadBookingsModal from "../DownloadBookingsModal";
 import BookingHistoryModal from "../BookingHistoryModal";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -29,6 +34,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     isLoading,
     getBookings,
     updateBookingStatus,
+    removeBooking,
   } = useAdminBooking();
   const [isError, setIsError] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
@@ -42,6 +48,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
   const [downloadModalOpen, setDownloadModalOpen] =
     React.useState<boolean>(false);
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
+  const [bookingToDelete, setBookingToDelete] = React.useState<Booking | null>(
+    null,
+  );
 
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = React.useState<boolean>(false);
@@ -446,12 +456,41 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                   initialStatus={currentBooking.status}
                 />
               </td>
+
+              <td className="px-3 py-5 text-right text-sm font-medium">
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    title="Edit booking"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  >
+                    <PencilSquareIcon className="h-5 w-5" />
+                    <span className="sr-only">Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete booking"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBookingToDelete(currentBooking);
+                      setDeleteModalOpen(true);
+                    }}
+                    className="rounded-md p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                    <span className="sr-only">Delete</span>
+                  </button>
+                </div>
+              </td>
             </tr>
 
             {/* EXPANDED CONTENT ROW */}
             {expandedBookingId === currentBooking._id && (
               <tr>
-                <td colSpan={6} className="bg-gray-50 p-6">
+                <td colSpan={7} className="bg-gray-50 p-6">
                   {/* ----- Put your SlideOver content here ----- */}
 
                   <div className="flex space-x-6">
@@ -545,6 +584,23 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         subtitle={historyTarget?.subtitle}
         image={historyTarget?.image}
         bookings={historyTarget?.bookings ?? []}
+      />
+      <DeleteBookingModal
+        isOpen={deleteModalOpen}
+        setOpen={setDeleteModalOpen}
+        booking={bookingToDelete}
+        onDeleted={(bookingId) => {
+          removeBooking(bookingId);
+          if (expandedBookingId === bookingId) setExpandedBookingId(null);
+          setToast({
+            message: "Booking deleted successfully",
+            variant: ToastVariant.SUCCESS,
+            show: true,
+          });
+        }}
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
       />
       <AdminBookingsCalendar deliveryType={deliveryType} />
       <div className="p-4 sm:px-6 lg:px-8">
@@ -739,6 +795,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         Status
                       </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900"
+                      >
+                        <span className="sr-only">Actions</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
@@ -749,7 +811,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         <th
                           scope="colgroup"
-                          colSpan={5}
+                          colSpan={6}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
                           This week bookings
@@ -766,7 +828,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         <th
                           scope="colgroup"
-                          colSpan={5}
+                          colSpan={6}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
                           Upcoming bookings
@@ -783,7 +845,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         <th
                           scope="colgroup"
-                          colSpan={5}
+                          colSpan={6}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
                           Previous bookings

@@ -4,6 +4,7 @@ import { BookingSchema } from "../../lib/db/schema";
 import { IBooking } from "../../common/interfaces/user";
 import {
   checkDuplicateBooking,
+  deleteBooking,
   getBookingAvailabilityByDress,
   getBookingsById,
 } from "../../lib/db/booking-dao";
@@ -14,6 +15,7 @@ import { authOptions } from "./auth/[...nextauth]";
 import dayjs from "dayjs";
 import { findUser } from "../../lib/db/user-dao";
 import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
+import { AccountType } from "../../common/enums/AccountType";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 
@@ -46,6 +48,23 @@ function calculateBlockOutPeriod(dateBooked: string): string[] {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+async function requireAdmin(
+  req: NextApiRequest,
+  res: NextApiResponse,
+): Promise<boolean> {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session?.user?.email) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+  const users = await findUser(session.user.email);
+  if (users.length === 0 || users[0].role !== AccountType.Admin) {
+    res.status(403).json({ message: "Forbidden: Admins only" });
+    return false;
+  }
+  return true;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -249,5 +268,23 @@ export default async function handler(
     res
       .status(200)
       .json({ message: "Booking updated successfully", booking: booking });
+  } else if (req.method == "DELETE") {
+    const isAdmin = await requireAdmin(req, res);
+    if (!isAdmin) return;
+
+    const bookingId = req.query.bookingId as string;
+
+    const booking = await getBookingsById(bookingId);
+
+    if (!booking)
+      return res
+        .status(404)
+        .send("The booking with the given ID was not found.");
+
+    await deleteBooking(bookingId);
+
+    res.status(200).json({ message: "Booking deleted successfully" });
+  } else {
+    res.status(405).end();
   }
 }
