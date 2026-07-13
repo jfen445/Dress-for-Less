@@ -128,6 +128,24 @@ const AddressForm = () => {
           />
         </div>
       </div>
+
+      <div className="sm:col-span-3">
+        <label
+          htmlFor="instructions"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Delivery instructions{" "}
+          <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <div className="mt-1">
+          <textarea
+            id="instructions"
+            name="instructions"
+            rows={3}
+            className="block border border-rose-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:border-black disabled:opacity-50"
+          />
+        </div>
+      </div>
     </div>
   );
 };

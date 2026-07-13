@@ -15,6 +15,7 @@ import { buildBookingList } from "../buildBookingList";
 interface IFreeCheckoutConfirmation {
   address: Address | null;
   billingAddress: Address | null;
+  instructions: string;
 }
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
@@ -22,6 +23,7 @@ const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 const FreeCheckoutConfirmation = ({
   address,
   billingAddress,
+  instructions,
 }: IFreeCheckoutConfirmation) => {
   const router = useRouter();
   const { userInfo } = useUserContext();
@@ -47,6 +49,7 @@ const FreeCheckoutConfirmation = ({
       userInfo?._id ?? "",
       address,
       billingAddress,
+      instructions,
       sentinelPaymentIntent,
     );
 

@@ -24,7 +24,7 @@ export async function getBookingsById(bookingId: String) {
 export async function getBookingsByPaymentIntent(paymentIntent: String) {
   return BookingSchema.find(
     { paymentIntent: paymentIntent },
-    "dressId userId address billingAddress blockOutPeriod createdAt dateBooked deliveryType isReturned isShipped price paymentIntent paymentSuccess tracking size couponIds discountAmount"
+    "dressId userId address billingAddress blockOutPeriod createdAt dateBooked deliveryType isReturned isShipped price paymentIntent paymentSuccess tracking size couponIds discountAmount instructions"
   );
 }
 

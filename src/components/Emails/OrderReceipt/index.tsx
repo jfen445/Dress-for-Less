@@ -43,7 +43,7 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
               style={{ margin: "auto" }}
             />
             <Heading style={global.heading}>
-              Your dress has been confimred
+              Your dress has been confirmed
             </Heading>
             <Text style={global.text}>
               You order is on its way soon. We will send you a tracking link

@@ -38,7 +38,9 @@ function calculateBlockOutPeriod(dateBooked: string): string[] {
     ];
   if (day >= 1 && day <= 4) {
     const monday = date.subtract(day - 1, "day");
-    return Array.from({ length: 7 }, (_, i) => monday.add(i, "day").format("YYYY-MM-DD"));
+    return Array.from({ length: 7 }, (_, i) =>
+      monday.add(i, "day").format("YYYY-MM-DD"),
+    );
   }
   return [];
 }
@@ -87,6 +89,7 @@ export default async function handler(
       deliveryType,
       address,
       billingAddress,
+      instructions,
     } = req.body;
 
     if (!dressId || !dateBooked || !size || !deliveryType) {
@@ -147,11 +150,12 @@ export default async function handler(
       size,
       price,
       status: BookingStatus.NA,
+      instructions: instructions ?? "",
     });
 
     await booking.save();
 
-    await sendEmailConfirmation([booking.toObject()]);
+    // await sendEmailConfirmation([booking.toObject()]);
 
     res.status(201).json({ message: "Booking created", booking });
   }

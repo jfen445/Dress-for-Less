@@ -59,6 +59,7 @@ const bookingSchema = new Schema(
     status: { type: String, required: true },
     couponIds: { type: [String], required: false, default: [] },
     discountAmount: { type: Number, required: false, default: 0 },
+    instructions: { type: String, required: false },
   },
   { timestamps: true },
 );

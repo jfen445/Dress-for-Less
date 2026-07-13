@@ -51,6 +51,7 @@ const CheckoutForm = () => {
   const [billingAddress, setBillingAddress] = React.useState<Address | null>(
     null,
   );
+  const [instructions, setInstructions] = React.useState("");
   const [addressError, setAddressError] = React.useState<boolean>(false);
   const [billingAddressError, setBillingAddressError] =
     React.useState<boolean>(false);
@@ -89,6 +90,7 @@ const CheckoutForm = () => {
       billingCity: { value: string };
       billingRegion: { value: string };
       billingPostCode: { value: string };
+      instructions?: { value: string };
     };
 
     if (!termsAccepted) {
@@ -156,6 +158,7 @@ const CheckoutForm = () => {
 
     setUserAddress(address);
     setBillingAddress(billingAddress);
+    setInstructions(formElements.instructions?.value ?? "");
     setAddressError(false);
     setBillingAddressError(false);
     setTermsError(false);
@@ -483,6 +486,7 @@ const CheckoutForm = () => {
               <FreeCheckoutConfirmation
                 address={userAddress}
                 billingAddress={billingAddress}
+                instructions={instructions}
               />
             ) : (
               clientSecret && (
@@ -493,6 +497,7 @@ const CheckoutForm = () => {
                     isSubmitted={isSubmitted}
                     address={userAddress}
                     billingAddress={billingAddress}
+                    instructions={instructions}
                   />
                 </Elements>
               )

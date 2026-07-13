@@ -27,6 +27,56 @@ const emptyAddress = (): Address => ({
   postCode: "",
 });
 
+const inputCls =
+  "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
+const labelCls = "block text-sm font-medium text-gray-700 mb-1";
+
+const AddressFields = ({
+  value,
+  onChange,
+}: {
+  value: Address;
+  onChange: (field: keyof Address, val: string) => void;
+}) => (
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {(
+      [
+        { field: "address", label: "Address", required: true },
+        { field: "apartment", label: "Apartment / Suite", required: false },
+        { field: "suburb", label: "Suburb", required: false },
+        { field: "city", label: "City", required: true },
+        { field: "postCode", label: "Postal code", required: true },
+        { field: "company", label: "Company", required: false },
+      ] as { field: keyof Address; label: string; required: boolean }[]
+    ).map(({ field, label, required }) => (
+      <div key={field}>
+        <label className={labelCls}>
+          {label}{" "}
+          {!required && (
+            <span className="text-gray-400 font-normal">(optional)</span>
+          )}
+        </label>
+        <input
+          type="text"
+          value={value[field] ?? ""}
+          onChange={(e) => onChange(field, e.target.value)}
+          required={required}
+          className={inputCls}
+        />
+      </div>
+    ))}
+    <div>
+      <label className={labelCls}>Country</label>
+      <input
+        type="text"
+        value="New Zealand"
+        disabled
+        className={`${inputCls} bg-gray-100`}
+      />
+    </div>
+  </div>
+);
+
 interface ICreateBookingModal {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -60,6 +110,7 @@ const CreateBookingModal = ({
   const [address, setAddress] = React.useState<Address>(emptyAddress());
   const [billingAddress, setBillingAddress] =
     React.useState<Address>(emptyAddress());
+  const [instructions, setInstructions] = React.useState("");
   const [sameAsShipping, setSameAsShipping] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
@@ -157,6 +208,7 @@ const CreateBookingModal = ({
         address: needsAddress ? address : undefined,
         billingAddress:
           sameAsShipping && needsAddress ? address : billingAddress,
+        instructions,
       });
       onCreated();
       setOpen(false);
@@ -168,56 +220,6 @@ const CreateBookingModal = ({
       setIsSubmitting(false);
     }
   };
-
-  const inputCls =
-    "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
-  const labelCls = "block text-sm font-medium text-gray-700 mb-1";
-
-  const AddressFields = ({
-    value,
-    onChange,
-  }: {
-    value: Address;
-    onChange: (field: keyof Address, val: string) => void;
-  }) => (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {(
-        [
-          { field: "address", label: "Address", required: true },
-          { field: "apartment", label: "Apartment / Suite", required: false },
-          { field: "suburb", label: "Suburb", required: false },
-          { field: "city", label: "City", required: true },
-          { field: "postCode", label: "Postal code", required: true },
-          { field: "company", label: "Company", required: false },
-        ] as { field: keyof Address; label: string; required: boolean }[]
-      ).map(({ field, label, required }) => (
-        <div key={field}>
-          <label className={labelCls}>
-            {label}{" "}
-            {!required && (
-              <span className="text-gray-400 font-normal">(optional)</span>
-            )}
-          </label>
-          <input
-            type="text"
-            value={value[field] ?? ""}
-            onChange={(e) => onChange(field, e.target.value)}
-            required={required}
-            className={inputCls}
-          />
-        </div>
-      ))}
-      <div>
-        <label className={labelCls}>Country</label>
-        <input
-          type="text"
-          value="New Zealand"
-          disabled
-          className={`${inputCls} bg-gray-100`}
-        />
-      </div>
-    </div>
-  );
 
   return (
     <>
@@ -431,6 +433,20 @@ const CreateBookingModal = ({
             {needsAddress && sameAsShipping && (
               <p className="text-sm text-gray-500">Using shipping address</p>
             )}
+          </div>
+
+          {/* Delivery instructions */}
+          <div>
+            <label className={labelCls}>
+              Delivery instructions{" "}
+              <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              rows={3}
+              className={inputCls}
+            />
           </div>
 
           {/* Price summary */}

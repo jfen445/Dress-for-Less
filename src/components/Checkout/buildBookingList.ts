@@ -8,6 +8,7 @@ export function buildBookingList(
   userId: string,
   address: Address | null,
   billingAddress: Address | null,
+  instructions: string,
   paymentIntent: string,
 ): Booking[] {
   return products.map((item) => ({
@@ -41,5 +42,6 @@ export function buildBookingList(
     paymentIntent,
     size: item.size,
     status: BookingStatus.NA,
+    instructions: instructions ?? "",
   }));
 }
