@@ -290,18 +290,22 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     document.body.removeChild(downloadLink);
   };
 
+  const getCarrierProductCode = (city?: string): string =>
+    city?.trim().toLowerCase() === "auckland" ? "CPOLP" : "CPOLTPA4";
+
   const extractObj = (bookingsToExport: Booking[]) => {
     return bookingsToExport?.map((booking) => ({
-      name: booking.user ? booking?.user[0].name : "",
-      email: booking.user ? booking?.user[0].email : "",
-      company: booking.address?.company ?? "",
-      address: booking.address?.address ?? "",
-      apartment: booking.address?.apartment ?? "",
-      suburb: booking.address?.suburb ?? "",
-      city: booking.address?.city ?? "",
-      postCode: booking.address?.postCode ?? "",
-      deliveryType: booking.deliveryType,
-      dress: booking.dress?.name,
+      Name: booking.user ? booking?.user[0].name : "",
+      Email: booking.user ? booking?.user[0].email : "",
+      Company: booking.address?.company ?? "",
+      Building: booking.address?.apartment ?? "",
+      Street: booking.address?.address ?? "",
+      Suburb: booking.address?.suburb ?? "",
+      City: booking.address?.city ?? "",
+      Postcode: booking.address?.postCode ?? "",
+      Country: booking.address?.country ?? "",
+      Instructions: booking.instructions ?? "",
+      CarrierProductCode: getCarrierProductCode(booking.address?.city),
     }));
   };
 

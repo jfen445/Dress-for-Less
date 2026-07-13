@@ -165,6 +165,22 @@ const CreateBookingModal = ({
       }
     : {};
 
+  const resetForm = () => {
+    setCustomerMode("existing");
+    setDressId(sortedDresses[0]?._id ?? "");
+    setSize("");
+    setUserId("");
+    setNewUserEmail("");
+    setNewUserFirstName("");
+    setNewUserLastName("");
+    setDateBooked("");
+    setDeliveryType(DeliveryType.Delivery);
+    setAddress(emptyAddress());
+    setBillingAddress(emptyAddress());
+    setInstructions("");
+    setSameAsShipping(true);
+  };
+
   const handleAddressChange = (field: keyof Address, value: string) => {
     setAddress((prev) => ({ ...prev, [field]: value }));
     if (sameAsShipping)
@@ -212,7 +228,7 @@ const CreateBookingModal = ({
       });
       onCreated();
       setOpen(false);
-      setDateBooked("");
+      resetForm();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Failed to create booking";
       setToast({ message: msg, variant: ToastVariant.WARNING, show: true });
