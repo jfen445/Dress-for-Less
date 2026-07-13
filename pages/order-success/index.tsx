@@ -274,6 +274,19 @@ const OrderSuccess = ({
                   </div>
                 </dl>
 
+                {bookingDetails?.instructions && (
+                  <dl className="border-t border-gray-200 py-10 text-sm">
+                    <div>
+                      <dt className="font-medium text-gray-900">
+                        Delivery instructions
+                      </dt>
+                      <dd className="mt-2 text-gray-700">
+                        {bookingDetails.instructions}
+                      </dd>
+                    </div>
+                  </dl>
+                )}
+
                 <h4 className="sr-only">Payment</h4>
                 <dl className="grid grid-cols-2 gap-x-6 border-t border-gray-200 py-10 text-sm">
                   <div>

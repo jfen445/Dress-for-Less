@@ -24,12 +24,14 @@ interface IPaymentForm {
   isSubmitted?: boolean;
   address: Address | null;
   billingAddress: Address | null;
+  instructions: string;
 }
 
 const PaymentForm = ({
   address,
   clientSecret,
   billingAddress,
+  instructions,
 }: IPaymentForm) => {
   const router = useRouter();
   const { userInfo } = useUserContext();
@@ -70,6 +72,7 @@ const PaymentForm = ({
       userInfo?._id ?? "",
       address,
       billingAddress,
+      instructions,
       clientSecret,
     );
 

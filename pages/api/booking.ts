@@ -222,6 +222,7 @@ export default async function handler(
         status: dress.status,
         couponIds,
         discountAmount,
+        instructions: dress.instructions ?? "",
       };
 
       bookedDresses = bookedDresses.concat(booking);
@@ -269,6 +270,7 @@ export default async function handler(
         address,
         billingAddress,
         status,
+        instructions,
       } = bookingObj;
 
       if (!dressId || !dateBooked || !size || !deliveryType) {
@@ -330,6 +332,7 @@ export default async function handler(
           address: address ?? {},
           billingAddress: billingAddress ?? {},
           status: status ?? existingBooking.status,
+          instructions: instructions ?? existingBooking.instructions ?? "",
         },
         { new: true },
       );

@@ -117,6 +117,7 @@ export type Booking = {
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
+  instructions?: string;
 };
 
 export type BookingAvailability = {

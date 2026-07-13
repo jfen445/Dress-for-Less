@@ -61,6 +61,7 @@ const EditBookingModal = ({
   const [address, setAddress] = React.useState<Address>(emptyAddress());
   const [billingAddress, setBillingAddress] =
     React.useState<Address>(emptyAddress());
+  const [instructions, setInstructions] = React.useState("");
   const [sameAsShipping, setSameAsShipping] = React.useState(false);
   const [status, setStatus] = React.useState<BookingStatus>(BookingStatus.NA);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -85,6 +86,7 @@ const EditBookingModal = ({
     setDeliveryType(booking.deliveryType);
     setAddress(booking.address ?? emptyAddress());
     setBillingAddress(booking.billingAddress);
+    setInstructions(booking.instructions ?? "");
     setSameAsShipping(false);
     setStatus(booking.status);
   }, [booking, isOpen]);
@@ -163,6 +165,7 @@ const EditBookingModal = ({
         billingAddress:
           sameAsShipping && needsAddress ? address : billingAddress,
         status,
+        instructions,
       });
       onEdited();
       setOpen(false);
@@ -451,6 +454,20 @@ const EditBookingModal = ({
           {needsAddress && sameAsShipping && (
             <p className="text-sm text-gray-500">Using shipping address</p>
           )}
+        </div>
+
+        {/* Delivery instructions */}
+        <div>
+          <label className={labelCls}>
+            Delivery instructions{" "}
+            <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <textarea
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            rows={3}
+            className={inputCls}
+          />
         </div>
 
         {/* Price summary */}

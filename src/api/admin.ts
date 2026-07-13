@@ -35,6 +35,7 @@ export async function createAdminBooking(data: {
   deliveryType: string;
   address?: object;
   billingAddress: object;
+  instructions?: string;
 }) {
   return api.post(`/api/admin/bookings`, data);
 }

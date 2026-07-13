@@ -35,6 +35,7 @@ export interface IBooking {
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
+  instructions?: string;
 }
 
 export interface IAddress {
