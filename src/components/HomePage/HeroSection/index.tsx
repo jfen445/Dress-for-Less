@@ -19,15 +19,17 @@ const HeroSection = () => {
       <Marquee
         style={
           {
-            "background-color": "#881337",
+            backgroundColor: "#881337",
             color: "white",
+            padding: "16px 0",
+            whiteSpace: "pre",
           } as React.CSSProperties
         }
         speed={30}
         gradientColor="pink"
         autoFill={false}
       >
-        {"Auckland Pick-Up || Postage NZ-Wide || Postage closes Tuesday 8pm for the weekend || ".repeat(
+        {"Auckland Pick-Up     ♡     Postage NZ-Wide     ♡     Postage closes Tuesday 8pm for the weekend     ♡     ".repeat(
           100,
         )}
       </Marquee>
