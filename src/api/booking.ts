@@ -21,6 +21,10 @@ export async function updateBooking(bookingId: string, bookingObj: any) {
   return api.patch(`/api/booking?bookingId=${bookingId}`, { bookingObj });
 }
 
+export async function deleteBooking(bookingId: string) {
+  return api.delete(`/api/booking?bookingId=${bookingId}`);
+}
+
 export async function getAllBookingsByUserId(userId: string) {
   return api.get(`/api/history?userId=${userId}`);
 }

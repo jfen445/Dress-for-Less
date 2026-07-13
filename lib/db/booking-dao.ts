@@ -39,6 +39,10 @@ export async function checkDuplicateBooking(
   );
 }
 
+export async function deleteBooking(bookingId: String) {
+  return BookingSchema.findByIdAndDelete(bookingId);
+}
+
 export async function getAllBookings() {
   return BookingSchema.aggregate([
     {

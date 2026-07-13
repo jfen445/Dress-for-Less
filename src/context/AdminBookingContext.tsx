@@ -13,6 +13,7 @@ interface AdminBookingCtx {
   isLoading: boolean;
   getBookings: () => Promise<void>;
   updateBookingStatus: (bookingId: string, status: BookingStatus) => void;
+  removeBooking: (bookingId: string) => void;
 }
 
 const adminBookingContext = React.createContext<AdminBookingCtx>(
@@ -80,6 +81,13 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
     setPastBookings(patch);
   };
 
+  const removeBooking = (bookingId: string) => {
+    const remove = (list: Booking[]) => list.filter((b) => b._id !== bookingId);
+    setBookings(remove);
+    setThisWeekBookings(remove);
+    setPastBookings(remove);
+  };
+
   React.useEffect(() => {
     getBookings();
   }, []);
@@ -93,6 +101,7 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
         isLoading,
         getBookings,
         updateBookingStatus,
+        removeBooking,
       }}
     >
       {children}
