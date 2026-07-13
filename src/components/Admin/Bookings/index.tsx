@@ -7,6 +7,7 @@ import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 import CreateBookingModal from "../CreateBookingModal";
 import DeleteBookingModal from "../DeleteBookingModal";
+import EditBookingModal from "../EditBookingModal";
 import EmailBookingsModal from "../EmailBookingsModal";
 import DownloadBookingsModal from "../DownloadBookingsModal";
 import BookingHistoryModal from "../BookingHistoryModal";
@@ -50,6 +51,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     React.useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
   const [bookingToDelete, setBookingToDelete] = React.useState<Booking | null>(
+    null,
+  );
+  const [editModalOpen, setEditModalOpen] = React.useState<boolean>(false);
+  const [bookingToEdit, setBookingToEdit] = React.useState<Booking | null>(
     null,
   );
 
@@ -464,6 +469,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     title="Edit booking"
                     onClick={(e) => {
                       e.stopPropagation();
+                      setBookingToEdit(currentBooking);
+                      setEditModalOpen(true);
                     }}
                     className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                   >
@@ -594,6 +601,22 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           if (expandedBookingId === bookingId) setExpandedBookingId(null);
           setToast({
             message: "Booking deleted successfully",
+            variant: ToastVariant.SUCCESS,
+            show: true,
+          });
+        }}
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
+      />
+      <EditBookingModal
+        isOpen={editModalOpen}
+        setOpen={setEditModalOpen}
+        booking={bookingToEdit}
+        onEdited={() => {
+          getBookings();
+          setToast({
+            message: "Booking updated successfully",
             variant: ToastVariant.SUCCESS,
             show: true,
           });

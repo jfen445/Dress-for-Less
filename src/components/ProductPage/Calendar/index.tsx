@@ -22,6 +22,7 @@ interface ICanlender {
   selectedSize: string;
   dressId?: string;
   isAdmin?: boolean;
+  excludeBookingId?: string;
 }
 
 const Calendar = ({
@@ -30,6 +31,7 @@ const Calendar = ({
   selectedSize,
   dressId: dressIdProp,
   isAdmin = false,
+  excludeBookingId,
 }: ICanlender) => {
   const params = useParams<{ id: string }>();
   const resolvedId = dressIdProp ?? params?.id ?? "";
@@ -77,9 +79,13 @@ const Calendar = ({
 
     const sizeStock = readObject(sizes, selectedSize.toLowerCase());
 
+    const relevantBookings = excludeBookingId
+      ? bookings?.filter((b) => b._id !== excludeBookingId)
+      : bookings;
+
     // Disable if this date falls within any booking's block-out period (covers the full Fri-Sun window).
     const blockedCount =
-      bookings?.filter(
+      relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
           booking.blockOutPeriod?.some((bp) => toNZDate(bp) === dateStr),
@@ -90,7 +96,7 @@ const Calendar = ({
     }
 
     // Fall back to checking dateBooked directly for bookings without a blockOutPeriod.
-    const days = bookings?.filter(
+    const days = relevantBookings?.filter(
       (booking) =>
         !booking.blockOutPeriod?.length &&
         toNZDate(booking.dateBooked) === dateStr &&
@@ -150,9 +156,13 @@ const Calendar = ({
 
     const sizeStock = readObject(sizes, selectedSize.toLowerCase());
 
+    const relevantBookings = excludeBookingId
+      ? bookings?.filter((b) => b._id !== excludeBookingId)
+      : bookings;
+
     // Disable if this date falls within any booking's block-out period (covers the full Fri-Sun window).
     const blockedCount =
-      bookings?.filter(
+      relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
           booking.blockOutPeriod?.some((bp) => toNZDate(bp) === dateStr),
@@ -163,7 +173,7 @@ const Calendar = ({
     }
 
     // Fall back to checking dateBooked directly for bookings without a blockOutPeriod.
-    const days = bookings?.filter(
+    const days = relevantBookings?.filter(
       (booking) =>
         !booking.blockOutPeriod?.length &&
         toNZDate(booking.dateBooked) === dateStr &&

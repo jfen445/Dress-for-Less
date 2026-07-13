@@ -120,6 +120,7 @@ export type Booking = {
 };
 
 export type BookingAvailability = {
+  _id?: string;
   dressId: string;
   size: String;
   dateBooked: string;
