@@ -39,6 +39,10 @@ const CreateBookingModal = ({
   onCreated,
 }: ICreateBookingModal) => {
   const { allDresses } = useGlobalContext();
+  const sortedDresses = React.useMemo(
+    () => [...(allDresses ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    [allDresses],
+  );
   const [users, setUsers] = React.useState<UserType[]>([]);
   const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
     "existing",
@@ -72,12 +76,12 @@ const CreateBookingModal = ({
   }, [isOpen]);
 
   React.useEffect(() => {
-    if (allDresses && allDresses.length > 0 && !dressId) {
-      setDressId(allDresses[0]._id);
+    if (sortedDresses.length > 0 && !dressId) {
+      setDressId(sortedDresses[0]._id);
     }
-  }, [allDresses, dressId]);
+  }, [sortedDresses, dressId]);
 
-  const selectedDress = allDresses?.find((d) => d._id === dressId);
+  const selectedDress = sortedDresses.find((d) => d._id === dressId);
 
   const availableSizes = SIZES.filter((s) => {
     if (!selectedDress) return false;
@@ -239,7 +243,7 @@ const CreateBookingModal = ({
                 className={inputCls}
                 required
               >
-                {allDresses?.map((d) => (
+                {sortedDresses.map((d) => (
                   <option key={d._id} value={d._id}>
                     {d.name}
                   </option>
