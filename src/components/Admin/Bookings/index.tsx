@@ -79,7 +79,39 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   >(null);
   const [selectedStatuses, setSelectedStatuses] = React.useState<
     BookingStatus[]
-  >([]);
+  >(Object.values(BookingStatus));
+
+  const [enlargedImage, setEnlargedImage] = React.useState<{
+    src: string;
+    alt: string;
+  } | null>(null);
+  const [isEnlargedImageVisible, setIsEnlargedImageVisible] =
+    React.useState<boolean>(false);
+
+  const openEnlargedImage = (src?: string, alt?: string) => {
+    if (!src) return;
+    setEnlargedImage({ src, alt: alt ?? "" });
+  };
+
+  const closeEnlargedImage = () => {
+    setIsEnlargedImageVisible(false);
+    setTimeout(() => setEnlargedImage(null), 200);
+  };
+
+  React.useEffect(() => {
+    if (!enlargedImage) return;
+    const frame = requestAnimationFrame(() => setIsEnlargedImageVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [enlargedImage]);
+
+  React.useEffect(() => {
+    if (!enlargedImage) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeEnlargedImage();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [enlargedImage]);
 
   const toggleRow = (id: string) => {
     setExpandedBookingId(expandedBookingId === id ? null : id);
@@ -342,7 +374,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           className={`mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 ${getStatusColour(status)}`}
         >
           {Object.values(BookingStatus).map((status) => (
-            <option key={status} value={status}>
+            <option key={status} value={status} style={getStatusOptionStyle(status)}>
               {status}
             </option>
           ))}
@@ -351,25 +383,49 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   };
 
+  const getStatusOptionStyle = (
+    status: BookingStatus,
+  ): React.CSSProperties => {
+    switch (status) {
+      case BookingStatus.BeingReturned:
+        return { backgroundColor: "#e9d5ff", color: "#581c87" };
+      case BookingStatus.Washing:
+        return { backgroundColor: "#bfdbfe", color: "#1e3a8a" };
+      case BookingStatus.Drying:
+        return { backgroundColor: "#d9f99d", color: "#365314" };
+      case BookingStatus.Packed:
+        return { backgroundColor: "#86efac", color: "#052e16" };
+      case BookingStatus.Delayed:
+        return { backgroundColor: "#fecaca", color: "#7f1d1d" };
+      case BookingStatus.Reparing:
+        return { backgroundColor: "#e7e5e4", color: "#1c1917" };
+      case BookingStatus.Returned:
+        return { backgroundColor: "#99f6e4", color: "#134e4a" };
+      case BookingStatus.NA:
+      default:
+        return { backgroundColor: "#e5e7eb", color: "#111827" };
+    }
+  };
+
   const getStatusBgColour = (status: BookingStatus) => {
     switch (status) {
       case BookingStatus.BeingReturned:
-        return "bg-purple-50";
+        return "bg-purple-100";
       case BookingStatus.Washing:
-        return "bg-blue-50";
+        return "bg-blue-100";
       case BookingStatus.Drying:
-        return "bg-lime-50";
+        return "bg-lime-100";
       case BookingStatus.Packed:
-        return "bg-orange-50";
+        return "bg-green-200";
       case BookingStatus.Delayed:
-        return "bg-red-50";
+        return "bg-red-100";
       case BookingStatus.Reparing:
-        return "bg-stone-50";
+        return "bg-stone-100";
       case BookingStatus.Returned:
-        return "bg-green-50";
+        return "bg-teal-100";
       case BookingStatus.NA:
       default:
-        return "bg-gray-50";
+        return "bg-gray-100";
     }
   };
 
@@ -377,28 +433,28 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     let colour = "";
     switch (status) {
       case BookingStatus.BeingReturned:
-        colour = "bg-purple-50 text-purple-700 ring-purple-600/20";
+        colour = "bg-purple-200 text-purple-900 ring-purple-700/30";
         break;
       case BookingStatus.Washing:
-        colour = "bg-blue-50 text-blue-700 ring-blue-600/20";
+        colour = "bg-blue-200 text-blue-900 ring-blue-700/30";
         break;
       case BookingStatus.Drying:
-        colour = "bg-lime-50 text-lime-700 ring-lime-600/20";
+        colour = "bg-lime-200 text-lime-900 ring-lime-700/30";
         break;
       case BookingStatus.Packed:
-        colour = "bg-orange-50 text-orange-700 ring-orange-600/20";
+        colour = "bg-green-300 text-green-950 ring-green-800/40";
         break;
       case BookingStatus.Delayed:
-        colour = "bg-red-50 text-red-700 ring-red-600/20";
+        colour = "bg-red-200 text-red-900 ring-red-700/30";
         break;
       case BookingStatus.Reparing:
-        colour = "bg-stone-50 text-stone-700 ring-stone-600/20";
+        colour = "bg-stone-200 text-stone-900 ring-stone-700/30";
         break;
       case BookingStatus.Returned:
-        colour = "bg-green-50 text-green-700 ring-green-600/20";
+        colour = "bg-teal-200 text-teal-900 ring-teal-700/30";
         break;
       case BookingStatus.NA:
-        colour = "bg-gray-50 text-gray-700 ring-gray-600/20";
+        colour = "bg-gray-200 text-gray-900 ring-gray-700/30";
         break;
     }
     return colour;
@@ -508,7 +564,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     <img
                       src={currentBooking.dress?.images[0]}
                       alt={currentBooking.dress?.name ?? ""}
-                      className="h-40 w-40 rounded-lg object-cover"
+                      className="h-40 w-40 rounded-lg object-cover cursor-zoom-in transition-transform hover:scale-105"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEnlargedImage(
+                          currentBooking.dress?.images[0],
+                          currentBooking.dress?.name,
+                        );
+                      }}
                     />
 
                     <div className="space-y-4 flex-1">
@@ -551,6 +614,25 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
   return (
     <>
+      {enlargedImage && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 transition-opacity duration-200 ease-out ${
+            isEnlargedImageVisible ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={closeEnlargedImage}
+        >
+          <img
+            src={enlargedImage.src}
+            alt={enlargedImage.alt}
+            className={`max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl transition-all duration-200 ease-out ${
+              isEnlargedImageVisible
+                ? "scale-100 opacity-100"
+                : "scale-90 opacity-0"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <Toast toast={toast} setToast={setToast} />
       <UserModal
         isOpen={userModalOpen}

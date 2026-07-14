@@ -75,9 +75,15 @@ const Cart = () => {
         .filter((product): product is CartItemType => Boolean(product));
 
       setProducts(items);
-      setSelectedProductIds((prev) =>
-        prev.filter((id) => items.some((product) => product.cartItemId === id)),
-      );
+      setSelectedProductIds((prev) => {
+        const filtered = prev.filter((id) =>
+          items.some((product) => product.cartItemId === id),
+        );
+        if (filtered.length === 0 && items.length === 1) {
+          return [items[0].cartItemId];
+        }
+        return filtered;
+      });
       setErr(items.length === 0);
       setIsLoading(false);
     };

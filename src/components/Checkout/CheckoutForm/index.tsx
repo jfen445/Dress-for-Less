@@ -104,7 +104,6 @@ const CheckoutForm = () => {
       if (
         !formElements.address.value ||
         !formElements.suburb.value ||
-        !formElements.city.value ||
         !formElements.region.value ||
         !formElements.postCode.value
       ) {
