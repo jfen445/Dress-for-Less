@@ -3,7 +3,7 @@ import FaqSection from "@/components/FaqSection";
 
 const FAQ = () => {
   return (
-    <main className="h-screen bg-white">
+    <main className="min-h-screen bg-white">
       <FaqSection />
     </main>
   );

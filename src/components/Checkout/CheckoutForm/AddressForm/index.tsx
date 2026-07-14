@@ -35,6 +35,7 @@ const AddressForm = () => {
             type="text"
             autoComplete="street-address"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            required
           />
         </div>
       </div>
@@ -72,6 +73,7 @@ const AddressForm = () => {
             type="text"
             autoComplete="address-level2"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            required
           />
         </div>
       </div>
@@ -125,6 +127,7 @@ const AddressForm = () => {
             name="postCode"
             type="text"
             autoComplete="postal-code"
+            required
           />
         </div>
       </div>

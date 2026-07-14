@@ -43,8 +43,8 @@ const AddressFields = ({
       [
         { field: "address", label: "Address", required: true },
         { field: "apartment", label: "Apartment / Suite", required: false },
-        { field: "suburb", label: "Suburb", required: false },
-        { field: "city", label: "City", required: true },
+        { field: "suburb", label: "Suburb", required: true },
+        { field: "city", label: "City", required: false },
         { field: "postCode", label: "Postal code", required: true },
         { field: "company", label: "Company", required: false },
       ] as { field: keyof Address; label: string; required: boolean }[]
