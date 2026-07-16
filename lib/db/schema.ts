@@ -77,6 +77,7 @@ const cartSchema = new Schema({
   userId: { type: String, required: true },
   dateBooked: { type: String, required: true },
   size: { type: String, required: true },
+  deliveryType: { type: String, required: true },
 });
 
 const CartSchema = mongoose.models.Carts ?? mongoose.model("Carts", cartSchema);

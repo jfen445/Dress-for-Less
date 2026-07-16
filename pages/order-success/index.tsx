@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 import { useCartContext } from "@/context/CartContext";
+import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
 
 const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY as string);
 
@@ -44,15 +45,9 @@ const OrderSuccess = ({
           .then(async (data) => {
             const bookingData = data.data.booking as Booking;
             setBooking(bookingData);
-            const deliveryStatus = bookingData.items[0]?.deliveryType;
-
-            if (deliveryStatus == DeliveryType.Delivery) {
-              setDeliveryCost(15);
-            } else if (deliveryStatus == DeliveryType.Pickup) {
-              setDeliveryCost(0);
-            } else {
-              setDeliveryCost(7.5);
-            }
+            setDeliveryCost(
+              hasDeliveryItem(bookingData.items) ? SHIPPING_FEE : 0,
+            );
           })
           .catch((err) => {
             console.log(err);
@@ -171,7 +166,7 @@ const OrderSuccess = ({
 
                 <h4 className="sr-only">Addresses</h4>
                 <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
-                  {firstItem?.deliveryType !== DeliveryType.Pickup &&
+                  {hasDeliveryItem(booking?.items ?? []) &&
                     firstItem?.address && (
                       <div>
                         <dt className="font-medium text-gray-900">

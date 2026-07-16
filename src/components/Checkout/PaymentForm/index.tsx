@@ -36,8 +36,7 @@ const PaymentForm = ({
   const router = useRouter();
   const { userInfo } = useUserContext();
   const { refreshCart } = useCartContext();
-  const { products, deliveryOption, selectedCouponIds } =
-    React.useContext(ProductContext);
+  const { products, selectedCouponIds } = React.useContext(ProductContext);
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -68,7 +67,6 @@ const PaymentForm = ({
 
     const booking = buildBooking(
       products,
-      deliveryOption,
       userInfo?._id ?? "",
       address,
       billingAddress,

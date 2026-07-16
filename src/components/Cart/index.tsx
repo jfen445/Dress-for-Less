@@ -70,6 +70,7 @@ const Cart = () => {
             stretch: dress.stretch,
             dateBooked: item.dateBooked,
             cartItemId,
+            deliveryType: item.deliveryType,
           } as CartItemType;
         })
         .filter((product): product is CartItemType => Boolean(product));

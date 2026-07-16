@@ -1,4 +1,5 @@
 import { BookingStatus } from "../enums/BookingStatus";
+import { DeliveryType } from "../enums/DeliveryType";
 
 export interface IUser {
   mongoID?: string;
@@ -15,6 +16,7 @@ export interface ICart {
   userId: string;
   dateBooked: string;
   size: string;
+  deliveryType: DeliveryType;
 }
 
 export interface IBookingItem {

@@ -4,13 +4,10 @@ import React from "react";
 import OrderSummary from "./OrderSummary";
 import { CartItemType, Coupon } from "../../../common/types";
 import CheckoutForm from "./CheckoutForm";
-import { DeliveryType } from "../../../common/enums/DeliveryType";
 
 interface ProductCtx {
   products: CartItemType[];
   setProducts: React.Dispatch<React.SetStateAction<CartItemType[]>>;
-  deliveryOption: DeliveryType;
-  setDeliveryOption: React.Dispatch<React.SetStateAction<DeliveryType>>;
   totalPrice: number;
   setTotalPrice: React.Dispatch<React.SetStateAction<number>>;
   selectedCouponIds: string[];
@@ -24,10 +21,6 @@ interface ProductCtx {
 export const ProductContext = React.createContext<ProductCtx>({} as ProductCtx);
 
 const Checkout = () => {
-  const [deliveryOption, setDeliveryOption] = React.useState<DeliveryType>(
-    DeliveryType.Delivery,
-  );
-
   const [totalPrice, setTotalPrice] = React.useState<number>(0);
   const [products, setProducts] = React.useState<CartItemType[]>([]);
   const [selectedCouponIds, setSelectedCouponIds] = React.useState<string[]>(
@@ -43,8 +36,6 @@ const Checkout = () => {
       value={{
         products,
         setProducts,
-        deliveryOption,
-        setDeliveryOption,
         totalPrice,
         setTotalPrice,
         selectedCouponIds,

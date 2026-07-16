@@ -11,6 +11,7 @@ import {
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import { findUser } from "../../lib/db/user-dao";
+import { DeliveryType } from "../../common/enums/DeliveryType";
 
 export default async function handler(
   req: NextApiRequest,
@@ -37,7 +38,12 @@ export default async function handler(
   } else if (req.method == "POST") {
     const cart: CartType = req.body.cartItem;
 
-    if (!cart.dressId || !cart.userId) {
+    if (
+      !cart.dressId ||
+      !cart.userId ||
+      (cart.deliveryType !== DeliveryType.Delivery &&
+        cart.deliveryType !== DeliveryType.Pickup)
+    ) {
       return res.status(404).json({
         message: "Invalid cart item",
       });
@@ -61,6 +67,7 @@ export default async function handler(
       userId: cart.userId,
       dateBooked: cart.dateBooked,
       size: cart.size,
+      deliveryType: cart.deliveryType,
     };
 
     await addToCart(newCartItem);

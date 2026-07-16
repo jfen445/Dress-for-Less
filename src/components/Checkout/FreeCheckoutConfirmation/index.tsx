@@ -28,8 +28,7 @@ const FreeCheckoutConfirmation = ({
   const router = useRouter();
   const { userInfo } = useUserContext();
   const { refreshCart } = useCartContext();
-  const { products, deliveryOption, selectedCouponIds } =
-    React.useContext(ProductContext);
+  const { products, selectedCouponIds } = React.useContext(ProductContext);
   const [isLoading, setIsLoading] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "A booking error occured. Please try again",
@@ -45,7 +44,6 @@ const FreeCheckoutConfirmation = ({
 
     const booking = buildBooking(
       products,
-      deliveryOption,
       userInfo?._id ?? "",
       address,
       billingAddress,

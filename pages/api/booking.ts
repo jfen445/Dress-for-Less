@@ -20,6 +20,7 @@ import { AccountType } from "../../common/enums/AccountType";
 import { getDress } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { calculateBlockOutPeriod } from "../../lib/utils/blockOutPeriod";
+import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 
@@ -126,7 +127,9 @@ export default async function handler(
     );
 
     if (isFreeCouponCheckout) {
-      const sumPrices = items.reduce((sum, item) => sum + item.price, 0);
+      const sumPrices =
+        items.reduce((sum, item) => sum + item.price, 0) +
+        (hasDeliveryItem(items) ? SHIPPING_FEE : 0);
       if (discountAmount < sumPrices) {
         return res
           .status(400)
@@ -180,8 +183,12 @@ export default async function handler(
       instructions: item.instructions ?? "",
     }));
 
+    const shippingFee = hasDeliveryItem(bookingItems) ? SHIPPING_FEE : 0;
+
     const totalPrice =
-      bookingItems.reduce((sum, item) => sum + item.price, 0) - discountAmount;
+      bookingItems.reduce((sum, item) => sum + item.price, 0) +
+      shippingFee -
+      discountAmount;
 
     const booking: IBooking = {
       userId: bookingPayload.userId,

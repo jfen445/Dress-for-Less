@@ -225,6 +225,9 @@ const CartItems = ({
                             <ExclamationCircleIcon className="size-4 text-red-500 ml-1" />
                           )}
                         </div>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {product.deliveryType}
+                        </p>
                       </div>
 
                       <div className="mt-4 flex flex-1 items-end justify-end">

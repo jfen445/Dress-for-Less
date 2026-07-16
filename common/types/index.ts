@@ -69,6 +69,7 @@ export type CartType = {
   userId?: string;
   dateBooked: string;
   size: string;
+  deliveryType: DeliveryType;
 };
 
 export type CartItemType = {
@@ -85,6 +86,7 @@ export type CartItemType = {
   stretch: string;
   dateBooked: string;
   cartItemId: string;
+  deliveryType: DeliveryType;
 };
 
 export type Address = {

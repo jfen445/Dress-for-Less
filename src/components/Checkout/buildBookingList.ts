@@ -1,10 +1,9 @@
 import { Address, Booking, BookingItem, CartItemType } from "../../../common/types";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
-import { DeliveryType } from "../../../common/enums/DeliveryType";
+import { hasDeliveryItem, SHIPPING_FEE } from "../../../lib/utils/deliveryRules";
 
 export function buildBooking(
   products: CartItemType[],
-  deliveryOption: DeliveryType,
   userId: string,
   address: Address | null,
   billingAddress: Address | null,
@@ -15,7 +14,7 @@ export function buildBooking(
     dressId: item._id,
     dateBooked: item.dateBooked,
     blockOutPeriod: [],
-    deliveryType: deliveryOption,
+    deliveryType: item.deliveryType,
     address: {
       company: address?.company ?? "",
       address: address?.address ?? "",
@@ -30,10 +29,12 @@ export function buildBooking(
     instructions: instructions ?? "",
   }));
 
+  const shippingFee = hasDeliveryItem(items) ? SHIPPING_FEE : 0;
+
   return {
     userId,
     items,
-    totalPrice: items.reduce((sum, item) => sum + item.price, 0),
+    totalPrice: items.reduce((sum, item) => sum + item.price, 0) + shippingFee,
     billingAddress: {
       company: billingAddress?.company ?? "",
       address: billingAddress?.address ?? "",

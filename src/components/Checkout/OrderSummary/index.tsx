@@ -13,14 +13,13 @@ import { getUserCoupons } from "@/api/coupon";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
-import { DeliveryType } from "../../../../common/enums/DeliveryType";
+import { hasDeliveryItem, SHIPPING_FEE } from "../../../../lib/utils/deliveryRules";
 
 const OrderSummary = () => {
   const { userInfo } = useUserContext();
   const {
     products,
     setProducts,
-    deliveryOption,
     setTotalPrice,
     selectedCouponIds,
     setDiscountAmount,
@@ -29,19 +28,8 @@ const OrderSummary = () => {
   } = React.useContext(ProductContext);
 
   const shippingCost = React.useCallback(() => {
-    if (deliveryOption === DeliveryType.Delivery) {
-      return "15.00";
-    }
-
-    if (
-      deliveryOption === DeliveryType.PickupDelivery ||
-      deliveryOption === DeliveryType.DeliveryPickup
-    ) {
-      return "7.50";
-    }
-
-    return "0.00";
-  }, [deliveryOption]);
+    return hasDeliveryItem(products) ? SHIPPING_FEE.toFixed(2) : "0.00";
+  }, [products]);
 
   React.useEffect(() => {
     const productIds = new URLSearchParams(window.location.search).getAll("id");

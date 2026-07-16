@@ -26,7 +26,13 @@ export default async function handler(
     }
 
     const invalidCartItem = cart.some((item) => {
-      return !item.dressId || !item.userId || !item.dateBooked || !item.size;
+      return (
+        !item.dressId ||
+        !item.userId ||
+        !item.dateBooked ||
+        !item.size ||
+        !item.deliveryType
+      );
     });
 
     if (invalidCartItem) {

@@ -10,6 +10,7 @@ import {
   Sizes,
   UserType,
 } from "../../../common/types";
+import { DeliveryType } from "../../../common/enums/DeliveryType";
 import ImageSelector from "./ImageSelector";
 import Button from "@/components/Button";
 import Calendar from "./Calendar";
@@ -22,6 +23,7 @@ import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
+import { isDeliveryAllowedForDate } from "../../../lib/utils/deliveryRules";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
@@ -34,6 +36,9 @@ const Product = () => {
 
   const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
+  const [deliveryType, setDeliveryType] = React.useState<DeliveryType>(
+    DeliveryType.Delivery,
+  );
   const [isAddedToCart, setIsAddedToCart] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
@@ -51,7 +56,17 @@ const Product = () => {
 
   React.useEffect(() => {
     if (isAddedToCart) setIsAddedToCart(false);
-  }, [selectedDate, size, isAddedToCart]);
+  }, [selectedDate, size, deliveryType, isAddedToCart]);
+
+  React.useEffect(() => {
+    if (
+      selectedDate &&
+      deliveryType === DeliveryType.Delivery &&
+      !isDeliveryAllowedForDate(selectedDate)
+    ) {
+      setDeliveryType(DeliveryType.Pickup);
+    }
+  }, [selectedDate, deliveryType]);
 
   React.useEffect(() => {
     if (params) {
@@ -123,13 +138,17 @@ const Product = () => {
       userId: user?._id,
       dateBooked: selectedDate,
       size: size,
+      deliveryType: deliveryType,
     };
 
     if (!session || !user) {
       const localCart = getItems() || ([] as CartType[]);
 
       const itemAlreadyInCart = localCart.some(
-        (item) => JSON.stringify(item) === JSON.stringify(cartItem),
+        (item) =>
+          item.dressId === cartItem.dressId &&
+          item.dateBooked === cartItem.dateBooked &&
+          item.size === cartItem.size,
       );
 
       if (itemAlreadyInCart) {
@@ -202,6 +221,46 @@ const Product = () => {
     );
   };
 
+  const DeliverySelector = () => {
+    const deliveryDisabled =
+      !!selectedDate && !isDeliveryAllowedForDate(selectedDate);
+
+    return (
+      <div className="mt-4">
+        <label className="block text-sm font-medium leading-6 text-gray-900">
+          Delivery or pick up
+        </label>
+        <div className="mt-2 flex gap-3">
+          <Button
+            type="button"
+            variant={
+              deliveryType === DeliveryType.Delivery ? "primary" : "tertiary"
+            }
+            disabled={deliveryDisabled}
+            onClick={() => setDeliveryType(DeliveryType.Delivery)}
+          >
+            Delivery
+          </Button>
+          <Button
+            type="button"
+            variant={
+              deliveryType === DeliveryType.Pickup ? "primary" : "tertiary"
+            }
+            onClick={() => setDeliveryType(DeliveryType.Pickup)}
+          >
+            Pickup
+          </Button>
+        </div>
+        {deliveryDisabled && (
+          <p className="mt-1 text-xs text-gray-500">
+            Delivery is no longer available for this weekend&apos;s dates.
+            Please select pickup, or choose a different date.
+          </p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white">
       <Toast toast={toast} setToast={setToast} href={"/cart"} />
@@ -261,6 +320,8 @@ const Product = () => {
               <CoverFlow images={images} classname="lg:hidden" />
 
               <Dropdown />
+
+              <DeliverySelector />
 
               <Calendar
                 setSelectedDate={setSelectedDate}
