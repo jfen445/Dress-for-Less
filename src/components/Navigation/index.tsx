@@ -54,13 +54,6 @@ const navigation: Navigation = {
       sections: [],
     },
     {
-      id: "about",
-      name: "About",
-      href: "/about",
-      featured: [],
-      sections: [],
-    },
-    {
       id: "faq",
       name: "FAQ",
       href: "/faq",
@@ -72,6 +65,13 @@ const navigation: Navigation = {
       id: "policies",
       name: "T&Cs",
       href: "/policies",
+      featured: [],
+      sections: [],
+    },
+    {
+      id: "about",
+      name: "About",
+      href: "/about",
       featured: [],
       sections: [],
     },
