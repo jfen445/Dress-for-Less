@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { Transition } from "@headlessui/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
+import Button from "@/components/Button";
 
 type NotificationProps = {
   toast: ToastType;
@@ -101,7 +102,8 @@ const Toast: React.FC<NotificationProps> = ({
                   </div>
 
                   <div className="ml-4 flex-shrink-0 flex relative z-10">
-                    <button
+                    <Button
+                      variant="ghost"
                       className={`${getColour()} rounded-md inline-flex text-white hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -123,7 +125,7 @@ const Toast: React.FC<NotificationProps> = ({
                           d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                         />
                       </svg>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

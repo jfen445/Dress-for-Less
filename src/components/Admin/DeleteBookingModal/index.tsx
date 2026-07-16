@@ -1,6 +1,7 @@
 import React from "react";
 import dayjs from "dayjs";
 import Modal from "@/components/Modal";
+import Button from "@/components/Button";
 import { deleteBooking } from "@/api/booking";
 import { Booking } from "../../../../common/types";
 
@@ -85,22 +86,24 @@ const DeleteBookingModal = ({
       </p>
 
       <div className="flex justify-end gap-3 pt-6">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setOpen(false)}
           disabled={isSubmitting}
-          className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={handleConfirm}
           disabled={isSubmitting}
-          className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 disabled:opacity-50"
+          className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
         >
           {isSubmitting ? "Deleting…" : "Delete"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

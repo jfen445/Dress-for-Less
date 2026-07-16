@@ -29,6 +29,7 @@ import { useGlobalContext } from "@/context/GlobalContext";
 import { useDressSearch } from "@/hooks/useDressSearch";
 import SearchResultsList from "@/components/Search/SearchResultsList";
 import { usePathname } from "next/navigation";
+import Button from "@/components/Button";
 
 const navigation: Navigation = {
   categories: [
@@ -127,14 +128,15 @@ const NavigationBar = () => {
         <div className="border-b border-gray-200">
           <div className="flex h-16 items-center justify-between">
             <div className="flex flex-1 items-center lg:hidden">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className="-ml-2 rounded-md bg-white p-2 text-gray-400"
                 onClick={() => setMobileNavOpen((prev) => !prev)}
               >
                 <span className="sr-only">Open menu</span>
                 <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-              </button>
+              </Button>
               {/* <a
                 href="#"
                 className="ml-2 p-2 text-gray-400 hover:text-gray-500"
@@ -365,8 +367,9 @@ const NavigationBar = () => {
                       className="w-full border-b border-gray-300 py-1 px-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-500"
                     />
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     className="p-2 text-gray-400 hover:text-gray-500"
                     onClick={() =>
                       isSearchOpen ? closeSearch() : setIsSearchOpen(true)
@@ -377,7 +380,7 @@ const NavigationBar = () => {
                       className="h-6 w-6"
                       aria-hidden="true"
                     />
-                  </button>
+                  </Button>
                 </div>
 
                 {isSearchOpen && searchQuery.trim().length > 0 && (

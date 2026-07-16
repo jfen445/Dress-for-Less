@@ -3,6 +3,7 @@
 import React from "react";
 import { getTakenTryOnSlots } from "@/api/tryOnBooking";
 import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
+import Button from "@/components/Button";
 
 interface ISlotPicker {
   date: string;
@@ -50,9 +51,10 @@ const SlotPicker = ({ date, selectedSlot, setSelectedSlot }: ISlotPicker) => {
           {availableSlots.map((slot) => {
             const isSelected = selectedSlot === slot;
             return (
-              <button
+              <Button
                 key={slot}
                 type="button"
+                variant="ghost"
                 onClick={() => setSelectedSlot(slot)}
                 className={`rounded-md border px-3 py-2 text-sm font-medium ${
                   isSelected
@@ -61,7 +63,7 @@ const SlotPicker = ({ date, selectedSlot, setSelectedSlot }: ISlotPicker) => {
                 }`}
               >
                 {formatTryOnTimeSlot(slot)}
-              </button>
+              </Button>
             );
           })}
         </div>

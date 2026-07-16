@@ -1,4 +1,5 @@
 import * as React from "react";
+import Button from "@/components/Button";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -39,14 +40,15 @@ const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) 
       aria-label="Pagination"
       className="mt-10 flex items-center justify-center gap-2"
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="rounded-full px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-full px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed"
       >
         Prev
-      </button>
+      </Button>
 
       {pages.map((page, idx) =>
         page === "ellipsis" ? (
@@ -54,9 +56,10 @@ const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) 
             …
           </span>
         ) : (
-          <button
+          <Button
             key={page}
             type="button"
+            variant="ghost"
             aria-current={page === currentPage ? "page" : undefined}
             onClick={() => onPageChange(page)}
             className={classNames(
@@ -67,18 +70,19 @@ const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) 
             )}
           >
             {page}
-          </button>
+          </Button>
         )
       )}
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="rounded-full px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-full px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed"
       >
         Next
-      </button>
+      </Button>
     </nav>
   );
 };

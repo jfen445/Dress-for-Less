@@ -286,12 +286,13 @@ const AdminCoupons = () => {
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
-                            <button
+                            <Button
+                              variant="ghost"
                               onClick={() => handleDelete(c._id!)}
                               className="text-red-500 hover:text-red-700 text-xs font-medium"
                             >
                               Remove
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       );

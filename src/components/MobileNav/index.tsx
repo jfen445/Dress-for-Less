@@ -7,6 +7,7 @@ import SearchResultsList from "@/components/Search/SearchResultsList";
 import { Dialog, Tab, Transition } from "@headlessui/react";
 import { XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { Fragment } from "react";
+import Button from "@/components/Button";
 
 const navigation = {
   categories: [
@@ -160,15 +161,16 @@ const MobileNav = () => {
           >
             <Dialog.Panel className="relative flex w-full max-w-xs flex-col overflow-y-auto bg-white pb-12 shadow-xl">
               <div className="flex px-4 pb-2 pt-5">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   className="relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400"
                   onClick={() => setMobileNavOpen(false)}
                 >
                   <span className="absolute -inset-0.5" />
                   <span className="sr-only">Close menu</span>
                   <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                </button>
+                </Button>
               </div>
 
               {/* Search */}
@@ -186,13 +188,14 @@ const MobileNav = () => {
                     className="flex-1 py-2 pl-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
                   />
                   {searchQuery && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setSearchQuery("")}
                       className="p-1 text-gray-400 hover:text-gray-600"
                     >
                       <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

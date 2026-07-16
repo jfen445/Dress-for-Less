@@ -3,6 +3,7 @@ import React from "react";
 import { CartItemType } from "../../../common/types";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
+import Button from "../Button";
 
 interface ICartType {
   products: CartItemType[];
@@ -232,13 +233,14 @@ const CartItems = ({
 
                       <div className="mt-4 flex flex-1 items-end justify-end">
                         <div className="ml-4">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             className="text-sm font-medium text-secondary-pink hover:text-indigo-500"
                             onClick={() => removeItem(product)}
                           >
                             <span>Remove</span>
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>

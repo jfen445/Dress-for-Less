@@ -581,8 +581,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
                 <td className="px-3 py-5 text-right text-sm font-medium">
                   <div className="flex justify-end gap-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       title="Edit booking"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -593,9 +594,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     >
                       <PencilSquareIcon className="h-5 w-5" />
                       <span className="sr-only">Edit</span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
                       title="Delete booking"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -606,7 +608,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     >
                       <TrashIcon className="h-5 w-5" />
                       <span className="sr-only">Delete</span>
-                    </button>
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -846,8 +848,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         <ul>
                           {dressSearchResults.map((dress) => (
                             <li key={dress.dressId}>
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
                                 onClick={() =>
                                   openDressHistory(
                                     dress.dressId,
@@ -873,7 +876,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                                     {dress.brand}
                                   </p>
                                 </div>
-                              </button>
+                              </Button>
                             </li>
                           ))}
                         </ul>
@@ -887,8 +890,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         <ul>
                           {userSearchResults.map((user) => (
                             <li key={user.userId}>
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
                                 onClick={() =>
                                   openUserHistory(
                                     user.userId,
@@ -904,7 +908,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                                 <p className="truncate text-xs text-gray-500">
                                   {user.email}
                                 </p>
-                              </button>
+                              </Button>
                             </li>
                           ))}
                         </ul>
@@ -927,8 +931,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           {Object.values(BookingStatus).map((status) => {
             const isActive = selectedStatuses.includes(status);
             return (
-              <button
+              <Button
                 key={status}
+                variant="ghost"
                 onClick={() => toggleStatus(status)}
                 className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                   isActive
@@ -937,16 +942,17 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 }`}
               >
                 {status}
-              </button>
+              </Button>
             );
           })}
           {selectedStatuses.length > 0 && (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setSelectedStatuses([])}
               className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
             >
               Clear
-            </button>
+            </Button>
           )}
         </div>
         {isLoading ? (

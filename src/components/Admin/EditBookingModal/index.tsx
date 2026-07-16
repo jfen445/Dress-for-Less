@@ -488,13 +488,14 @@ const EditBookingModal = ({
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setOpen(false)}
             className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving…" : "Save changes"}
           </Button>

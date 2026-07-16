@@ -1,9 +1,9 @@
 import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children?: string;
+  children?: React.ReactNode;
   className?: string;
-  variant?: "primary" | "secondary" | "tertiary";
+  variant?: "primary" | "secondary" | "tertiary" | "ghost";
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -12,10 +12,12 @@ const Button: React.FC<ButtonProps> = ({
   variant,
   ...props
 }) => {
-  return (
-    <button
-      className={
-        `rounded-md ${
+  const disabledClass = props.disabled ? "opacity-50" : "";
+
+  const variantClasses =
+    variant === "ghost"
+      ? ""
+      : `rounded-md ${
           variant == "tertiary"
             ? "bg-white border border-primary-pink text-primary-pink enabled:hover:bg-primary-pink enabled:hover:text-white"
             : `${
@@ -23,11 +25,11 @@ const Button: React.FC<ButtonProps> = ({
                   ? "bg-primary-pink"
                   : "bg-secondary-pink"
               } bg-primary-pink text-white enabled:hover:bg-secondary-pink`
-        } ${
-          props.disabled && "opacity-50"
-        } px-3.5 py-2.5 text-sm font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600` +
-        className
-      }
+        } px-3.5 py-2.5 text-sm font-semibold shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600`;
+
+  return (
+    <button
+      className={`${variantClasses} ${disabledClass} ${className ?? ""}`}
       {...props}
     >
       {children}

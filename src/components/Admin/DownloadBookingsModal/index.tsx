@@ -163,13 +163,14 @@ const DownloadBookingsModal = ({
           {selectedIds.size} of {lineItems.length} selected
         </span>
         <div className="flex gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setOpen(false)}
             className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Button>
           <Button onClick={handleDownload} disabled={selectedIds.size === 0}>
             {`Download${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`}
           </Button>
