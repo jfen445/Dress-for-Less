@@ -248,7 +248,7 @@ const Product = () => {
             }
             onClick={() => setDeliveryType(DeliveryType.Pickup)}
           >
-            Pickup
+            {"Pickup (Auckland)"}
           </Button>
         </div>
         {deliveryDisabled && (
@@ -257,6 +257,11 @@ const Product = () => {
             Please select pickup, or choose a different date.
           </p>
         )}
+        <p className="mt-4 text-xs text-gray-500">
+          {deliveryType === DeliveryType.Delivery
+            ? "Select the date of your event, your dress will arrive 1-2 days prior to this."
+            : "Select the date of your event, your dress will be ready for pick up 1 day prior to this."}
+        </p>
       </div>
     );
   };
@@ -327,6 +332,7 @@ const Product = () => {
                 setSelectedDate={setSelectedDate}
                 sizes={sizes}
                 selectedSize={size}
+                deliveryType={deliveryType}
               />
 
               <div className="mt-10">

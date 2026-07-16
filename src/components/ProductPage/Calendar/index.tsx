@@ -4,6 +4,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
+import { isPickupAllowedForDate } from "../../../../lib/utils/deliveryRules";
+import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
 import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
 import { useParams } from "next/navigation";
@@ -19,6 +21,7 @@ interface ICanlender {
   dressId?: string;
   isAdmin?: boolean;
   excludeBookingId?: string;
+  deliveryType?: DeliveryType;
 }
 
 const Calendar = ({
@@ -28,6 +31,7 @@ const Calendar = ({
   dressId: dressIdProp,
   isAdmin = false,
   excludeBookingId,
+  deliveryType,
 }: ICanlender) => {
   const params = useParams<{ id: string }>();
   const resolvedId = dressIdProp ?? params?.id ?? "";
@@ -113,8 +117,14 @@ const Calendar = ({
     const isAfterWednesday = today.day() > 3;
     const isWeekend = date.day() === 5 || date.day() === 6 || date.day() === 0;
 
-    // Disable Friday - Sunday only for this week if today is after Wednesday
-    if (isThisWeek && isAfterWednesday && isWeekend) {
+    // Disable Friday - Sunday only for this week if today is after Wednesday.
+    // Pickup is exempt — it has its own, more precise 2-day/8pm lead-time rule below.
+    if (
+      deliveryType !== DeliveryType.Pickup &&
+      isThisWeek &&
+      isAfterWednesday &&
+      isWeekend
+    ) {
       return true;
     }
 
@@ -129,6 +139,14 @@ const Calendar = ({
     // Disable if date is more than 6 months in the future
     const sixMonthsFromNow = today.add(6, "month");
     if (date.isAfter(sixMonthsFromNow, "day")) {
+      return true;
+    }
+
+    // Pickup needs at least 2 days' lead time (before 8pm Auckland 2 days prior).
+    if (
+      deliveryType === DeliveryType.Pickup &&
+      !isPickupAllowedForDate(dateStr)
+    ) {
       return true;
     }
 

@@ -50,3 +50,18 @@ export function isDeliveryAllowedForDate(
     isDateWithinCurrentWeekend(dateStr, now) && !isBeforeTuesday8pm(now)
   );
 }
+
+export function isPickupAllowedForDate(
+  dateStr: string,
+  now: Dayjs = auckland.now(),
+): boolean {
+  const date = auckland.toZone(dateStr);
+  const cutoff = date
+    .subtract(2, "day")
+    .hour(20)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+
+  return now.isBefore(cutoff);
+}
