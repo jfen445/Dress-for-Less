@@ -21,20 +21,20 @@ export default async function handler(
   await dbConnect();
 
   if (req.method == "POST") {
-    const dresses = req.body.booking as Booking[];
+    const booking = req.body.booking as Booking;
     var errorResponse: String[] = [];
 
-    for (const dress of dresses) {
+    for (const item of booking.items) {
       const checkBooking = await checkDuplicateBooking(
-        dress.dressId,
-        dress.size,
-        dress.dateBooked,
+        item.dressId,
+        item.size,
+        item.dateBooked,
       );
 
-      const blockedOut = await checkBlockOut(dress.dressId, dress.size as string, dress.dateBooked);
+      const blockedOut = await checkBlockOut(item.dressId, item.size as string, item.dateBooked);
 
       if (checkBooking.length > 0 || blockedOut) {
-        errorResponse.push(dress.dressId);
+        errorResponse.push(item.dressId);
       }
     }
 

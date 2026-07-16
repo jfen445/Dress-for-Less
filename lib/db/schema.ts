@@ -40,26 +40,31 @@ const billingAddressSchema = new Schema({
   apartment: { type: String, required: false },
 });
 
+const bookingItemSchema = new Schema({
+  dressId: { type: String, required: true },
+  dateBooked: { type: String, required: true },
+  blockOutPeriod: { type: [String], required: true },
+  deliveryType: { type: String, required: true, default: "delivery" },
+  address: { type: addressSchema, required: false },
+  size: { type: String, required: true },
+  price: { type: Number, required: true },
+  instructions: { type: String, required: false },
+});
+
 const bookingSchema = new Schema(
   {
-    dressId: { type: String, required: true },
     userId: { type: mongoose.Schema.ObjectId, required: true },
-    dateBooked: { type: String, required: true },
-    blockOutPeriod: { type: [String], required: true },
-    address: { type: addressSchema, required: false },
+    items: { type: [bookingItemSchema], required: true },
+    totalPrice: { type: Number, required: true },
     billingAddress: { type: billingAddressSchema, required: false },
-    deliveryType: { type: String, required: true, default: "delivery" },
     tracking: { type: String, required: false },
     isShipped: { type: Boolean, required: true, default: false },
     isReturned: { type: Boolean, required: true, default: false },
     paymentIntent: { type: String, required: true },
     paymentSuccess: { type: Boolean, required: true, default: false },
-    size: { type: String, required: true },
-    price: { type: Number, required: true },
     status: { type: String, required: true },
     couponIds: { type: [String], required: false, default: [] },
     discountAmount: { type: Number, required: false, default: 0 },
-    instructions: { type: String, required: false },
   },
   { timestamps: true },
 );

@@ -75,18 +75,19 @@ const EditBookingModal = ({
 
   React.useEffect(() => {
     if (!isOpen || !booking) return;
-    setDressId(booking.dressId);
-    setSize(booking.size as string);
+    const item = booking.items[0];
+    setDressId(item?.dressId ?? "");
+    setSize((item?.size as string) ?? "");
     setCustomerMode("existing");
     setUserId(booking.userId);
     setNewUserEmail("");
     setNewUserFirstName("");
     setNewUserLastName("");
-    setDateBooked(booking.dateBooked);
-    setDeliveryType(booking.deliveryType);
-    setAddress(booking.address ?? emptyAddress());
+    setDateBooked(item?.dateBooked ?? "");
+    setDeliveryType(item?.deliveryType ?? DeliveryType.Delivery);
+    setAddress(item?.address ?? emptyAddress());
     setBillingAddress(booking.billingAddress);
-    setInstructions(booking.instructions ?? "");
+    setInstructions(item?.instructions ?? "");
     setSameAsShipping(false);
     setStatus(booking.status);
   }, [booking, isOpen]);

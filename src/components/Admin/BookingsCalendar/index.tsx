@@ -2,7 +2,8 @@ import React from "react";
 import { EventCalendar } from "@mui/x-scheduler/event-calendar";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
-import { mapBookingToEvent } from "./mapBookingToEvent";
+import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { mapBookingItemToEvent } from "./mapBookingToEvent";
 
 interface IAdminBookingsCalendar {
   deliveryType: DeliveryType[];
@@ -13,10 +14,24 @@ const AdminBookingsCalendar = ({ deliveryType }: IAdminBookingsCalendar) => {
 
   const events = React.useMemo(() => {
     const all = [...pastBookings, ...thisWeekBookings, ...bookings];
-    const filtered = deliveryType?.length
-      ? all.filter((b) => deliveryType.includes(b.deliveryType as DeliveryType))
-      : all;
-    return filtered.map(mapBookingToEvent);
+    const pairs = all.flatMap((booking) => {
+      const items = deliveryType?.length
+        ? booking.items.filter((item) =>
+            deliveryType.includes(item.deliveryType as DeliveryType),
+          )
+        : booking.items;
+      return items.map((item) => ({ booking, item }));
+    });
+
+    // Packed bookings sink to the bottom of each day's event list.
+    const sorted = [...pairs].sort((a, b) => {
+      const aPacked = a.booking.status === BookingStatus.Packed;
+      const bPacked = b.booking.status === BookingStatus.Packed;
+      if (aPacked === bPacked) return 0;
+      return aPacked ? 1 : -1;
+    });
+
+    return sorted.map(({ booking, item }) => mapBookingItemToEvent(booking, item));
   }, [bookings, thisWeekBookings, pastBookings, deliveryType]);
 
   return (

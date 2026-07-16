@@ -2,35 +2,38 @@ import React from "react";
 import dayjs from "dayjs";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
-import { Booking } from "../../../../common/types";
+import { BookingLineItem } from "../../../../common/types";
 
 interface DownloadBookingsModalProps {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  bookings: Booking[];
-  onDownload: (bookings: Booking[]) => void;
+  lineItems: BookingLineItem[];
+  onDownload: (lineItems: BookingLineItem[]) => void;
 }
+
+const rowKey = ({ booking, item }: BookingLineItem) =>
+  (item._id as string) ?? `${booking._id}-${item.dressId}-${item.dateBooked}`;
 
 const DownloadBookingsModal = ({
   isOpen,
   setOpen,
-  bookings,
+  lineItems,
   onDownload,
 }: DownloadBookingsModalProps) => {
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
-    if (isOpen) setSelectedIds(new Set(bookings.map((b) => b._id as string)));
-  }, [isOpen, bookings]);
+    if (isOpen) setSelectedIds(new Set(lineItems.map(rowKey)));
+  }, [isOpen, lineItems]);
 
   const allSelected =
-    bookings.length > 0 && selectedIds.size === bookings.length;
+    lineItems.length > 0 && selectedIds.size === lineItems.length;
 
   const toggleAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(bookings.map((b) => b._id as string)));
+      setSelectedIds(new Set(lineItems.map(rowKey)));
     }
   };
 
@@ -44,7 +47,7 @@ const DownloadBookingsModal = ({
 
   const handleDownload = () => {
     if (!selectedIds.size) return;
-    onDownload(bookings.filter((b) => selectedIds.has(b._id as string)));
+    onDownload(lineItems.filter((li) => selectedIds.has(rowKey(li))));
     setOpen(false);
   };
 
@@ -88,17 +91,18 @@ const DownloadBookingsModal = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
-            {bookings.length === 0 ? (
+            {lineItems.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-gray-400">
                   No bookings to display.
                 </td>
               </tr>
             ) : (
-              bookings.map((booking) => {
-                const id = booking._id as string;
+              lineItems.map((li) => {
+                const { booking, item } = li;
+                const id = rowKey(li);
                 const checked = selectedIds.has(id);
-                const user = (booking as any).user?.[0];
+                const user = booking.user?.[0];
                 return (
                   <tr
                     key={id}
@@ -116,19 +120,19 @@ const DownloadBookingsModal = ({
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
-                        {booking.dress?.images?.[0] && (
+                        {item.dress?.images?.[0] && (
                           <img
-                            src={booking.dress.images[0]}
-                            alt={booking.dress.name}
+                            src={item.dress.images[0]}
+                            alt={item.dress.name}
                             className="h-8 w-8 rounded-full object-cover flex-shrink-0"
                           />
                         )}
                         <div>
                           <div className="font-medium text-gray-900">
-                            {booking.dress?.name}
+                            {item.dress?.name}
                           </div>
                           <div className="text-gray-500 text-xs">
-                            {booking.dress?.brand}
+                            {item.dress?.brand}
                           </div>
                         </div>
                       </div>
@@ -138,12 +142,12 @@ const DownloadBookingsModal = ({
                       <div className="text-gray-500 text-xs">{user?.email}</div>
                     </td>
                     <td className="py-3 px-3 text-gray-600 whitespace-nowrap">
-                      {dayjs(booking.dateBooked).format("MMM D, YYYY")}
+                      {dayjs(item.dateBooked).format("MMM D, YYYY")}
                     </td>
-                    <td className="py-3 px-3 text-gray-600">{booking.size}</td>
+                    <td className="py-3 px-3 text-gray-600">{item.size}</td>
                     <td className="py-3 px-3">
                       <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                        {booking.deliveryType}
+                        {item.deliveryType}
                       </span>
                     </td>
                   </tr>
@@ -156,7 +160,7 @@ const DownloadBookingsModal = ({
 
       <div className="mt-4 flex items-center justify-between">
         <span className="text-sm text-gray-500">
-          {selectedIds.size} of {bookings.length} selected
+          {selectedIds.size} of {lineItems.length} selected
         </span>
         <div className="flex gap-3">
           <button

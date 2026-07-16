@@ -20,6 +20,8 @@ const DeleteBookingModal = ({
   onError,
 }: IDeleteBookingModal) => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const primaryItem = booking?.items[0];
+  const extraCount = (booking?.items.length ?? 0) - 1;
 
   const handleConfirm = async () => {
     if (!booking?._id) return;
@@ -43,25 +45,32 @@ const DeleteBookingModal = ({
 
       <div className="flex space-x-4">
         <img
-          src={booking?.dress?.images?.[0]}
-          alt={booking?.dress?.name ?? ""}
+          src={primaryItem?.dress?.images?.[0]}
+          alt={primaryItem?.dress?.name ?? ""}
           className="h-20 w-20 flex-none rounded-lg object-cover"
         />
         <div className="space-y-1 text-sm">
-          <p className="font-medium text-gray-900">{booking?.dress?.name}</p>
-          <p className="text-gray-500">{booking?.dress?.brand}</p>
+          <p className="font-medium text-gray-900">
+            {primaryItem?.dress?.name}
+            {extraCount > 0 && (
+              <span className="ml-2 font-normal text-gray-400">
+                +{extraCount} more
+              </span>
+            )}
+          </p>
+          <p className="text-gray-500">{primaryItem?.dress?.brand}</p>
           <p>
             <span className="font-medium">Booked by:</span>{" "}
             {booking?.user?.[0]?.name} ({booking?.user?.[0]?.email})
           </p>
           <p>
             <span className="font-medium">Date:</span>{" "}
-            {booking?.dateBooked
-              ? dayjs(booking.dateBooked).format("MMMM D, YYYY")
+            {primaryItem?.dateBooked
+              ? dayjs(primaryItem.dateBooked).format("MMMM D, YYYY")
               : ""}
           </p>
           <p>
-            <span className="font-medium">Size:</span> {booking?.size}
+            <span className="font-medium">Size:</span> {primaryItem?.size}
           </p>
           <p>
             <span className="font-medium">Status:</span> {booking?.status}
@@ -70,7 +79,8 @@ const DeleteBookingModal = ({
       </div>
 
       <p className="mt-4 text-sm text-gray-700">
-        Are you sure you want to delete this booking? This action cannot be
+        Are you sure you want to delete this booking
+        {extraCount > 0 ? " and all its items" : ""}? This action cannot be
         undone.
       </p>
 

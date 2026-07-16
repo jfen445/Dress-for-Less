@@ -1,7 +1,7 @@
 import React from "react";
 import dayjs from "dayjs";
 import Modal from "@/components/Modal";
-import { Booking } from "../../../../common/types";
+import { BookingLineItem } from "../../../../common/types";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 
 interface BookingHistoryModalProps {
@@ -10,7 +10,7 @@ interface BookingHistoryModalProps {
   title: string;
   subtitle?: string;
   image?: string;
-  bookings: Booking[];
+  lineItems: BookingLineItem[];
 }
 
 const getStatusColour = (status: BookingStatus) => {
@@ -41,14 +41,14 @@ const BookingHistoryModal = ({
   title,
   subtitle,
   image,
-  bookings,
+  lineItems,
 }: BookingHistoryModalProps) => {
-  const sortedBookings = React.useMemo(
+  const sortedLineItems = React.useMemo(
     () =>
-      [...bookings].sort((a, b) =>
-        dayjs(b.dateBooked).diff(dayjs(a.dateBooked)),
+      [...lineItems].sort((a, b) =>
+        dayjs(b.item.dateBooked).diff(dayjs(a.item.dateBooked)),
       ),
-    [bookings],
+    [lineItems],
   );
 
   return (
@@ -89,23 +89,23 @@ const BookingHistoryModal = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
-            {sortedBookings.length === 0 ? (
+            {sortedLineItems.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-gray-400">
                   No booking history to display.
                 </td>
               </tr>
             ) : (
-              sortedBookings.map((booking) => {
-                const user = (booking as any).user?.[0];
+              sortedLineItems.map(({ booking, item }) => {
+                const user = booking.user?.[0];
                 return (
-                  <tr key={booking._id}>
+                  <tr key={item._id ?? `${booking._id}-${item.dressId}`}>
                     <td className="py-3 pl-4 pr-3">
                       <div className="font-medium text-gray-900">
-                        {booking.dress?.name}
+                        {item.dress?.name}
                       </div>
                       <div className="text-gray-500 text-xs">
-                        {booking.dress?.brand}
+                        {item.dress?.brand}
                       </div>
                     </td>
                     <td className="py-3 px-3">
@@ -113,9 +113,9 @@ const BookingHistoryModal = ({
                       <div className="text-gray-500 text-xs">{user?.email}</div>
                     </td>
                     <td className="py-3 px-3 text-gray-600 whitespace-nowrap">
-                      {dayjs(booking.dateBooked).format("MMM D, YYYY")}
+                      {dayjs(item.dateBooked).format("MMM D, YYYY")}
                     </td>
-                    <td className="py-3 px-3 text-gray-600">{booking.size}</td>
+                    <td className="py-3 px-3 text-gray-600">{item.size}</td>
                     <td className="py-3 px-3">
                       <span
                         className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(

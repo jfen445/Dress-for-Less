@@ -38,9 +38,11 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
         currentSunday.setDate(now.getDate() + (7 - now.getDay()));
       }
       currentSunday.setHours(23, 59, 59, 999);
+      const primaryDate = (booking: Booking) => booking.items[0]?.dateBooked;
+
       const sortedBookings = (data.data as unknown as Booking[]).sort(
         function (a, b) {
-          return dayjs(a.dateBooked).diff(dayjs(b.dateBooked));
+          return dayjs(primaryDate(a)).diff(dayjs(primaryDate(b)));
         },
       );
 
@@ -52,19 +54,19 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
 
       const thisWeek = sortedBookings.filter(
         (booking) =>
-          dayjs(booking.dateBooked).isBefore(dayjs(currentSunday)) &&
-          dayjs(booking.dateBooked).isAfter(dayjs(previousMonday())),
+          dayjs(primaryDate(booking)).isBefore(dayjs(currentSunday)) &&
+          dayjs(primaryDate(booking)).isAfter(dayjs(previousMonday())),
       );
 
       const allBookings = sortedBookings.filter((booking) =>
-        dayjs(booking.dateBooked).isAfter(dayjs(currentSunday)),
+        dayjs(primaryDate(booking)).isAfter(dayjs(currentSunday)),
       );
 
       const pastBookings = sortedBookings
         .filter((booking) =>
-          dayjs(booking.dateBooked).isBefore(previousMonday()),
+          dayjs(primaryDate(booking)).isBefore(previousMonday()),
         )
-        .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked)));
+        .sort((a, b) => dayjs(primaryDate(b)).diff(dayjs(primaryDate(a))));
       setPastBookings(pastBookings);
 
       setThisWeekBookings(thisWeek);

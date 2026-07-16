@@ -49,8 +49,6 @@ const Product = () => {
     return obj;
   }, [sizes]);
 
-  console.log("condition", dress);
-
   React.useEffect(() => {
     if (isAddedToCart) setIsAddedToCart(false);
   }, [selectedDate, size, isAddedToCart]);

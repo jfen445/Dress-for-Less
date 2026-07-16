@@ -97,27 +97,41 @@ export type Address = {
   apartment?: string;
 };
 
-export type Booking = {
+export type BookingItem = {
   _id?: string;
   dressId: string;
-  userId: string;
   dateBooked: string;
   blockOutPeriod: string[];
-  price: number;
-  address?: Address;
-  billingAddress: Address;
   deliveryType: DeliveryType;
+  address?: Address;
+  size: String;
+  price: number;
+  instructions?: string;
+  dress?: DressType;
+};
+
+export type Booking = {
+  _id?: string;
+  userId: string;
+  items: BookingItem[];
+  totalPrice: number;
+  billingAddress: Address;
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
   paymentIntent: string;
-  size: String;
-  dress?: DressType;
   user?: UserType[];
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
-  instructions?: string;
+};
+
+// Pairs a Booking (order) with one of its line items — used by admin views
+// that need to display/select a single dress without duplicating the
+// shared order-level fields (user, status, billing address, etc).
+export type BookingLineItem = {
+  booking: Booking;
+  item: BookingItem;
 };
 
 export type BookingAvailability = {

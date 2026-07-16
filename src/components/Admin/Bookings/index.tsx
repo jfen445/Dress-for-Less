@@ -1,7 +1,7 @@
 import { getAllBookings } from "@/api/admin";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
-import { Booking, UserType } from "../../../../common/types";
+import { Booking, BookingLineItem, UserType } from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
@@ -67,7 +67,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     title: string;
     subtitle?: string;
     image?: string;
-    bookings: Booking[];
+    lineItems: BookingLineItem[];
   } | null>(null);
 
   const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
@@ -150,23 +150,28 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
     const seen = new Set<string>();
-    const results: { dressId: string; name: string; brand: string; image?: string }[] =
-      [];
+    const results: {
+      dressId: string;
+      name: string;
+      brand: string;
+      image?: string;
+    }[] = [];
     for (const booking of allBookingsHistory) {
-      const dressId = booking.dressId;
-      const dress = booking.dress;
-      if (!dress || seen.has(dressId)) continue;
-      if (
-        dress.name?.toLowerCase().includes(q) ||
-        dress.brand?.toLowerCase().includes(q)
-      ) {
-        seen.add(dressId);
-        results.push({
-          dressId,
-          name: dress.name,
-          brand: dress.brand,
-          image: dress.images?.[0],
-        });
+      for (const item of booking.items) {
+        const dress = item.dress;
+        if (!dress || seen.has(item.dressId)) continue;
+        if (
+          dress.name?.toLowerCase().includes(q) ||
+          dress.brand?.toLowerCase().includes(q)
+        ) {
+          seen.add(item.dressId);
+          results.push({
+            dressId: item.dressId,
+            name: dress.name,
+            brand: dress.brand,
+            image: dress.images?.[0],
+          });
+        }
       }
     }
     return results.slice(0, 8);
@@ -192,26 +197,38 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     return results.slice(0, 8);
   }, [allBookingsHistory, searchQuery]);
 
-  const openDressHistory = (dressId: string, name: string, brand?: string, image?: string) => {
-    const dressBookings = allBookingsHistory.filter(
-      (b) => b.dressId === dressId,
-    );
+  const openDressHistory = (
+    dressId: string,
+    name: string,
+    brand?: string,
+    image?: string,
+  ) => {
+    const lineItems: BookingLineItem[] = [];
+    for (const booking of allBookingsHistory) {
+      for (const item of booking.items) {
+        if (item.dressId === dressId) lineItems.push({ booking, item });
+      }
+    }
     setHistoryTarget({
       title: name,
       subtitle: brand,
       image,
-      bookings: dressBookings,
+      lineItems,
     });
     setHistoryModalOpen(true);
     closeSearch();
   };
 
   const openUserHistory = (userId: string, name?: string, email?: string) => {
-    const userBookings = allBookingsHistory.filter((b) => b.userId === userId);
+    const lineItems: BookingLineItem[] = [];
+    for (const booking of allBookingsHistory) {
+      if (booking.userId !== userId) continue;
+      for (const item of booking.items) lineItems.push({ booking, item });
+    }
     setHistoryTarget({
       title: name || email || "User",
       subtitle: name ? email : undefined,
-      bookings: userBookings,
+      lineItems,
     });
     setHistoryModalOpen(true);
     closeSearch();
@@ -221,7 +238,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     let result = bookings;
     if (deliveryType?.length)
       result = result.filter((b) =>
-        deliveryType.includes(b.deliveryType as DeliveryType),
+        b.items.some((item) =>
+          deliveryType.includes(item.deliveryType as DeliveryType),
+        ),
       );
     if (selectedStatuses.length)
       result = result.filter((b) =>
@@ -234,7 +253,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     let result = thisWeekBookings;
     if (deliveryType?.length)
       result = result.filter((b) =>
-        deliveryType.includes(b.deliveryType as DeliveryType),
+        b.items.some((item) =>
+          deliveryType.includes(item.deliveryType as DeliveryType),
+        ),
       );
     if (selectedStatuses.length)
       result = result.filter((b) =>
@@ -247,7 +268,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     let result = pastBookings;
     if (deliveryType?.length)
       result = result.filter((b) =>
-        deliveryType.includes(b.deliveryType as DeliveryType),
+        b.items.some((item) =>
+          deliveryType.includes(item.deliveryType as DeliveryType),
+        ),
       );
     if (selectedStatuses.length)
       result = result.filter((b) =>
@@ -255,6 +278,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       );
     return result;
   }, [pastBookings, deliveryType, selectedStatuses]);
+
+  const thisWeekLineItems = React.useMemo(
+    () =>
+      filteredThisWeekBookings.flatMap((booking) =>
+        booking.items.map((item) => ({ booking, item })),
+      ),
+    [filteredThisWeekBookings],
+  );
 
   const updateCurrentBooking = async (
     bookingId: string,
@@ -325,19 +356,19 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const getCarrierProductCode = (city?: string): string =>
     city?.trim().toLowerCase() === "auckland" ? "CPOLP" : "CPOLTPA4";
 
-  const extractObj = (bookingsToExport: Booking[]) => {
-    return bookingsToExport?.map((booking) => ({
-      Name: booking.user ? booking?.user[0].name : "",
-      Email: booking.user ? booking?.user[0].email : "",
-      Company: booking.address?.company ?? "",
-      Building: booking.address?.apartment ?? "",
-      Street: booking.address?.address ?? "",
-      Suburb: booking.address?.suburb ?? "",
-      City: booking.address?.city ?? "",
-      Postcode: booking.address?.postCode ?? "",
-      Country: booking.address?.country ?? "",
-      Instructions: booking.instructions ?? "",
-      CarrierProductCode: getCarrierProductCode(booking.address?.city),
+  const extractObj = (lineItems: BookingLineItem[]) => {
+    return lineItems?.map(({ booking, item }) => ({
+      Name: booking.user ? booking.user[0].name : "",
+      Email: booking.user ? booking.user[0].email : "",
+      Company: item.address?.company ?? "",
+      Building: item.address?.apartment ?? "",
+      Street: item.address?.address ?? "",
+      Suburb: item.address?.suburb ?? "",
+      City: item.address?.city ?? "",
+      Postcode: item.address?.postCode ?? "",
+      Country: item.address?.country ?? "",
+      Instructions: item.instructions ?? "",
+      CarrierProductCode: getCarrierProductCode(item.address?.city),
     }));
   };
 
@@ -374,7 +405,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           className={`mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 ${getStatusColour(status)}`}
         >
           {Object.values(BookingStatus).map((status) => (
-            <option key={status} value={status} style={getStatusOptionStyle(status)}>
+            <option
+              key={status}
+              value={status}
+              style={getStatusOptionStyle(status)}
+            >
               {status}
             </option>
           ))}
@@ -383,9 +418,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   };
 
-  const getStatusOptionStyle = (
-    status: BookingStatus,
-  ): React.CSSProperties => {
+  const getStatusOptionStyle = (status: BookingStatus): React.CSSProperties => {
     switch (status) {
       case BookingStatus.BeingReturned:
         return { backgroundColor: "#e9d5ff", color: "#581c87" };
@@ -463,151 +496,203 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const renderBookingRow = (bookingList: Booking[]) => {
     return (
       <>
-        {bookingList?.map((currentBooking: any) => (
-          <Fragment key={currentBooking._id}>
-            {/* Main row */}
-            <tr
-              className={`cursor-pointer ${getStatusBgColour(currentBooking.status)}`}
-              onClick={() => toggleRow(currentBooking._id)}
-            >
-              <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
-                <div className="flex items-center">
-                  <img
-                    src={currentBooking.dress?.images[0]}
-                    alt={currentBooking.dress?.name ?? ""}
-                    className="h-11 w-11 rounded-full cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setUserModalOpen(true);
-                      setSelectedUser(currentBooking.user?.[0]);
-                    }}
-                  />
-                  <div className="ml-4">
-                    <div>{currentBooking.dress?.name}</div>
-                    <div className="text-gray-500">
-                      {currentBooking.dress?.brand}
-                    </div>
-                  </div>
-                </div>
-              </td>
+        {bookingList?.map((currentBooking: any) => {
+          const primaryItem = currentBooking.items[0];
+          const additionalItems = currentBooking.items.slice(1);
 
-              <td className="px-3 py-5 text-sm">
-                <div className="font-medium">
-                  {currentBooking.user[0]?.name}
-                </div>
-                <div className="text-gray-500">
-                  {currentBooking.user[0]?.email}
-                </div>
-              </td>
-
-              <td className="px-3 py-5 text-sm text-gray-500">
-                {dayjs(currentBooking.dateBooked).format("MMMM D, YYYY")}
-              </td>
-
-              <td className="px-3 py-5 text-sm text-gray-500">
-                {currentBooking.size}
-              </td>
-
-              <td className="px-3 py-5 text-sm">
-                {/* <span
-                  className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
-                    currentBooking,
-                  )}`}
-                >
-                  {currentBooking.status}
-                </span> */}
-                <Dropdown
-                  bookingId={currentBooking._id}
-                  initialStatus={currentBooking.status}
-                />
-              </td>
-
-              <td className="px-3 py-5 text-right text-sm font-medium">
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    title="Edit booking"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBookingToEdit(currentBooking);
-                      setEditModalOpen(true);
-                    }}
-                    className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                  >
-                    <PencilSquareIcon className="h-5 w-5" />
-                    <span className="sr-only">Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    title="Delete booking"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBookingToDelete(currentBooking);
-                      setDeleteModalOpen(true);
-                    }}
-                    className="rounded-md p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                    <span className="sr-only">Delete</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-
-            {/* EXPANDED CONTENT ROW */}
-            {expandedBookingId === currentBooking._id && (
-              <tr>
-                <td colSpan={7} className="bg-gray-50 p-6">
-                  {/* ----- Put your SlideOver content here ----- */}
-
-                  <div className="flex space-x-6">
+          return (
+            <Fragment key={currentBooking._id}>
+              {/* Main row */}
+              <tr
+                className={`cursor-pointer ${getStatusBgColour(currentBooking.status)}`}
+                onClick={() => toggleRow(currentBooking._id)}
+              >
+                <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
+                  <div className="flex items-center">
                     <img
-                      src={currentBooking.dress?.images[0]}
-                      alt={currentBooking.dress?.name ?? ""}
-                      className="h-40 w-40 rounded-lg object-cover cursor-zoom-in transition-transform hover:scale-105"
+                      src={primaryItem?.dress?.images[0]}
+                      alt={primaryItem?.dress?.name ?? ""}
+                      className="h-11 w-11 rounded-full cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openEnlargedImage(
-                          currentBooking.dress?.images[0],
-                          currentBooking.dress?.name,
-                        );
+                        setUserModalOpen(true);
+                        setSelectedUser(currentBooking.user?.[0]);
                       }}
                     />
-
-                    <div className="space-y-4 flex-1">
-                      <h3 className="font-semibold text-gray-900">
-                        {currentBooking.dress?.name}
-                      </h3>
-
-                      <p className="text-sm">{currentBooking.dress?.brand}</p>
-
-                      <p>
-                        <span className="font-medium">Booked by:</span>{" "}
-                        {currentBooking.user?.[0]?.name}
-                      </p>
-
-                      <p>
-                        <span className="font-medium">Delivery:</span>{" "}
-                        {currentBooking.deliveryType}
-                      </p>
-
-                      <p>
-                        <span className="font-medium">Address:</span>{" "}
-                        {currentBooking.address.apartment
-                          ? `${currentBooking.address.apartment}/${currentBooking.address.address}`
-                          : currentBooking.address.address}
-                        {", "}
-                        {currentBooking.address.city},{" "}
-                        {currentBooking.address.country},{" "}
-                        {currentBooking.address.postCode}
-                      </p>
+                    <div className="ml-4">
+                      <div>{primaryItem?.dress?.name}</div>
+                      <div className="text-gray-500">
+                        {primaryItem?.dress?.brand}
+                      </div>
                     </div>
+                  </div>
+
+                  {additionalItems.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                      {additionalItems.map((item: any) => (
+                        <div key={item._id} className="flex items-center">
+                          <img
+                            src={item.dress?.images?.[0]}
+                            alt={item.dress?.name ?? ""}
+                            className="h-11 w-11 rounded-full cursor-pointer"
+                          />
+                          <div className="ml-4">
+                            <div>{item.dress?.name}</div>
+                            <div className="text-gray-500">
+                              {item.dress?.brand}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </td>
+
+                <td className="px-3 py-5 text-sm text-gray-500">
+                  <div>{primaryItem?.size}</div>
+                  {additionalItems.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                      {additionalItems.map((item: any) => (
+                        <div key={item._id}>{item.size}</div>
+                      ))}
+                    </div>
+                  )}
+                </td>
+
+                <td className="px-3 py-5 text-sm">
+                  <div className="font-medium">
+                    {currentBooking.user[0]?.name}
+                  </div>
+                  <div className="text-gray-500">
+                    {currentBooking.user[0]?.email}
+                  </div>
+                </td>
+
+                <td className="px-3 py-5 text-sm text-gray-500">
+                  {dayjs(primaryItem?.dateBooked).format("MMMM D, YYYY")}
+                </td>
+
+                <td className="px-3 py-5 text-sm">
+                  <Dropdown
+                    bookingId={currentBooking._id}
+                    initialStatus={currentBooking.status}
+                  />
+                </td>
+
+                <td className="px-3 py-5 text-right text-sm font-medium">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      title="Edit booking"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBookingToEdit(currentBooking);
+                        setEditModalOpen(true);
+                      }}
+                      className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                    >
+                      <PencilSquareIcon className="h-5 w-5" />
+                      <span className="sr-only">Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      title="Delete booking"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBookingToDelete(currentBooking);
+                        setDeleteModalOpen(true);
+                      }}
+                      className="rounded-md p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                      <span className="sr-only">Delete</span>
+                    </button>
                   </div>
                 </td>
               </tr>
-            )}
-          </Fragment>
-        ))}
+
+              {/* EXPANDED CONTENT ROW — full detail for every item in this order */}
+              {expandedBookingId === currentBooking._id && (
+                <tr>
+                  <td colSpan={7} className="bg-gray-50 p-6">
+                    <div className="space-y-6">
+                      {currentBooking.items.map((item: any, index: number) => (
+                        <div
+                          key={item._id ?? index}
+                          className={`flex space-x-6 ${index > 0 ? "border-t border-gray-200 pt-6" : ""}`}
+                        >
+                          <img
+                            src={item.dress?.images?.[0]}
+                            alt={item.dress?.name ?? ""}
+                            className="h-40 w-40 rounded-lg object-cover cursor-zoom-in transition-transform hover:scale-105"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEnlargedImage(
+                                item.dress?.images?.[0],
+                                item.dress?.name,
+                              );
+                            }}
+                          />
+
+                          <div className="space-y-4 flex-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {item.dress?.name}
+                            </h3>
+
+                            <p className="text-sm">{item.dress?.brand}</p>
+
+                            {index === 0 && (
+                              <p>
+                                <span className="font-medium">Booked by:</span>{" "}
+                                {currentBooking.user?.[0]?.name}
+                              </p>
+                            )}
+
+                            <p>
+                              <span className="font-medium">Size:</span>{" "}
+                              {item.size}
+                            </p>
+
+                            <p>
+                              <span className="font-medium">Date booked:</span>{" "}
+                              {dayjs(item.dateBooked).format("MMMM D, YYYY")}
+                            </p>
+
+                            <p>
+                              <span className="font-medium">Delivery:</span>{" "}
+                              {item.deliveryType}
+                            </p>
+
+                            {item.address && (
+                              <p>
+                                <span className="font-medium">Address:</span>{" "}
+                                {item.address.apartment
+                                  ? `${item.address.apartment}/${item.address.address}`
+                                  : item.address.address}
+                                {", "}
+                                {item.address.city}, {item.address.country},{" "}
+                                {item.address.postCode}
+                              </p>
+                            )}
+
+                            {item.instructions && (
+                              <p>
+                                <span className="font-medium">
+                                  Instructions:
+                                </span>{" "}
+                                {item.instructions}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          );
+        })}
       </>
     );
   };
@@ -654,7 +739,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <EmailBookingsModal
         isOpen={emailModalOpen}
         setOpen={setEmailModalOpen}
-        bookings={filteredThisWeekBookings}
+        lineItems={thisWeekLineItems}
         onSent={(message) =>
           setToast({ message, variant: ToastVariant.SUCCESS, show: true })
         }
@@ -665,9 +750,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <DownloadBookingsModal
         isOpen={downloadModalOpen}
         setOpen={setDownloadModalOpen}
-        bookings={filteredThisWeekBookings}
-        onDownload={(bookingsToExport) =>
-          downloadCSV(convertToCSV(extractObj(bookingsToExport) ?? []), "bookings.csv")
+        lineItems={thisWeekLineItems}
+        onDownload={(lineItemsToExport) =>
+          downloadCSV(
+            convertToCSV(extractObj(lineItemsToExport) ?? []),
+            "bookings.csv",
+          )
         }
       />
       <BookingHistoryModal
@@ -676,7 +764,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         title={historyTarget?.title ?? ""}
         subtitle={historyTarget?.subtitle}
         image={historyTarget?.image}
-        bookings={historyTarget?.bookings ?? []}
+        lineItems={historyTarget?.lineItems ?? []}
       />
       <DeleteBookingModal
         isOpen={deleteModalOpen}
@@ -832,9 +920,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
-            <Button onClick={() => setDownloadModalOpen(true)}>
-              Download
-            </Button>
+            <Button onClick={() => setDownloadModalOpen(true)}>Download</Button>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -884,6 +970,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Size
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         User
                       </th>
                       <th
@@ -891,12 +983,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
                         Date Booked
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Size
                       </th>
                       <th
                         scope="col"

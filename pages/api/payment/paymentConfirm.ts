@@ -4,7 +4,7 @@ import { getBookingsByPaymentIntent } from "../../../lib/db/booking-dao";
 import OrderReceiptEmail from "@/components/Emails/OrderReceipt";
 import { Resend } from "resend";
 import { getDress } from "../../../sanity/sanity.query";
-import { Booking, OrderReceipt, User } from "../../../common/types";
+import { Booking, OrderReceipt } from "../../../common/types";
 import { removeItemFromCartByFields } from "../../../lib/db/cart-dao";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
@@ -30,64 +30,64 @@ export default async function handler(
       const result = await BookingSchema.updateMany(filter, update);
 
       const bookings = await getBookingsByPaymentIntent(intent);
+      const booking = bookings[0] as Booking | undefined;
 
       if (result.modifiedCount === 0) {
         res
           .status(200)
-          .json({ message: "No bookings updated", booking: bookings });
+          .json({ message: "No bookings updated", booking });
         return;
       }
 
-      for (const booking of bookings) {
-        await removeItemFromCartByFields(
-          booking.userId,
-          booking.dressId,
-          booking.dateBooked,
-          booking.size,
-        );
+      if (booking) {
+        for (const item of booking.items) {
+          await removeItemFromCartByFields(
+            booking.userId,
+            item.dressId,
+            item.dateBooked,
+            item.size,
+          );
+        }
+
+        await sendEmailConfirmation(booking);
       }
 
-      await sendEmailConfirmation(bookings);
-
-      res.status(200).json({ message: "Update successful", booking: bookings });
+      res.status(200).json({ message: "Update successful", booking });
     } catch (err) {
       res.status(404).json({ message: "Update Error", error: err });
     }
   }
 }
 
-// TODO: Implement email confirmation functionality
-export async function sendEmailConfirmation(bookings: Booking[]) {
+export async function sendEmailConfirmation(booking: Booking) {
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-  // Ensure we have dress data (booking may not include populated dress)
-  // Build an array of OrderReceipt objects from bookings
-  const orderReceipt: OrderReceipt[] = await Promise.all(
-    bookings.map(async (booking) => {
-      const dress = (booking as any).dress || (await getDress(booking.dressId));
+  let user: any = null;
+  if ((booking as any).user && (booking as any).user.length > 0) {
+    user = (booking as any).user[0];
+  } else if (booking.userId) {
+    user = await UserSchema.findById(booking.userId).lean();
+  }
 
-      let user: any = null;
-      if ((booking as any).user && (booking as any).user.length > 0) {
-        user = (booking as any).user[0];
-      } else if (booking.userId) {
-        user = await UserSchema.findById(booking.userId).lean();
-      }
+  const orderReceipt: OrderReceipt[] = await Promise.all(
+    booking.items.map(async (item) => {
+      const dress = (item as any).dress || (await getDress(item.dressId));
 
       return {
-        _id: booking._id,
-        dressId: booking.dressId,
+        _id: item._id,
+        dressId: item.dressId,
         name: user?.name ?? "",
-        dateBooked: booking.dateBooked,
-        blockOutPeriod: booking.blockOutPeriod,
-        price: booking.price,
-        address: booking.address,
+        dateBooked: item.dateBooked,
+        blockOutPeriod: item.blockOutPeriod,
+        price: item.price,
+        address: item.address,
         billingAddress: booking.billingAddress,
-        deliveryType: String(booking.deliveryType),
+        deliveryType: String(item.deliveryType),
         tracking: booking.tracking ?? "",
         isShipped: booking.isShipped ?? false,
         isReturned: booking.isReturned ?? false,
         paymentIntent: booking.paymentIntent,
-        size: booking.size,
+        size: item.size,
         dressName: dress?.name ?? "",
         dressDescription: dress?.description ?? "",
         dressImage: dress?.images?.[0] ?? "",
@@ -95,19 +95,13 @@ export async function sendEmailConfirmation(bookings: Booking[]) {
     }),
   );
 
-  // Determine recipient: try first booking's user email, fallback to configured address
-  const firstUser: User | null =
-    (bookings[0] as any).user?.[0] || (bookings[0] as any).userId
-      ? await UserSchema.findById((bookings[0] as any).userId).lean()
-      : null;
-
-  if (!firstUser || !firstUser.email) {
+  if (!user || !user.email) {
     console.error("No user found for email confirmation");
     return;
   }
 
-  const toEmail = firstUser?.email
-    ? [firstUser.email]
+  const toEmail = user?.email
+    ? [user.email]
     : [process.env.RESEND_EMAIL_ADDRESS as string];
 
   await resend.emails.send({

@@ -44,9 +44,9 @@ const HeroSection = () => {
                 </h1>
                 <p className="mt-4 text-xl text-gray-500">
                   Hire your dream dress for a fraction of the retail price.
-                  Whether it's a ball, birthday, wedding, formal or special
-                  event, we've got hundreds of designer dresses ready to rent
-                  across New Zealand.
+                  Whether it&apos;s a ball, birthday, wedding, formal or special
+                  event, we&apos;ve got hundreds of designer dresses ready to
+                  rent across New Zealand.
                 </p>
               </div>
               <div>

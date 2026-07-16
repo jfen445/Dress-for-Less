@@ -22,42 +22,44 @@ export default async function handler(
 
     const bookings = await getBookingsByUser(userId);
 
-    const userBookings = bookings as Booking[];
+    const userBookings = bookings as unknown as Booking[];
 
     const orderHistory: OrderHistory[] = [];
 
     for (const booking of userBookings) {
-      try {
-        const dress = await getDress(booking.dressId);
-        const order: OrderHistory = {
-          _id: booking._id,
-          dressId: booking.dressId,
-          userId: booking.userId,
-          dateBooked: booking.dateBooked,
-          blockOutPeriod: booking.blockOutPeriod,
-          price: dress.price,
-          address: booking.address
-            ? {
-                address: booking.address.address,
-                suburb: booking.address.suburb,
-                city: booking.address.city,
-                country: booking.address.country,
-                postCode: booking.address.postCode,
-              }
-            : undefined,
-          deliveryType: booking.deliveryType,
-          tracking: booking.tracking,
-          isShipped: booking.isShipped,
-          isReturned: booking.isReturned,
-          size: booking.size,
-          dressName: dress.name,
-          dressDescription: dress.description,
-          dressImages: dress.images[0],
-        };
+      for (const item of booking.items) {
+        try {
+          const dress = await getDress(item.dressId);
+          const order: OrderHistory = {
+            _id: (item as any)._id ?? booking._id,
+            dressId: item.dressId,
+            userId: booking.userId,
+            dateBooked: item.dateBooked,
+            blockOutPeriod: item.blockOutPeriod,
+            price: dress.price,
+            address: item.address
+              ? {
+                  address: item.address.address,
+                  suburb: item.address.suburb,
+                  city: item.address.city,
+                  country: item.address.country,
+                  postCode: item.address.postCode,
+                }
+              : undefined,
+            deliveryType: String(item.deliveryType),
+            tracking: booking.tracking,
+            isShipped: booking.isShipped,
+            isReturned: booking.isReturned,
+            size: item.size,
+            dressName: dress.name,
+            dressDescription: dress.description,
+            dressImages: dress.images[0],
+          };
 
-        orderHistory.push(order);
-      } catch (error) {
-        continue;
+          orderHistory.push(order);
+        } catch (error) {
+          continue;
+        }
       }
     }
 

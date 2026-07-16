@@ -1,4 +1,4 @@
-import { Booking } from "../../../../common/types";
+import { Booking, BookingItem } from "../../../../common/types";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 
 export type SchedulerEventColor =
@@ -25,6 +25,10 @@ export interface BookingCalendarEvent {
   color: SchedulerEventColor;
 }
 
+// Each status gets its own SchedulerEventColor token so the CSS variable
+// overrides in styles/global.css (scoped to .booking-status-calendar) can
+// give it an exact color without colliding with another status. The token
+// names themselves don't need to semantically match — see global.css.
 const statusColor = (status: BookingStatus): SchedulerEventColor => {
   switch (status) {
     case BookingStatus.BeingReturned:
@@ -34,21 +38,22 @@ const statusColor = (status: BookingStatus): SchedulerEventColor => {
     case BookingStatus.Drying:
       return "lime";
     case BookingStatus.Packed:
-      return "orange";
+      return "green";
     case BookingStatus.Delayed:
       return "red";
     case BookingStatus.Reparing:
       return "grey";
     case BookingStatus.Returned:
-      return "green";
+      return "teal";
     case BookingStatus.NA:
-    default:
       return "grey";
+    default:
+      return "indigo";
   }
 };
 
-const formatAddress = (booking: Booking) => {
-  const address = booking.address;
+const formatAddress = (item: BookingItem) => {
+  const address = item.address;
   if (!address) return "";
   const line = address.apartment
     ? `${address.apartment}/${address.address}`
@@ -56,18 +61,21 @@ const formatAddress = (booking: Booking) => {
   return `${line}, ${address.city}, ${address.country}, ${address.postCode}`;
 };
 
-export function mapBookingToEvent(booking: Booking): BookingCalendarEvent {
-  const start = booking.dateBooked;
-  const end = booking.dateBooked;
+export function mapBookingItemToEvent(
+  booking: Booking,
+  item: BookingItem,
+): BookingCalendarEvent {
+  const start = item.dateBooked;
+  const end = item.dateBooked;
   const userName = booking.user?.[0]?.name ?? "Unknown";
-  const dressName = booking.dress?.name ?? "Dress";
-  const address = formatAddress(booking);
+  const dressName = item.dress?.name ?? "Dress";
+  const address = formatAddress(item);
 
   return {
-    id: booking._id ?? `${booking.dressId}-${booking.dateBooked}`,
-    title: `${dressName} — ${userName} (${booking.deliveryType})`,
+    id: item._id ?? `${booking._id}-${item.dressId}-${item.dateBooked}`,
+    title: `${dressName} — ${userName} (${item.deliveryType})`,
     description: [
-      `Size: ${booking.size}`,
+      `Size: ${item.size}`,
       `Status: ${booking.status}`,
       address ? `Address: ${address}` : null,
     ]

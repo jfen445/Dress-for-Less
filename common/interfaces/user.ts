@@ -17,25 +17,30 @@ export interface ICart {
   size: string;
 }
 
-export interface IBooking {
+export interface IBookingItem {
   dressId: string;
-  userId: string;
   dateBooked: string;
   blockOutPeriod: string[];
-  price: number;
-  address: IAddress;
-  billingAddress: IAddress;
   deliveryType: string;
+  address?: IAddress;
+  size: String;
+  price: number;
+  instructions?: string;
+}
+
+export interface IBooking {
+  userId: string;
+  items: IBookingItem[];
+  totalPrice: number;
+  billingAddress: IAddress;
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
   paymentIntent: string;
   paymentSuccess: boolean;
-  size: String;
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
-  instructions?: string;
 }
 
 export interface IAddress {

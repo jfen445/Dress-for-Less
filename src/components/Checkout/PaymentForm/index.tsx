@@ -16,7 +16,7 @@ import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
 import { useCartContext } from "@/context/CartContext";
-import { buildBookingList } from "../buildBookingList";
+import { buildBooking } from "../buildBookingList";
 
 interface IPaymentForm {
   clientSecret?: any;
@@ -66,7 +66,7 @@ const PaymentForm = ({
       return;
     }
 
-    const bookingList = buildBookingList(
+    const booking = buildBooking(
       products,
       deliveryOption,
       userInfo?._id ?? "",
@@ -78,7 +78,7 @@ const PaymentForm = ({
 
     let isValid = true;
 
-    await checkValidBooking(bookingList)
+    await checkValidBooking(booking)
       .then()
       .catch((err) => {
         console.error(err);
@@ -117,7 +117,7 @@ const PaymentForm = ({
         }
 
         if (paymentIntent && paymentIntent.status === "succeeded") {
-          await createBooking(bookingList, paymentIntent.id, selectedCouponIds)
+          await createBooking(booking, paymentIntent.id, selectedCouponIds)
             .then(() => {
               router.push("/order-success?paymentIntent=" + paymentIntent.id);
             })

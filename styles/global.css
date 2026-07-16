@@ -23,3 +23,142 @@ body {
     text-wrap: balance;
   }
 }
+
+/*
+ * @mui/x-scheduler only accepts a fixed set of named event colors
+ * (SchedulerEventColor). To match the admin Bookings status colors exactly,
+ * each BookingStatus is assigned one of those tokens (see statusColor() in
+ * src/components/Admin/BookingsCalendar/mapBookingToEvent.ts) and its CSS
+ * variables are overridden here with the equivalent Tailwind hex values.
+ * Applied globally (not scoped to the calendar container) because the
+ * "+N more" popover renders via an MUI Portal into document.body, outside
+ * the calendar's DOM subtree — this is the only @mui/x-scheduler usage in
+ * the app, so an unscoped override is safe.
+ */
+[data-palette="purple"] {
+  /* BeingReturned */
+  --event-main: #9333ea;
+  --event-surface-subtle: #f3e8ff;
+  --event-surface-subtle-hover: #e9d5ff;
+  --event-on-surface-subtle-primary: #581c87;
+  --event-on-surface-subtle-secondary: #7e22ce;
+  --event-surface-bold: #e9d5ff;
+  --event-surface-bold-hover: #d8b4fe;
+  --event-on-surface-bold: #581c87;
+  --event-surface-accent: #9333ea;
+  --event-surface-selected: #9333ea;
+  --event-surface-selected-hover: #7e22ce;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="blue"] {
+  /* Washing */
+  --event-main: #2563eb;
+  --event-surface-subtle: #dbeafe;
+  --event-surface-subtle-hover: #bfdbfe;
+  --event-on-surface-subtle-primary: #1e3a8a;
+  --event-on-surface-subtle-secondary: #1d4ed8;
+  --event-surface-bold: #bfdbfe;
+  --event-surface-bold-hover: #93c5fd;
+  --event-on-surface-bold: #1e3a8a;
+  --event-surface-accent: #2563eb;
+  --event-surface-selected: #2563eb;
+  --event-surface-selected-hover: #1d4ed8;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="lime"] {
+  /* Drying */
+  --event-main: #65a30d;
+  --event-surface-subtle: #ecfccb;
+  --event-surface-subtle-hover: #d9f99d;
+  --event-on-surface-subtle-primary: #365314;
+  --event-on-surface-subtle-secondary: #4d7c0f;
+  --event-surface-bold: #d9f99d;
+  --event-surface-bold-hover: #bef264;
+  --event-on-surface-bold: #365314;
+  --event-surface-accent: #65a30d;
+  --event-surface-selected: #65a30d;
+  --event-surface-selected-hover: #4d7c0f;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="green"] {
+  /* Packed */
+  --event-main: #15803d;
+  --event-surface-subtle: #bbf7d0;
+  --event-surface-subtle-hover: #86efac;
+  --event-on-surface-subtle-primary: #052e16;
+  --event-on-surface-subtle-secondary: #166534;
+  --event-surface-bold: #86efac;
+  --event-surface-bold-hover: #4ade80;
+  --event-on-surface-bold: #052e16;
+  --event-surface-accent: #15803d;
+  --event-surface-selected: #15803d;
+  --event-surface-selected-hover: #166534;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="red"] {
+  /* Delayed */
+  --event-main: #dc2626;
+  --event-surface-subtle: #fee2e2;
+  --event-surface-subtle-hover: #fecaca;
+  --event-on-surface-subtle-primary: #7f1d1d;
+  --event-on-surface-subtle-secondary: #b91c1c;
+  --event-surface-bold: #fecaca;
+  --event-surface-bold-hover: #fca5a5;
+  --event-on-surface-bold: #7f1d1d;
+  --event-surface-accent: #dc2626;
+  --event-surface-selected: #dc2626;
+  --event-surface-selected-hover: #b91c1c;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="grey"] {
+  /* Reparing (stone) */
+  --event-main: #57534e;
+  --event-surface-subtle: #f5f5f4;
+  --event-surface-subtle-hover: #e7e5e4;
+  --event-on-surface-subtle-primary: #1c1917;
+  --event-on-surface-subtle-secondary: #44403c;
+  --event-surface-bold: #e7e5e4;
+  --event-surface-bold-hover: #d6d3d1;
+  --event-on-surface-bold: #1c1917;
+  --event-surface-accent: #57534e;
+  --event-surface-selected: #57534e;
+  --event-surface-selected-hover: #44403c;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="teal"] {
+  /* Returned */
+  --event-main: #0d9488;
+  --event-surface-subtle: #ccfbf1;
+  --event-surface-subtle-hover: #99f6e4;
+  --event-on-surface-subtle-primary: #134e4a;
+  --event-on-surface-subtle-secondary: #0f766e;
+  --event-surface-bold: #99f6e4;
+  --event-surface-bold-hover: #5eead4;
+  --event-on-surface-bold: #134e4a;
+  --event-surface-accent: #0d9488;
+  --event-surface-selected: #0d9488;
+  --event-surface-selected-hover: #0f766e;
+  --event-on-surface-selected: #ffffff;
+}
+
+[data-palette="indigo"] {
+  /* NA (gray) */
+  --event-main: #4b5563;
+  --event-surface-subtle: #f3f4f6;
+  --event-surface-subtle-hover: #e5e7eb;
+  --event-on-surface-subtle-primary: #111827;
+  --event-on-surface-subtle-secondary: #374151;
+  --event-surface-bold: #e5e7eb;
+  --event-surface-bold-hover: #d1d5db;
+  --event-on-surface-bold: #111827;
+  --event-surface-accent: #4b5563;
+  --event-surface-selected: #4b5563;
+  --event-surface-selected-hover: #374151;
+  --event-on-surface-selected: #ffffff;
+}
