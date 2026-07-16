@@ -1,7 +1,7 @@
-import dayjs from "dayjs";
+import { auckland } from "./timezone";
 
 export function calculateBlockOutPeriod(dateBooked: string): string[] {
-  const date = dayjs(dateBooked);
+  const date = auckland.toZone(dateBooked);
   const day = date.day(); // 0=Sun, 5=Fri, 6=Sat, 1-4=Mon-Thu
 
   if (day === 5) {

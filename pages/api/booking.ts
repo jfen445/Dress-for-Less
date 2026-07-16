@@ -13,7 +13,8 @@ import { Booking, BookingAvailability } from "../../common/types";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
-import dayjs from "dayjs";
+import { auckland } from "../../lib/utils/timezone";
+import { isCouponActive } from "../../lib/utils/couponRules";
 import { createUser, findUser } from "../../lib/db/user-dao";
 import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
@@ -104,13 +105,10 @@ export default async function handler(
           .json({ message: "One or more coupons could not be found" });
       }
 
-      const now = dayjs().toISOString();
+      const now = auckland.now().toISOString();
       const invalidCoupon = coupons.find(
         (c) =>
-          c.userId.toString() !== user._id.toString() ||
-          c.isRedeemed ||
-          c.expiryDate < now ||
-          c.startDate > now,
+          c.userId.toString() !== user._id.toString() || !isCouponActive(c, now),
       );
 
       if (invalidCoupon) {

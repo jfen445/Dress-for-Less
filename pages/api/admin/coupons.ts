@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import dayjs from "dayjs";
+import { auckland } from "../../../lib/utils/timezone";
 import { dbConnect } from "../../../lib/db/db";
 import {
   getAllCoupons,
@@ -65,7 +65,7 @@ export default async function handler(
         .json({ message: "discountAmount must be a positive number" });
     }
 
-    const start = dayjs(startDate);
+    const start = auckland.toZone(startDate);
     if (!start.isValid()) {
       return res.status(400).json({ message: "startDate must be a valid date" });
     }

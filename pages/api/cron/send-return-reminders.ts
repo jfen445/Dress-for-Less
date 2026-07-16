@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { Resend } from "resend";
+import { auckland } from "../../../lib/utils/timezone";
 import { dbConnect } from "../../../lib/db/db";
 import { getBookingsByDateRange } from "../../../lib/db/booking-dao";
 import { getDress } from "../../../sanity/sanity.query";
@@ -21,15 +22,12 @@ export default async function handler(
 
   await dbConnect();
 
-  const today = new Date();
-  const lastSunday = new Date(today);
-  lastSunday.setDate(today.getDate() - 1);
-  const lastMonday = new Date(today);
-  lastMonday.setDate(today.getDate() - 7);
+  const now = auckland.now();
+  const lastSunday = now.subtract(1, "day");
+  const lastMonday = now.subtract(7, "day");
 
-  const toDateString = (d: Date) => d.toISOString().split("T")[0];
-  const startDate = toDateString(lastMonday);
-  const endDate = toDateString(lastSunday);
+  const startDate = lastMonday.format("YYYY-MM-DD");
+  const endDate = lastSunday.format("YYYY-MM-DD");
 
   const bookings = await getBookingsByDateRange(startDate, endDate);
 

@@ -1,12 +1,6 @@
-import dayjs, { Dayjs } from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+import { Dayjs } from "dayjs";
+import { auckland } from "./timezone";
 import { DeliveryType } from "../../common/enums/DeliveryType";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const NZ_TIMEZONE = "Pacific/Auckland";
 
 export const SHIPPING_FEE = 15;
 
@@ -16,7 +10,7 @@ export function hasDeliveryItem(
   return items.some((item) => item.deliveryType === DeliveryType.Delivery);
 }
 
-export function isBeforeTuesday8pm(now: Dayjs = dayjs().tz(NZ_TIMEZONE)): boolean {
+export function isBeforeTuesday8pm(now: Dayjs = auckland.now()): boolean {
   const day = now.day(); // 0 (Sun) - 6 (Sat)
   const daysSinceMonday = (day + 6) % 7;
   const tuesday8pm = now
@@ -32,7 +26,7 @@ export function isBeforeTuesday8pm(now: Dayjs = dayjs().tz(NZ_TIMEZONE)): boolea
 
 export function isDateWithinCurrentWeekend(
   dateStr: string,
-  now: Dayjs = dayjs().tz(NZ_TIMEZONE),
+  now: Dayjs = auckland.now(),
 ): boolean {
   const day = now.day(); // 0 (Sun) - 6 (Sat)
   const daysUntilSunday = day === 0 ? 0 : 7 - day;
@@ -43,14 +37,14 @@ export function isDateWithinCurrentWeekend(
     .second(59)
     .millisecond(999);
 
-  const date = dayjs.tz(dateStr, NZ_TIMEZONE);
+  const date = auckland.toZone(dateStr);
 
   return !date.isBefore(now) && !date.isAfter(currentSunday);
 }
 
 export function isDeliveryAllowedForDate(
   dateStr: string,
-  now: Dayjs = dayjs().tz(NZ_TIMEZONE),
+  now: Dayjs = auckland.now(),
 ): boolean {
   return !(
     isDateWithinCurrentWeekend(dateStr, now) && !isBeforeTuesday8pm(now)

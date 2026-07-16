@@ -4,7 +4,7 @@ import * as React from "react";
 import { Booking, UserType } from "../../common/types";
 import { getAllBookings } from "@/api/admin";
 import { BookingStatus } from "../../common/enums/BookingStatus";
-import dayjs from "dayjs";
+import { auckland } from "../../lib/utils/timezone";
 
 interface AdminBookingCtx {
   bookings: Booking[];
@@ -29,44 +29,32 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
   const getBookings = async () => {
     setIsLoading(true);
     await getAllBookings().then((data) => {
-      var d = new Date();
-      d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
-      const now = new Date();
+      const now = auckland.now();
+      const currentSunday = (
+        now.day() === 0 ? now : now.add(7 - now.day(), "day")
+      ).endOf("day");
+      // now.day(): Sunday = 0, Monday = 1, ..., Saturday = 6
+      const previousMonday = now.subtract((now.day() + 6) % 7, "day").startOf("day");
 
-      const currentSunday = new Date(now);
-      if (now.getDay() !== 0) {
-        currentSunday.setDate(now.getDate() + (7 - now.getDay()));
-      }
-      currentSunday.setHours(23, 59, 59, 999);
       const primaryDate = (booking: Booking) => booking.items[0]?.dateBooked;
+      const dateOf = (booking: Booking) => auckland.toZone(primaryDate(booking));
 
       const sortedBookings = (data.data as unknown as Booking[]).sort(
-        function (a, b) {
-          return dayjs(primaryDate(a)).diff(dayjs(primaryDate(b)));
-        },
+        (a, b) => dateOf(a).diff(dateOf(b)),
       );
 
-      const previousMonday = (d = dayjs()) => {
-        // dayjs().day(): Sunday = 0, Monday = 1, ..., Saturday = 6
-        const daysToSubtract = (d.day() + 6) % 7; // 0 when Monday, 1 when Tuesday, ..., 6 when Sunday
-        return d.subtract(daysToSubtract, "day").startOf("day");
-      };
-
-      const thisWeek = sortedBookings.filter(
-        (booking) =>
-          dayjs(primaryDate(booking)).isBefore(dayjs(currentSunday)) &&
-          dayjs(primaryDate(booking)).isAfter(dayjs(previousMonday())),
-      );
+      const thisWeek = sortedBookings.filter((booking) => {
+        const date = dateOf(booking);
+        return date.isBefore(currentSunday) && date.isAfter(previousMonday);
+      });
 
       const allBookings = sortedBookings.filter((booking) =>
-        dayjs(primaryDate(booking)).isAfter(dayjs(currentSunday)),
+        dateOf(booking).isAfter(currentSunday),
       );
 
       const pastBookings = sortedBookings
-        .filter((booking) =>
-          dayjs(primaryDate(booking)).isBefore(previousMonday()),
-        )
-        .sort((a, b) => dayjs(primaryDate(b)).diff(dayjs(primaryDate(a))));
+        .filter((booking) => dateOf(booking).isBefore(previousMonday))
+        .sort((a, b) => dateOf(b).diff(dateOf(a)));
       setPastBookings(pastBookings);
 
       setThisWeekBookings(thisWeek);

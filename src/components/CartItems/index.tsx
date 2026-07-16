@@ -2,6 +2,7 @@ import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import React from "react";
 import { CartItemType } from "../../../common/types";
 import dayjs from "dayjs";
+import { auckland } from "../../../lib/utils/timezone";
 import { useRouter } from "next/router";
 import Button from "../Button";
 
@@ -130,8 +131,7 @@ const CartItems = ({
   };
 
   const isInvalidDate = (day: string | number | Date) => {
-    const currentDate = dayjs(new Date());
-    return dayjs(currentDate).isAfter(dayjs(new Date(day)));
+    return auckland.now().isAfter(auckland.toZone(day));
   };
 
   return (

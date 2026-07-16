@@ -3,18 +3,14 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
 import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
 import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
 import { useParams } from "next/navigation";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
 // Converts any stored date string (plain YYYY-MM-DD or UTC ISO) to NZ date string
 const toNZDate = (s: string) =>
-  s.length === 10 ? s : dayjs(s).tz("Pacific/Auckland").format("YYYY-MM-DD");
+  s.length === 10 ? s : dayjs(s).tz(AUCKLAND_TZ).format("YYYY-MM-DD");
 
 interface ICanlender {
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
@@ -107,7 +103,7 @@ const Calendar = ({
       return true;
     }
 
-    const today = dayjs();
+    const today = auckland.now();
     const startOfWeek = today.startOf("week").add(1, "day"); // Move to Monday
     const endOfWeek = today.startOf("week").add(7, "day"); // Move to Sunday (inclusive)
 
@@ -125,7 +121,7 @@ const Calendar = ({
     // Disable days Monday - Thursday
     if (
       !(date.day() === 0 || date.day() === 5 || date.day() === 6) ||
-      dayjs(Date.now()).diff(date) > 0
+      auckland.now().diff(date) > 0
     ) {
       return true;
     }
@@ -184,7 +180,7 @@ const Calendar = ({
       return true;
     }
 
-    const today = dayjs();
+    const today = auckland.now();
     const startOfWeek = today.startOf("week").add(1, "day"); // Move to Monday
     const endOfWeek = today.startOf("week").add(7, "day"); // Move to Sunday (inclusive)
 
@@ -227,7 +223,7 @@ const Calendar = ({
           key={`${selectedSize}-${blockOuts.map((b) => b._id).join(",")}`}
           onChange={(e) => selectDate(e)}
           shouldDisableDate={(date) => getDisabledDates(date)}
-          timezone="Pacific/Auckland"
+          timezone={AUCKLAND_TZ}
           slotProps={{
             day: {
               sx: {

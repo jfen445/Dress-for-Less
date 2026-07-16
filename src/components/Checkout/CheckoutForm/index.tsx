@@ -18,7 +18,9 @@ import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import {
   hasDeliveryItem,
   isDeliveryAllowedForDate,
+  isDateWithinCurrentWeekend,
 } from "../../../../lib/utils/deliveryRules";
+import { auckland } from "../../../../lib/utils/timezone";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
@@ -186,24 +188,14 @@ const CheckoutForm = () => {
   };
 
   const isThisWeekendBookings = () => {
-    const dates = products.map((item) => item.dateBooked);
-    const now = new Date();
-
-    // Get current week's Sunday at 11:59:59.999 PM
-    const currentSunday = new Date(now);
-    if (now.getDay() !== 0) {
-      currentSunday.setDate(now.getDate() + (7 - now.getDay()));
-    }
-    currentSunday.setHours(23, 59, 59, 999);
-
-    return dates.some((dateStr) => {
-      const date = new Date(dateStr);
-      return date >= now && date <= currentSunday;
-    });
+    const now = auckland.now();
+    return products.some((item) =>
+      isDateWithinCurrentWeekend(item.dateBooked, now),
+    );
   };
 
   const isBookingValid = () => {
-    const currentDayOfWeek = new Date().getDay();
+    const currentDayOfWeek = auckland.now().day();
 
     const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
 

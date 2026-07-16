@@ -1,5 +1,6 @@
 import React from "react";
 import dayjs, { Dayjs } from "dayjs";
+import { AUCKLAND_TZ } from "../../../../lib/utils/timezone";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
@@ -258,7 +259,7 @@ const AdminTryOnAvailability = () => {
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateCalendar
                   onChange={(d) => selectDate(d)}
-                  timezone="Pacific/Auckland"
+                  timezone={AUCKLAND_TZ}
                   slots={{ day: DayWithIndicators }}
                   slotProps={
                     {
