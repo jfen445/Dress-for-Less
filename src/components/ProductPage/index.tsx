@@ -23,7 +23,6 @@ import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
-import { isDeliveryAllowedForDate } from "../../../lib/utils/deliveryRules";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
@@ -57,16 +56,6 @@ const Product = () => {
   React.useEffect(() => {
     if (isAddedToCart) setIsAddedToCart(false);
   }, [selectedDate, size, deliveryType, isAddedToCart]);
-
-  React.useEffect(() => {
-    if (
-      selectedDate &&
-      deliveryType === DeliveryType.Delivery &&
-      !isDeliveryAllowedForDate(selectedDate)
-    ) {
-      setDeliveryType(DeliveryType.Pickup);
-    }
-  }, [selectedDate, deliveryType]);
 
   React.useEffect(() => {
     if (params) {
@@ -222,8 +211,10 @@ const Product = () => {
   };
 
   const DeliverySelector = () => {
-    const deliveryDisabled =
-      !!selectedDate && !isDeliveryAllowedForDate(selectedDate);
+    const selectDeliveryType = (type: DeliveryType) => {
+      setDeliveryType(type);
+      setSelectedDate("");
+    };
 
     return (
       <div className="mt-4">
@@ -236,8 +227,7 @@ const Product = () => {
             variant={
               deliveryType === DeliveryType.Delivery ? "primary" : "tertiary"
             }
-            disabled={deliveryDisabled}
-            onClick={() => setDeliveryType(DeliveryType.Delivery)}
+            onClick={() => selectDeliveryType(DeliveryType.Delivery)}
           >
             Delivery
           </Button>
@@ -246,17 +236,11 @@ const Product = () => {
             variant={
               deliveryType === DeliveryType.Pickup ? "primary" : "tertiary"
             }
-            onClick={() => setDeliveryType(DeliveryType.Pickup)}
+            onClick={() => selectDeliveryType(DeliveryType.Pickup)}
           >
             {"Pickup (Auckland)"}
           </Button>
         </div>
-        {deliveryDisabled && (
-          <p className="mt-1 text-xs text-gray-500">
-            Delivery is no longer available for this weekend&apos;s dates.
-            Please select pickup, or choose a different date.
-          </p>
-        )}
         <p className="mt-4 text-xs text-gray-500">
           {deliveryType === DeliveryType.Delivery
             ? "Select the date of your event, your dress will arrive 1-2 days prior to this."

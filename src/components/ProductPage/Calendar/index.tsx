@@ -238,7 +238,7 @@ const Calendar = ({
     <div className="mt-10 ">
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <DateCalendar
-          key={`${selectedSize}-${blockOuts.map((b) => b._id).join(",")}`}
+          key={`${selectedSize}-${deliveryType}-${blockOuts.map((b) => b._id).join(",")}`}
           onChange={(e) => selectDate(e)}
           shouldDisableDate={(date) => getDisabledDates(date)}
           timezone={AUCKLAND_TZ}

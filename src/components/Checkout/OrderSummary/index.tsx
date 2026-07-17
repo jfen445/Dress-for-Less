@@ -14,6 +14,7 @@ import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
 import { hasDeliveryItem, SHIPPING_FEE } from "../../../../lib/utils/deliveryRules";
+import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const OrderSummary = () => {
   const { userInfo } = useUserContext();
@@ -50,6 +51,7 @@ const OrderSummary = () => {
             dress.dateBooked = item.dateBooked;
             dress.cartItemId = item._id;
             dress.size = item.size;
+            dress.deliveryType = item.deliveryType;
             return dress as CartItemType;
           }),
         );
@@ -79,6 +81,12 @@ const OrderSummary = () => {
 
   const formatDate = (date: string) => {
     return dayjs(date).format("D MMMM YYYY");
+  };
+
+  const formatDeliveryType = (deliveryType: DeliveryType) => {
+    return deliveryType === DeliveryType.Pickup
+      ? "Pickup (Auckland)"
+      : "Delivery";
   };
 
   const sumPrices = (): string => {
@@ -125,6 +133,9 @@ const OrderSummary = () => {
                   <p className="text-gray-500">{product.size}</p>
                   <p className="text-gray-500">
                     {formatDate(product.dateBooked)}
+                  </p>
+                  <p className="text-gray-500">
+                    {formatDeliveryType(product.deliveryType)}
                   </p>
                 </div>
                 <p className="flex-none text-base font-medium">
