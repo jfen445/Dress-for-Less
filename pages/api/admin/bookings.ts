@@ -12,7 +12,7 @@ import { AccountType } from "../../../common/enums/AccountType";
 import { BookingSchema } from "../../../lib/db/schema";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { checkBlockOut } from "../../../lib/db/blockout-dao";
-import { calculateBlockOutPeriod } from "../../../lib/utils/blockOutPeriod";
+import { calculateBookingWindow } from "../../../lib/utils/bookingWindow";
 
 export default async function handler(
   req: NextApiRequest,
@@ -106,7 +106,7 @@ export default async function handler(
         .json({ message: "This date is already fully booked" });
 
     const price = parseInt(dress.price);
-    const blockOutPeriod = calculateBlockOutPeriod(dateBooked);
+    const { blockedFrom, blockedUntil } = calculateBookingWindow(dateBooked, deliveryType);
 
     const booking = new BookingSchema({
       userId,
@@ -114,7 +114,8 @@ export default async function handler(
         {
           dressId,
           dateBooked,
-          blockOutPeriod,
+          blockedFrom,
+          blockedUntil,
           deliveryType,
           address: address ?? {},
           size,

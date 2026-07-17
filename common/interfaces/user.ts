@@ -22,7 +22,8 @@ export interface ICart {
 export interface IBookingItem {
   dressId: string;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
   deliveryType: string;
   address?: IAddress;
   size: String;

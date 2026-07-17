@@ -35,7 +35,8 @@ export default async function handler(
             dressId: item.dressId,
             userId: booking.userId,
             dateBooked: item.dateBooked,
-            blockOutPeriod: item.blockOutPeriod,
+            blockedFrom: item.blockedFrom,
+            blockedUntil: item.blockedUntil,
             price: dress.price,
             address: item.address
               ? {

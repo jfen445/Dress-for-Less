@@ -13,7 +13,8 @@ export function buildBooking(
   const items: BookingItem[] = products.map((item) => ({
     dressId: item._id,
     dateBooked: item.dateBooked,
-    blockOutPeriod: [],
+    blockedFrom: "",
+    blockedUntil: "",
     deliveryType: item.deliveryType,
     address: {
       company: address?.company ?? "",

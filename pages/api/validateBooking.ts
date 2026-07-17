@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../lib/db/db";
 import { checkDuplicateBooking } from "../../lib/db/booking-dao";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
+import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
 import { Booking } from "../../common/types";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
@@ -33,13 +34,20 @@ export default async function handler(
 
       const blockedOut = await checkBlockOut(item.dressId, item.size as string, item.dateBooked);
 
-      if (checkBooking.length > 0 || blockedOut) {
+      const available = await isBookingAvailable(
+        item.dressId,
+        item.size as string,
+        item.dateBooked,
+        item.deliveryType,
+      );
+
+      if (checkBooking.length > 0 || blockedOut || !available) {
         errorResponse.push(item.dressId);
       }
     }
 
     if (errorResponse.length > 0) {
-      res.status(404).json({
+      return res.status(404).json({
         message:
           "One or more dresses have already been booked for the selected day.",
         body: errorResponse,

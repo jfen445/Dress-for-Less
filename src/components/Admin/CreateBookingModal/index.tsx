@@ -378,6 +378,7 @@ const CreateBookingModal = ({
                 selectedSize={size}
                 dressId={dressId}
                 isAdmin={true}
+                deliveryType={deliveryType}
               />
               {dateBooked && (
                 <p className="text-sm text-gray-500 mt-1">

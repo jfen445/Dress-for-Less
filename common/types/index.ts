@@ -103,7 +103,8 @@ export type BookingItem = {
   _id?: string;
   dressId: string;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
   deliveryType: DeliveryType;
   address?: Address;
   size: String;
@@ -141,7 +142,8 @@ export type BookingAvailability = {
   dressId: string;
   size: String;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
 };
 
 export type Sizes = {
@@ -179,7 +181,8 @@ export type OrderHistory = {
   dressId: string;
   userId: string;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
   price: number;
   address?: Address;
   deliveryType: string;
@@ -224,7 +227,8 @@ export type OrderReceipt = {
   dressId: string;
   name: string;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
   price: number;
   address?: Address;
   billingAddress?: Address;

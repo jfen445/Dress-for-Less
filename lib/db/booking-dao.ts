@@ -13,7 +13,8 @@ export async function getBookingAvailabilityByDress(dressId: String) {
         dressId: "$items.dressId",
         size: "$items.size",
         dateBooked: "$items.dateBooked",
-        blockOutPeriod: "$items.blockOutPeriod",
+        blockedFrom: "$items.blockedFrom",
+        blockedUntil: "$items.blockedUntil",
       },
     },
   ]);

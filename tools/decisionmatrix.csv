@@ -1,0 +1,18 @@
+Dress for Less – Booking Availability Decision Matrix,,,,,,,,,
+"Use this table to determine the earliest event date that can be offered after an existing booking, with separate outcomes for the next customer choosing pickup or postage.",,,,,,,,,
+,,,,,,,,,
+Booking A event,Booking A method,Initial dispatch / collection,Return due,Expected back,Clean / pack,Ready again,Earliest Booking B event – Pickup,Earliest Booking B event – Postage,Reason / operational note
+Monday,Post,Dispatch previous Thursday,Tuesday by 1pm,Wednesday,Thursday,Friday,Friday,Wednesday,Following weekend is blocked for postage; Friday re-dispatch supports a Wednesday event.
+Monday,Pickup,Collect Sunday or Monday,Tuesday by 8pm,Tuesday,Wednesday,Thursday,Thursday,Monday,Thursday dispatch supports the following Monday event.
+Tuesday,Post,Dispatch previous Thursday preferred; Friday fallback,Wednesday by 1pm,Thursday,Friday,Saturday,Saturday,Thursday,Conservative postal reopening: next dispatch Monday for a Thursday event.
+Tuesday,Pickup,Collect Monday or Tuesday,Wednesday by 8pm,Wednesday,Thursday,Friday,Friday,Wednesday,Ready Friday; Friday dispatch supports a Wednesday event.
+Wednesday,Post,Dispatch previous Friday,Thursday by 1pm,Friday at earliest,Saturday,Sunday,Sunday,Thursday,Block the following weekend completely because the postal return timing is risky.
+Wednesday,Pickup,Collect Tuesday or Wednesday,Thursday by 8pm,Thursday,Friday,Saturday,Saturday,Thursday,"Returns locally Thursday, so it can be prepared Friday and collected Saturday."
+Thursday,Post,Dispatch Monday,Friday by 1pm,Monday,Tuesday,Wednesday,Wednesday,Friday,Wednesday dispatch returns the dress to the standard weekend postal cycle.
+Thursday,Pickup,Collect Wednesday or Thursday,Friday by 8pm,Friday,Saturday,Sunday,Sunday,Thursday,"Next postal dispatch is Monday, supporting a Thursday event."
+Friday,Post,Dispatch Wednesday,Monday by 1pm,Tuesday,Tuesday,Wednesday,Wednesday,Friday,Current proven weekend cycle; same-day processing on Tuesday remains unchanged.
+Friday,Pickup,Collect Thursday or Friday,Saturday by 8pm,Saturday,Sunday,Monday,Monday,Thursday,Ready Monday; Monday dispatch supports a Thursday event.
+Saturday,Post,Dispatch Wednesday,Monday by 1pm,Tuesday,Tuesday,Wednesday,Wednesday,Friday,Current proven weekend cycle.
+Saturday,Pickup,Collect Friday or Saturday,Sunday by 8pm,Sunday,Monday,Tuesday,Tuesday,Friday,Ready Tuesday; Wednesday dispatch supports a Friday event.
+Sunday,Post,Dispatch Wednesday,Monday by 1pm,Tuesday,Tuesday,Wednesday,Wednesday,Friday,Current proven weekend cycle.
+Sunday,Pickup,Collect Saturday or Sunday,Monday by 8pm,Monday,Tuesday,Wednesday,Wednesday,Friday,Ready Wednesday; Wednesday dispatch supports a Friday event.

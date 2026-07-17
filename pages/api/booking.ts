@@ -20,7 +20,8 @@ import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
 import { getDress } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
-import { calculateBlockOutPeriod } from "../../lib/utils/blockOutPeriod";
+import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
+import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
 import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
@@ -150,13 +151,20 @@ export default async function handler(
         item.dateBooked,
       );
 
-      if (checkBooking.length > 0) {
+      const available = await isBookingAvailable(
+        item.dressId,
+        item.size as string,
+        item.dateBooked,
+        item.deliveryType,
+      );
+
+      if (checkBooking.length > 0 || !available) {
         errorResponse.push(item.dressId);
       }
     }
 
     if (errorResponse.length > 0) {
-      res.status(404).json({
+      return res.status(404).json({
         message: "This dressed has already been booked the the selected day. ",
         body: errorResponse,
       });
@@ -165,7 +173,7 @@ export default async function handler(
     const bookingItems: IBookingItem[] = items.map((item) => ({
       dressId: item.dressId,
       dateBooked: item.dateBooked,
-      blockOutPeriod: calculateBlockOutPeriod(item.dateBooked),
+      ...calculateBookingWindow(item.dateBooked, item.deliveryType),
       deliveryType: String(item.deliveryType),
       address: item.address && {
         company: item.address?.company ?? "",
@@ -295,7 +303,7 @@ export default async function handler(
       }
 
       const price = parseInt(dress.price);
-      const blockOutPeriod = calculateBlockOutPeriod(dateBooked);
+      const { blockedFrom, blockedUntil } = calculateBookingWindow(dateBooked, deliveryType);
       const existingItem = existingBooking.items[0];
 
       const updatedBooking = await BookingSchema.findByIdAndUpdate(
@@ -306,7 +314,8 @@ export default async function handler(
             _id: existingItem?._id,
             dressId,
             dateBooked,
-            blockOutPeriod,
+            blockedFrom,
+            blockedUntil,
             deliveryType,
             address: address ?? {},
             size,

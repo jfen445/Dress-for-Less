@@ -4,15 +4,15 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
-import { isPickupAllowedForDate } from "../../../../lib/utils/deliveryRules";
+import {
+  isDeliveryAllowedForDate,
+  isPickupAllowedForDate,
+} from "../../../../lib/utils/deliveryRules";
+import { isDateBlockedByExistingBooking } from "../../../../lib/utils/bookingWindow";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
 import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
 import { useParams } from "next/navigation";
-
-// Converts any stored date string (plain YYYY-MM-DD or UTC ISO) to NZ date string
-const toNZDate = (s: string) =>
-  s.length === 10 ? s : dayjs(s).tz(AUCKLAND_TZ).format("YYYY-MM-DD");
 
 interface ICanlender {
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
@@ -77,76 +77,45 @@ const Calendar = ({
     );
     if (isBlockedOut) return true;
 
+    // No past dates.
+    if (auckland.now().diff(date) > 0) {
+      return true;
+    }
+
+    const today = auckland.now();
+    const sixMonthsFromNow = today.add(6, "month");
+    if (date.isAfter(sixMonthsFromNow, "day")) {
+      return true;
+    }
+
+    const method = deliveryType ?? DeliveryType.Delivery;
+
+    // Notice-from-today: has to clear the 8pm-day-before-dispatch cutoff for
+    // whichever method the shopper has selected.
+    const isAllowedForDate =
+      method === DeliveryType.Pickup
+        ? isPickupAllowedForDate(dateStr)
+        : isDeliveryAllowedForDate(dateStr);
+    if (!isAllowedForDate) {
+      return true;
+    }
+
+    // Conflicts with an existing booking of the same dress+size, counted
+    // against that size's stock.
     const sizeStock = readObject(sizes, selectedSize.toLowerCase());
 
     const relevantBookings = excludeBookingId
       ? bookings?.filter((b) => b._id !== excludeBookingId)
       : bookings;
 
-    // Disable if this date falls within any booking's block-out period (covers the full Fri-Sun window).
     const blockedCount =
       relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
-          booking.blockOutPeriod?.some((bp) => toNZDate(bp) === dateStr),
+          isDateBlockedByExistingBooking(dateStr, method, booking),
       ).length ?? 0;
 
     if (blockedCount >= sizeStock) {
-      return true;
-    }
-
-    // Fall back to checking dateBooked directly for bookings without a blockOutPeriod.
-    const days = relevantBookings?.filter(
-      (booking) =>
-        !booking.blockOutPeriod?.length &&
-        toNZDate(booking.dateBooked) === dateStr &&
-        booking.size == selectedSize,
-    );
-
-    if (days && days.length >= sizeStock) {
-      return true;
-    }
-
-    const today = auckland.now();
-    const startOfWeek = today.startOf("week").add(1, "day"); // Move to Monday
-    const endOfWeek = today.startOf("week").add(7, "day"); // Move to Sunday (inclusive)
-
-    const isThisWeek =
-      !date.isBefore(startOfWeek, "day") && !date.isAfter(endOfWeek, "day");
-
-    const isAfterWednesday = today.day() > 3;
-    const isWeekend = date.day() === 5 || date.day() === 6 || date.day() === 0;
-
-    // Disable Friday - Sunday only for this week if today is after Wednesday.
-    // Pickup is exempt — it has its own, more precise 2-day/8pm lead-time rule below.
-    if (
-      deliveryType !== DeliveryType.Pickup &&
-      isThisWeek &&
-      isAfterWednesday &&
-      isWeekend
-    ) {
-      return true;
-    }
-
-    // Disable days Monday - Thursday
-    if (
-      !(date.day() === 0 || date.day() === 5 || date.day() === 6) ||
-      auckland.now().diff(date) > 0
-    ) {
-      return true;
-    }
-
-    // Disable if date is more than 6 months in the future
-    const sixMonthsFromNow = today.add(6, "month");
-    if (date.isAfter(sixMonthsFromNow, "day")) {
-      return true;
-    }
-
-    // Pickup needs at least 2 days' lead time (before 8pm Auckland 2 days prior).
-    if (
-      deliveryType === DeliveryType.Pickup &&
-      !isPickupAllowedForDate(dateStr)
-    ) {
       return true;
     }
 
@@ -174,27 +143,16 @@ const Calendar = ({
       ? bookings?.filter((b) => b._id !== excludeBookingId)
       : bookings;
 
-    // Disable if this date falls within any booking's block-out period (covers the full Fri-Sun window).
+    const method = deliveryType ?? DeliveryType.Delivery;
+
     const blockedCount =
       relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
-          booking.blockOutPeriod?.some((bp) => toNZDate(bp) === dateStr),
+          isDateBlockedByExistingBooking(dateStr, method, booking),
       ).length ?? 0;
 
     if (blockedCount >= sizeStock) {
-      return true;
-    }
-
-    // Fall back to checking dateBooked directly for bookings without a blockOutPeriod.
-    const days = relevantBookings?.filter(
-      (booking) =>
-        !booking.blockOutPeriod?.length &&
-        toNZDate(booking.dateBooked) === dateStr &&
-        booking.size == selectedSize,
-    );
-
-    if (days && days.length >= sizeStock) {
       return true;
     }
 
