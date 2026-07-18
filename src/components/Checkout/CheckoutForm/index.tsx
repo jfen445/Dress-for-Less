@@ -14,6 +14,7 @@ import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
 import AddressForm from "./AddressForm";
 import BillingForm from "./BillingForm";
+import TermsModal from "../TermsModal";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import {
   hasDeliveryItem,
@@ -51,6 +52,7 @@ const CheckoutForm = () => {
     React.useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
   const [termsError, setTermsError] = React.useState<boolean>(false);
+  const [termsModalOpen, setTermsModalOpen] = React.useState<boolean>(false);
   const [deliveryError, setDeliveryError] = React.useState<string>();
 
   const email =
@@ -347,7 +349,13 @@ const CheckoutForm = () => {
                   <div className="mt-6 flex items-center">
                     <input
                       checked={termsAccepted}
-                      onChange={() => setTermsAccepted(!termsAccepted)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setTermsModalOpen(true);
+                        } else {
+                          setTermsAccepted(false);
+                        }
+                      }}
                       id="terms-and-conditions"
                       name="terms-and-conditions"
                       type="checkbox"
@@ -430,6 +438,11 @@ const CheckoutForm = () => {
           </div>
         </section>
       )}
+      <TermsModal
+        isOpen={termsModalOpen}
+        setOpen={setTermsModalOpen}
+        onConfirm={() => setTermsAccepted(true)}
+      />
     </>
   );
 };
