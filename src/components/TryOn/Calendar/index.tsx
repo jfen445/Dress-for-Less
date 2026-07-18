@@ -5,12 +5,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
 import { getAvailableTryOnDates } from "@/api/tryOnBooking";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 interface ITryOnCalendar {
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
@@ -31,7 +27,7 @@ const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
   };
 
   const disabledDays = (date: dayjs.Dayjs) => {
-    const today = dayjs().startOf("day");
+    const today = auckland.now().startOf("day");
 
     if (date.isBefore(today, "day")) {
       return true;
@@ -55,7 +51,7 @@ const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
         <DateCalendar
           onChange={(e) => selectDate(e)}
           shouldDisableDate={disabledDays}
-          timezone="Pacific/Auckland"
+          timezone={AUCKLAND_TZ}
           slotProps={{
             day: {
               sx: {

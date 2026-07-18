@@ -1,5 +1,6 @@
 import React from "react";
 import dayjs, { Dayjs } from "dayjs";
+import { AUCKLAND_TZ } from "../../../../lib/utils/timezone";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
@@ -258,7 +259,7 @@ const AdminTryOnAvailability = () => {
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateCalendar
                   onChange={(d) => selectDate(d)}
-                  timezone="Pacific/Auckland"
+                  timezone={AUCKLAND_TZ}
                   slots={{ day: DayWithIndicators }}
                   slotProps={
                     {
@@ -338,13 +339,14 @@ const AdminTryOnAvailability = () => {
                         onChange={(e) => setPendingTime(e.target.value)}
                         className={inputCls}
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={handleAddPendingTime}
                         className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                       >
                         Add
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -352,15 +354,16 @@ const AdminTryOnAvailability = () => {
                     <label className={labelCls}>Quick add</label>
                     <div className="flex flex-wrap gap-2">
                       {TRY_ON_TIME_SLOTS.map((slot) => (
-                        <button
+                        <Button
                           key={slot}
                           type="button"
+                          variant="ghost"
                           onClick={() => addTime(slot)}
                           disabled={timeSlots.includes(slot)}
-                          className="rounded-full px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-full px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed"
                         >
                           {formatTryOnTimeSlot(slot)}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -379,14 +382,15 @@ const AdminTryOnAvailability = () => {
                             className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-secondary-pink"
                           >
                             {formatTryOnTimeSlot(slot)}
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               onClick={() => removeTime(slot)}
                               aria-label={`Remove ${slot}`}
                               className="text-secondary-pink hover:text-rose-900"
                             >
                               ×
-                            </button>
+                            </Button>
                           </span>
                         ))}
                       </div>
@@ -398,13 +402,14 @@ const AdminTryOnAvailability = () => {
                       {isSubmitting ? "Saving…" : "Save"}
                     </Button>
                     {hasExistingAvailability && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={handleRemove}
                         className="text-red-500 hover:text-red-700 text-xs font-medium"
                       >
                         Remove this date
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

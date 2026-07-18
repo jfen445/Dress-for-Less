@@ -6,7 +6,7 @@ import { CartItemType, CartType } from "../../../common/types";
 import Link from "next/link";
 import CartItems from "../CartItems";
 import Spinner from "../Spinner";
-import dayjs from "dayjs";
+import { auckland } from "../../../lib/utils/timezone";
 import Modal from "../Modal";
 import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
@@ -70,6 +70,7 @@ const Cart = () => {
             stretch: dress.stretch,
             dateBooked: item.dateBooked,
             cartItemId,
+            deliveryType: item.deliveryType,
           } as CartItemType;
         })
         .filter((product): product is CartItemType => Boolean(product));
@@ -189,8 +190,7 @@ const Cart = () => {
   };
 
   const isInvalidDate = (day: string | number | Date) => {
-    const currentDate = dayjs(new Date());
-    return dayjs(currentDate).isAfter(dayjs(new Date(day)));
+    return auckland.now().isAfter(auckland.toZone(day));
   };
 
   const isAuthenticated = status === "authenticated";

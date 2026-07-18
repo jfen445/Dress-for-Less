@@ -117,6 +117,11 @@ const Orders = () => {
                       {product.dressName}
                     </a>
                   </h3>
+                  {product.orderNumber && (
+                    <p className="text-sm text-gray-500">
+                      Order: {product.orderNumber}
+                    </p>
+                  )}
                   <p className="truncate text-sm text-gray-500">
                     <span>Booked for: {formatDate(product.dateBooked)}</span>{" "}
                     <span aria-hidden="true" className="mx-1 text-gray-400">

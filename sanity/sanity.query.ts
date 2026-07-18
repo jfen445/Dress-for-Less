@@ -35,6 +35,7 @@ export async function getFaq() {
     _id,
     question,
     answer,
+    section,
   }`
   );
 }

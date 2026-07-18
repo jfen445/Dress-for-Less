@@ -52,31 +52,35 @@ export default async function handler(
 
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
+  const recipients = bookings.flatMap((booking) =>
+    booking.items.map((item: any) => ({ booking, item })),
+  );
+
   const results = await Promise.allSettled(
-    bookings.map(async (booking) => {
-      const dress = await getDress(booking.dressId);
+    recipients.map(async ({ booking, item }) => {
+      const dress = await getDress(item.dressId);
       const recipient = booking.user?.[0];
       if (!recipient?.email) throw new Error(`No email for booking ${booking._id}`);
 
       await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
         to: [recipient.email],
-        subject: getBookingInstructionsSubject(booking.deliveryType),
+        subject: getBookingInstructionsSubject(item.deliveryType),
         react: BookingInstructionsEmail({
           name: recipient.name ?? "",
           dressName: dress?.name ?? "",
           dressImage: dress?.images?.[0] ?? "",
-          size: booking.size,
-          dateBooked: booking.dateBooked,
-          deliveryType: booking.deliveryType,
-          address: booking.address,
+          size: item.size,
+          dateBooked: item.dateBooked,
+          deliveryType: item.deliveryType,
+          address: item.address,
         }),
       });
     }),
   );
 
   const failed = results.filter((r) => r.status === "rejected").length;
-  const sent = bookings.length - failed;
+  const sent = recipients.length - failed;
 
   if (failed > 0 && sent === 0)
     return res.status(500).json({ message: "Failed to send all emails" });

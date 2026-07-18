@@ -75,18 +75,19 @@ const EditBookingModal = ({
 
   React.useEffect(() => {
     if (!isOpen || !booking) return;
-    setDressId(booking.dressId);
-    setSize(booking.size as string);
+    const item = booking.items[0];
+    setDressId(item?.dressId ?? "");
+    setSize((item?.size as string) ?? "");
     setCustomerMode("existing");
     setUserId(booking.userId);
     setNewUserEmail("");
     setNewUserFirstName("");
     setNewUserLastName("");
-    setDateBooked(booking.dateBooked);
-    setDeliveryType(booking.deliveryType);
-    setAddress(booking.address ?? emptyAddress());
+    setDateBooked(item?.dateBooked ?? "");
+    setDeliveryType(item?.deliveryType ?? DeliveryType.Delivery);
+    setAddress(item?.address ?? emptyAddress());
     setBillingAddress(booking.billingAddress);
-    setInstructions(booking.instructions ?? "");
+    setInstructions(item?.instructions ?? "");
     setSameAsShipping(false);
     setStatus(booking.status);
   }, [booking, isOpen]);
@@ -228,9 +229,12 @@ const EditBookingModal = ({
 
   return (
     <Modal isOpen={isOpen} setOpen={setOpen}>
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">
         Edit Booking
       </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        {booking?.orderNumber ? `Order: ${booking.orderNumber}` : " "}
+      </p>
       <form
         onSubmit={handleSubmit}
         className="space-y-6 max-h-[75vh] overflow-y-auto pr-1"
@@ -383,6 +387,7 @@ const EditBookingModal = ({
               dressId={dressId}
               isAdmin={true}
               excludeBookingId={booking?._id}
+              deliveryType={deliveryType}
             />
             {dateBooked && (
               <p className="text-sm text-gray-500 mt-1">
@@ -487,13 +492,14 @@ const EditBookingModal = ({
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setOpen(false)}
             className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving…" : "Save changes"}
           </Button>

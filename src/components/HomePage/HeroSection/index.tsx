@@ -40,12 +40,13 @@ const HeroSection = () => {
             <div className="relative mx-auto max-w-7xl px-4 sm:static sm:px-6 lg:px-8">
               <div className="sm:max-w-lg">
                 <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                  Dress for Less has landed here
+                  Designer dress rentals, made affordable.
                 </h1>
                 <p className="mt-4 text-xl text-gray-500">
-                  This year, our new summer collection will shelter you from the
-                  harsh elements of a world that does not care if you live or
-                  die.
+                  Hire your dream dress for a fraction of the retail price.
+                  Whether it&apos;s a ball, birthday, wedding, formal or special
+                  event, we&apos;ve got hundreds of designer dresses ready to
+                  rent across New Zealand.
                 </p>
               </div>
               <div>

@@ -1,4 +1,5 @@
 import { BookingStatus } from "../enums/BookingStatus";
+import { DeliveryType } from "../enums/DeliveryType";
 
 export interface IUser {
   mongoID?: string;
@@ -15,27 +16,35 @@ export interface ICart {
   userId: string;
   dateBooked: string;
   size: string;
+  deliveryType: DeliveryType;
+}
+
+export interface IBookingItem {
+  dressId: string;
+  dateBooked: string;
+  blockedFrom: string;
+  blockedUntil: string;
+  deliveryType: string;
+  address?: IAddress;
+  size: String;
+  price: number;
+  instructions?: string;
 }
 
 export interface IBooking {
-  dressId: string;
   userId: string;
-  dateBooked: string;
-  blockOutPeriod: string[];
-  price: number;
-  address: IAddress;
+  items: IBookingItem[];
+  totalPrice: number;
   billingAddress: IAddress;
-  deliveryType: string;
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
   paymentIntent: string;
   paymentSuccess: boolean;
-  size: String;
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
-  instructions?: string;
+  orderNumber: string;
 }
 
 export interface IAddress {

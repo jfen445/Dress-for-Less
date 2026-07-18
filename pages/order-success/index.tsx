@@ -3,22 +3,18 @@ import Stripe from "stripe";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/router";
 import { confirmBooking } from "@/api/booking";
-import { Booking, DressType } from "../../common/types";
+import { Booking, BookingItem, DressType } from "../../common/types";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 import { useCartContext } from "@/context/CartContext";
-
-const deliveryMethods = [
-  { id: "delivery", title: "Full delivery" },
-  { id: "pickup", title: "Full pick up" },
-  { id: "pickup/delivery", title: "Pick up and delivery return" },
-  { id: "delivery/pickup", title: "Delivery and drop off" },
-];
+import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
 
 const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY as string);
+
+type LineItem = { item: BookingItem; dress: DressType | null };
 
 const OrderSuccess = ({
   searchParams,
@@ -30,24 +26,15 @@ const OrderSuccess = ({
   const { refreshCart } = useCartContext();
   const { getDressWithId } = useGlobalContext();
   const { userInfo } = useUserContext();
-  const [bookings, setBookings] = React.useState<Booking[]>([]);
+  const [booking, setBooking] = React.useState<Booking | null>(null);
   const [deliveryCost, setDeliveryCost] = React.useState<number>(0);
-  const [bookingDresses, setBookingDresses] = React.useState<DressType[]>([]);
+  const [lineItems, setLineItems] = React.useState<LineItem[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
-  const price = React.useCallback(() => {
-    const totalPrice = bookings.reduce(
-      (partialSum, { price }) => partialSum + price,
-      0,
-    );
 
-    return Number(totalPrice).toString();
-  }, [bookings]);
-
-  const deliveryType = React.useCallback(() => {
-    if (bookings.length == 0) return "";
-    return bookings[0].deliveryType;
-    // return String(delivery).charAt(0).toUpperCase() + String(delivery).slice(1);
-  }, [bookings]);
+  const subtotal = React.useMemo(
+    () => booking?.items.reduce((sum, item) => sum + item.price, 0) ?? 0,
+    [booking],
+  );
 
   const paymentIntent = router.query.paymentIntent;
 
@@ -56,17 +43,11 @@ const OrderSuccess = ({
       if (paymentIntent) {
         await confirmBooking(paymentIntent.toString())
           .then(async (data) => {
-            const bookingData = data.data.booking as Booking[];
-            setBookings(bookingData);
-            const deliveryStatus = bookingData[0].deliveryType;
-
-            if (deliveryStatus == DeliveryType.Delivery) {
-              setDeliveryCost(15);
-            } else if (deliveryStatus == DeliveryType.Pickup) {
-              setDeliveryCost(0);
-            } else {
-              setDeliveryCost(7.5);
-            }
+            const bookingData = data.data.booking as Booking;
+            setBooking(bookingData);
+            setDeliveryCost(
+              hasDeliveryItem(bookingData.items) ? SHIPPING_FEE : 0,
+            );
           })
           .catch((err) => {
             console.log(err);
@@ -81,47 +62,31 @@ const OrderSuccess = ({
   React.useEffect(() => {
     refreshCart();
 
-    if (bookings.length === 0) return;
+    if (!booking || booking.items.length === 0) return;
 
-    async function fetchDressDetails(bookings: Booking[]) {
-      const dressDetails = await Promise.all(
-        bookings.map(async (booking) => {
+    async function fetchDressDetails(items: BookingItem[]) {
+      return Promise.all(
+        items.map(async (item) => {
           try {
-            return getDressWithId(booking.dressId);
+            return { item, dress: await getDressWithId(item.dressId) };
           } catch (error) {
             console.error(
-              `Error fetching dress with ID ${booking.dressId}:`,
+              `Error fetching dress with ID ${item.dressId}:`,
               error,
             );
-            return null; // Handle errors gracefully
+            return { item, dress: null };
           }
         }),
       );
-
-      return dressDetails.filter((detail) => detail !== null); // Remove null values if any
     }
 
-    fetchDressDetails(bookings).then((results) => {
-      setBookingDresses(results as unknown as DressType[]);
+    fetchDressDetails(booking.items).then((results) => {
+      setLineItems(results as unknown as LineItem[]);
       setIsLoading(false);
     });
-  }, [bookings, getDressWithId, refreshCart]);
+  }, [booking, getDressWithId, refreshCart]);
 
-  function addStringNumbers(num1: string, num2: number) {
-    // Convert strings to numbers
-    const number1 = parseFloat(num1);
-    const number2 = num2;
-
-    // Check if conversion is successful
-    if (isNaN(number1) || isNaN(number2)) {
-      return 0; // or handle the error as needed
-    }
-
-    // Perform the addition
-    return number1 + number2;
-  }
-
-  const bookingDetails = bookings[0];
+  const firstItem = booking?.items[0];
 
   return (
     <>
@@ -143,19 +108,21 @@ const OrderSuccess = ({
                 A confirmation will be sent to your email shortly.
               </p>
 
-              {/* <dl className="mt-12 text-sm font-medium">
-                <dt className="text-gray-900">Tracking number</dt>
-                <dd className="mt-2 text-indigo-600">51547878755545848512</dd>
-              </dl> */}
+              {booking?.orderNumber && (
+                <dl className="mt-12 text-sm font-medium">
+                  <dt className="text-gray-900">Order number</dt>
+                  <dd className="mt-2 text-indigo-600">{booking.orderNumber}</dd>
+                </dl>
+              )}
             </div>
 
             <div className="mt-10 border-t border-gray-200">
               <h2 className="sr-only">Your order</h2>
 
               <h3 className="sr-only">Items</h3>
-              {bookingDresses.map((dress, index) => (
+              {lineItems.map(({ item, dress }) => (
                 <div
-                  key={dress._id}
+                  key={item._id ?? item.dressId}
                   className="flex space-x-6 border-b border-gray-200 py-10"
                 >
                   <img
@@ -166,32 +133,28 @@ const OrderSuccess = ({
                   <div className="flex flex-auto flex-col">
                     <div>
                       <h4 className="font-medium text-gray-900">
-                        <a href={`/dresses?id=${dress._id}`}>{dress.name}</a>
+                        <a href={`/dresses?id=${dress?._id}`}>{dress?.name}</a>
                       </h4>
                       <p className="mt-2 text-sm text-gray-600">
-                        {dress.description}
+                        {dress?.description}
                       </p>
                     </div>
                     <div className="mt-6 flex flex-1 items-end">
                       <dl className="flex space-x-4 divide-x divide-gray-200 text-sm sm:space-x-6">
                         <div className="flex">
                           <dt className="font-medium text-gray-900">Size</dt>
-                          <dd className="ml-2 text-gray-700">
-                            {bookings[index].size}
-                          </dd>
+                          <dd className="ml-2 text-gray-700">{item.size}</dd>
                         </div>
                         <div className="flex pl-4 sm:pl-6">
                           <dt className="font-medium text-gray-900">Price</dt>
-                          <dd className="ml-2 text-gray-700">{dress.price}</dd>
+                          <dd className="ml-2 text-gray-700">{dress?.price}</dd>
                         </div>
                         <div className="flex pl-4 sm:pl-6">
                           <dt className="font-medium text-gray-900">
                             Date booked
                           </dt>
                           <dd className="ml-2 text-gray-700">
-                            {dayjs(bookings[index].dateBooked).format(
-                              "DD/MM/YYYY",
-                            )}
+                            {dayjs(item.dateBooked).format("DD/MM/YYYY")}
                           </dd>
                         </div>
                       </dl>
@@ -205,8 +168,8 @@ const OrderSuccess = ({
 
                 <h4 className="sr-only">Addresses</h4>
                 <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
-                  {bookingDetails?.deliveryType !== DeliveryType.Pickup &&
-                    bookingDetails?.address && (
+                  {hasDeliveryItem(booking?.items ?? []) &&
+                    firstItem?.address && (
                       <div>
                         <dt className="font-medium text-gray-900">
                           Shipping address
@@ -214,27 +177,27 @@ const OrderSuccess = ({
                         <dd className="mt-2 text-gray-700">
                           <address className="not-italic">
                             <span className="block">{userInfo?.name}</span>
-                            {bookingDetails.address.company && (
+                            {firstItem.address.company && (
                               <span className="block">
-                                {bookingDetails.address.company}
+                                {firstItem.address.company}
                               </span>
                             )}
                             <span className="block">
-                              {bookingDetails.address.apartment
-                                ? `${bookingDetails.address.apartment}/${bookingDetails.address.address}`
-                                : bookingDetails.address.address}
+                              {firstItem.address.apartment
+                                ? `${firstItem.address.apartment}/${firstItem.address.address}`
+                                : firstItem.address.address}
                             </span>
                             <span className="block">
                               {[
-                                bookingDetails.address.suburb,
-                                bookingDetails.address.city,
-                                bookingDetails.address.postCode,
+                                firstItem.address.suburb,
+                                firstItem.address.city,
+                                firstItem.address.postCode,
                               ]
                                 .filter(Boolean)
                                 .join(" ")}
                             </span>
                             <span className="block">
-                              {bookingDetails.address.country}
+                              {firstItem.address.country}
                             </span>
                           </address>
                         </dd>
@@ -247,41 +210,41 @@ const OrderSuccess = ({
                     <dd className="mt-2 text-gray-700">
                       <address className="not-italic">
                         <span className="block">{userInfo?.name}</span>
-                        {bookingDetails?.billingAddress.company && (
+                        {booking?.billingAddress.company && (
                           <span className="block">
-                            {bookingDetails.billingAddress.company}
+                            {booking.billingAddress.company}
                           </span>
                         )}
                         <span className="block">
-                          {bookingDetails?.billingAddress.apartment
-                            ? `${bookingDetails.billingAddress.apartment}/${bookingDetails.billingAddress.address}`
-                            : bookingDetails?.billingAddress.address}
+                          {booking?.billingAddress.apartment
+                            ? `${booking.billingAddress.apartment}/${booking.billingAddress.address}`
+                            : booking?.billingAddress.address}
                         </span>
                         <span className="block">
                           {[
-                            bookingDetails?.billingAddress.suburb,
-                            bookingDetails?.billingAddress.city,
-                            bookingDetails?.billingAddress.postCode,
+                            booking?.billingAddress.suburb,
+                            booking?.billingAddress.city,
+                            booking?.billingAddress.postCode,
                           ]
                             .filter(Boolean)
                             .join(" ")}
                         </span>
                         <span className="block">
-                          {bookingDetails?.billingAddress.country}
+                          {booking?.billingAddress.country}
                         </span>
                       </address>
                     </dd>
                   </div>
                 </dl>
 
-                {bookingDetails?.instructions && (
+                {firstItem?.instructions && (
                   <dl className="border-t border-gray-200 py-10 text-sm">
                     <div>
                       <dt className="font-medium text-gray-900">
                         Delivery instructions
                       </dt>
                       <dd className="mt-2 text-gray-700">
-                        {bookingDetails.instructions}
+                        {firstItem.instructions}
                       </dd>
                     </div>
                   </dl>
@@ -294,7 +257,7 @@ const OrderSuccess = ({
                       Shipping method
                     </dt>
                     <dd className="mt-2 text-gray-700">
-                      <p>{bookingDetails?.deliveryType}</p>
+                      <p>{firstItem?.deliveryType}</p>
                     </dd>
                   </div>
                 </dl>
@@ -304,19 +267,19 @@ const OrderSuccess = ({
                 <dl className="space-y-6 border-t border-gray-200 pt-10 text-sm">
                   <div className="flex justify-between">
                     <dt className="font-medium text-gray-900">Subtotal</dt>
-                    <dd className="text-gray-700">${price()}</dd>
+                    <dd className="text-gray-700">${subtotal}</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="font-medium text-gray-900">Shipping</dt>
                     <dd className="text-gray-700">${deliveryCost}</dd>
                   </div>
-                  {(bookingDetails?.discountAmount ?? 0) > 0 && (
+                  {(booking?.discountAmount ?? 0) > 0 && (
                     <div className="flex justify-between">
                       <dt className="font-medium text-gray-900">
                         Coupon discount
                       </dt>
                       <dd className="text-gray-700">
-                        -${(bookingDetails?.discountAmount ?? 0).toFixed(2)}
+                        -${(booking?.discountAmount ?? 0).toFixed(2)}
                       </dd>
                     </div>
                   )}
@@ -326,8 +289,7 @@ const OrderSuccess = ({
                       $
                       {Math.max(
                         0,
-                        addStringNumbers(price(), deliveryCost) -
-                          (bookingDetails?.discountAmount ?? 0),
+                        subtotal + deliveryCost - (booking?.discountAmount ?? 0),
                       )}
                     </dd>
                   </div>

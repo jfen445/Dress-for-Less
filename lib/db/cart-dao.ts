@@ -7,13 +7,17 @@ export async function addToCart(cart: CartType) {
     userId: cart.userId,
     dateBooked: cart.dateBooked,
     size: cart.size,
+    deliveryType: cart.deliveryType,
   });
 
   return newCartItem;
 }
 
 export async function getCart(userId: String) {
-  return CartSchema.find({ userId }, "dressId userId dateBooked size");
+  return CartSchema.find(
+    { userId },
+    "dressId userId dateBooked size deliveryType",
+  );
 }
 
 export async function getCartItem(
@@ -24,7 +28,7 @@ export async function getCartItem(
 ) {
   return CartSchema.findOne(
     { userId, dressId, size, dateBooked },
-    "dressId userId dateBooked size"
+    "dressId userId dateBooked size deliveryType"
   );
 }
 

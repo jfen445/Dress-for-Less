@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { auckland } from "../utils/timezone";
 import { TryOnBookingSchema } from "./schema";
 import { createCoupon } from "./coupon-dao";
 import {
@@ -53,7 +53,7 @@ export async function updateTryOnBookingStatus(
 }
 
 export async function grantTryOnCoupon(userId: string, date: string) {
-  const startDate = dayjs(date).startOf("day");
+  const startDate = auckland.startOfDay(date);
   const expiryDate = startDate
     .add(TRY_ON_COUPON_VALID_DAYS, "day")
     .endOf("day");

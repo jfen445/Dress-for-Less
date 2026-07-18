@@ -2,21 +2,24 @@ import React from "react";
 import dayjs from "dayjs";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
-import { Booking } from "../../../../common/types";
+import { BookingLineItem } from "../../../../common/types";
 import { sendBookingEmails } from "@/api/admin";
 
 interface EmailBookingsModalProps {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  bookings: Booking[];
+  lineItems: BookingLineItem[];
   onSent: (message: string) => void;
   onError: (message: string) => void;
 }
 
+const rowKey = ({ booking, item }: BookingLineItem) =>
+  (item._id as string) ?? `${booking._id}-${item.dressId}-${item.dateBooked}`;
+
 const EmailBookingsModal = ({
   isOpen,
   setOpen,
-  bookings,
+  lineItems,
   onSent,
   onError,
 }: EmailBookingsModalProps) => {
@@ -28,13 +31,13 @@ const EmailBookingsModal = ({
   }, [isOpen]);
 
   const allSelected =
-    bookings.length > 0 && selectedIds.size === bookings.length;
+    lineItems.length > 0 && selectedIds.size === lineItems.length;
 
   const toggleAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(bookings.map((b) => b._id as string)));
+      setSelectedIds(new Set(lineItems.map(rowKey)));
     }
   };
 
@@ -50,7 +53,16 @@ const EmailBookingsModal = ({
     if (!selectedIds.size) return;
     setIsSending(true);
     try {
-      const res = await sendBookingEmails([...selectedIds]);
+      // The email endpoint sends instructions for every item in a matched
+      // booking, so selecting one item's row emails the whole order.
+      const bookingIds = [
+        ...new Set(
+          lineItems
+            .filter((li) => selectedIds.has(rowKey(li)))
+            .map((li) => li.booking._id as string),
+        ),
+      ];
+      const res = await sendBookingEmails(bookingIds);
       onSent(res.data?.message ?? "Emails sent successfully");
       setOpen(false);
     } catch {
@@ -99,17 +111,18 @@ const EmailBookingsModal = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
-            {bookings.length === 0 ? (
+            {lineItems.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-gray-400">
                   No bookings to display.
                 </td>
               </tr>
             ) : (
-              bookings.map((booking) => {
-                const id = booking._id as string;
+              lineItems.map((li) => {
+                const { booking, item } = li;
+                const id = rowKey(li);
                 const checked = selectedIds.has(id);
-                const user = (booking as any).user?.[0];
+                const user = booking.user?.[0];
                 return (
                   <tr
                     key={id}
@@ -127,19 +140,19 @@ const EmailBookingsModal = ({
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
-                        {booking.dress?.images?.[0] && (
+                        {item.dress?.images?.[0] && (
                           <img
-                            src={booking.dress.images[0]}
-                            alt={booking.dress.name}
+                            src={item.dress.images[0]}
+                            alt={item.dress.name}
                             className="h-8 w-8 rounded-full object-cover flex-shrink-0"
                           />
                         )}
                         <div>
                           <div className="font-medium text-gray-900">
-                            {booking.dress?.name}
+                            {item.dress?.name}
                           </div>
                           <div className="text-gray-500 text-xs">
-                            {booking.dress?.brand}
+                            {item.dress?.brand}
                           </div>
                         </div>
                       </div>
@@ -149,12 +162,12 @@ const EmailBookingsModal = ({
                       <div className="text-gray-500 text-xs">{user?.email}</div>
                     </td>
                     <td className="py-3 px-3 text-gray-600 whitespace-nowrap">
-                      {dayjs(booking.dateBooked).format("MMM D, YYYY")}
+                      {dayjs(item.dateBooked).format("MMM D, YYYY")}
                     </td>
-                    <td className="py-3 px-3 text-gray-600">{booking.size}</td>
+                    <td className="py-3 px-3 text-gray-600">{item.size}</td>
                     <td className="py-3 px-3">
                       <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                        {booking.deliveryType}
+                        {item.deliveryType}
                       </span>
                     </td>
                   </tr>
@@ -167,16 +180,17 @@ const EmailBookingsModal = ({
 
       <div className="mt-4 flex items-center justify-between">
         <span className="text-sm text-gray-500">
-          {selectedIds.size} of {bookings.length} selected
+          {selectedIds.size} of {lineItems.length} selected
         </span>
         <div className="flex gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setOpen(false)}
             className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Button>
           <Button
             onClick={handleSend}
             disabled={selectedIds.size === 0 || isSending}

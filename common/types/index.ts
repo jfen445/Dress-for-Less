@@ -43,6 +43,7 @@ export type DressType = {
   brand: string;
   rrp: string;
   stretch: string;
+  condition?: string;
   recommendedSize?: string[];
   notes?: string;
   xs: string;
@@ -69,6 +70,7 @@ export type CartType = {
   userId?: string;
   dateBooked: string;
   size: string;
+  deliveryType: DeliveryType;
 };
 
 export type CartItemType = {
@@ -85,6 +87,7 @@ export type CartItemType = {
   stretch: string;
   dateBooked: string;
   cartItemId: string;
+  deliveryType: DeliveryType;
 };
 
 export type Address = {
@@ -97,27 +100,43 @@ export type Address = {
   apartment?: string;
 };
 
-export type Booking = {
+export type BookingItem = {
   _id?: string;
   dressId: string;
-  userId: string;
   dateBooked: string;
-  blockOutPeriod: string[];
-  price: number;
-  address?: Address;
-  billingAddress: Address;
+  blockedFrom: string;
+  blockedUntil: string;
   deliveryType: DeliveryType;
+  address?: Address;
+  size: String;
+  price: number;
+  instructions?: string;
+  dress?: DressType;
+};
+
+export type Booking = {
+  _id?: string;
+  userId: string;
+  items: BookingItem[];
+  totalPrice: number;
+  billingAddress: Address;
   tracking: string;
   isShipped: boolean;
   isReturned: boolean;
   paymentIntent: string;
-  size: String;
-  dress?: DressType;
   user?: UserType[];
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
-  instructions?: string;
+  orderNumber?: string;
+};
+
+// Pairs a Booking (order) with one of its line items — used by admin views
+// that need to display/select a single dress without duplicating the
+// shared order-level fields (user, status, billing address, etc).
+export type BookingLineItem = {
+  booking: Booking;
+  item: BookingItem;
 };
 
 export type BookingAvailability = {
@@ -125,7 +144,8 @@ export type BookingAvailability = {
   dressId: string;
   size: String;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
 };
 
 export type Sizes = {
@@ -154,8 +174,10 @@ export type TryOnAvailability = {
 };
 
 export type Faq = {
+  _id?: string;
   question: string;
   answer: string;
+  section?: string;
 };
 
 export type OrderHistory = {
@@ -163,7 +185,8 @@ export type OrderHistory = {
   dressId: string;
   userId: string;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
   price: number;
   address?: Address;
   deliveryType: string;
@@ -175,6 +198,7 @@ export type OrderHistory = {
   dressName: string;
   dressDescription: string;
   dressImages: string;
+  orderNumber?: string;
 };
 
 export type TryOnBooking = {
@@ -208,7 +232,8 @@ export type OrderReceipt = {
   dressId: string;
   name: string;
   dateBooked: string;
-  blockOutPeriod: string[];
+  blockedFrom: string;
+  blockedUntil: string;
   price: number;
   address?: Address;
   billingAddress?: Address;
@@ -221,4 +246,5 @@ export type OrderReceipt = {
   dressName: string;
   dressDescription: string;
   dressImage: string;
+  orderNumber?: string;
 };

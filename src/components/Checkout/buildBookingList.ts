@@ -1,22 +1,21 @@
-import { Address, Booking, CartItemType } from "../../../common/types";
+import { Address, Booking, BookingItem, CartItemType } from "../../../common/types";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
-import { DeliveryType } from "../../../common/enums/DeliveryType";
+import { hasDeliveryItem, SHIPPING_FEE } from "../../../lib/utils/deliveryRules";
 
-export function buildBookingList(
+export function buildBooking(
   products: CartItemType[],
-  deliveryOption: DeliveryType,
   userId: string,
   address: Address | null,
   billingAddress: Address | null,
   instructions: string,
   paymentIntent: string,
-): Booking[] {
-  return products.map((item) => ({
-    userId,
+): Booking {
+  const items: BookingItem[] = products.map((item) => ({
     dressId: item._id,
     dateBooked: item.dateBooked,
-    blockOutPeriod: [],
-    price: parseInt(item.price),
+    blockedFrom: "",
+    blockedUntil: "",
+    deliveryType: item.deliveryType,
     address: {
       company: address?.company ?? "",
       address: address?.address ?? "",
@@ -26,6 +25,17 @@ export function buildBookingList(
       country: address?.country ?? "",
       postCode: address?.postCode ?? "",
     },
+    size: item.size,
+    price: parseInt(item.price),
+    instructions: instructions ?? "",
+  }));
+
+  const shippingFee = hasDeliveryItem(items) ? SHIPPING_FEE : 0;
+
+  return {
+    userId,
+    items,
+    totalPrice: items.reduce((sum, item) => sum + item.price, 0) + shippingFee,
     billingAddress: {
       company: billingAddress?.company ?? "",
       address: billingAddress?.address ?? "",
@@ -35,13 +45,10 @@ export function buildBookingList(
       country: billingAddress?.country ?? "",
       postCode: billingAddress?.postCode ?? "",
     },
-    deliveryType: deliveryOption,
     tracking: "",
     isShipped: false,
     isReturned: false,
     paymentIntent,
-    size: item.size,
     status: BookingStatus.NA,
-    instructions: instructions ?? "",
-  }));
+  };
 }

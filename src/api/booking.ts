@@ -2,7 +2,7 @@ import api from "./client";
 import { Booking } from "../../common/types";
 
 export async function createBooking(
-  booking: Booking[],
+  booking: Booking,
   paymentIntent: string,
   couponIds?: string[],
 ) {
@@ -33,6 +33,6 @@ export async function getBlockOutsByDress(dressId: string) {
   return api.get(`/api/blockouts?dressId=${dressId}`);
 }
 
-export async function checkValidBooking(booking: Booking[]) {
+export async function checkValidBooking(booking: Booking) {
   return api.post(`/api/validateBooking`, { booking });
 }

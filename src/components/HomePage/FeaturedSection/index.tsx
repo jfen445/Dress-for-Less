@@ -14,15 +14,16 @@ const FeaturedSection = () => {
             Dress rentals made easy
           </h2>
           <p className="mt-3 text-xl text-white">
-            From school balls and birthdays to weddings and formal events,
-            we&apos;re here to help you find a dress you love without the
-            designer price tag.
+            Whether you&apos;re heading to a school ball, birthday, wedding,
+            graduation or formal event, renting has never been easier. Browse
+            hundreds of designer dresses, choose your dates, and we&apos;ll
+            deliver it straight to your door - or collect from Auckland.
           </p>
           <a
-            href={"/about"}
+            href={"/faq"}
             className="mt-8 block w-full rounded-md border border-transparent bg-white px-8 py-3 text-base font-medium text-gray-900 hover:bg-gray-100 sm:w-auto"
           >
-            Read our story
+            How It Works
           </a>
         </div>
       </div>

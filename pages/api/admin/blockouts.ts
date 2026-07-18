@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import dayjs from "dayjs";
+import { auckland } from "../../../lib/utils/timezone";
 import { dbConnect } from "../../../lib/db/db";
 import { getAllBlockOuts, createBlockOut, deleteBlockOut } from "../../../lib/db/blockout-dao";
 import { getServerSession } from "next-auth/next";
@@ -40,8 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (startDate > endDate) {
       return res.status(400).json({ message: "startDate must be on or before endDate" });
     }
-    const start = dayjs(startDate).startOf("day").toISOString();
-    const end = dayjs(endDate).endOf("day").toISOString();
+    const start = auckland.startOfDay(startDate).toISOString();
+    const end = auckland.endOfDay(endDate).toISOString();
     const created = await createBlockOut({ dressId, size, startDate: start, endDate: end, reason });
     return res.status(201).json(created);
   }

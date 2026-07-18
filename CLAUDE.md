@@ -63,6 +63,16 @@ Unauthenticated users' cart items are stored in `localStorage` under the key `lo
 3. Checkout page (`/checkout`) → address form + Stripe card element → creates PaymentIntent → confirms payment → creates booking in MongoDB
 4. `/order-success` — confirmation page
 
+### Booking availability
+
+Each `BookingItem` stores a `blockedFrom`/`blockedUntil` window (not the individual dates) marking when a dress is physically unavailable — computed once at creation by `calculateBookingWindow` (`lib/utils/bookingWindow.ts`) from the event date's weekday and `deliveryType`. Delivery/Post dispatch and turnaround offsets vary by weekday (see the lookup table in that file); Pickup is constant (1 day before, ready 3 days after) when stored. Availability for a new candidate date is checked with `isDateBlockedByExistingBooking`, which compares the candidate's own window (computed with an *optimistic* same-day Pickup offset, since "collect day-before or day-of" is a real choice — existing bookings always use the conservative day-before figure) against each existing booking's stored window.
+
+Two independent gates must both pass for a date to be bookable:
+1. **Notice-from-today** — `isPickupAllowedForDate`/`isDeliveryAllowedForDate` (`lib/utils/deliveryRules.ts`): cutoff is 8pm the day before that method's dispatch date.
+2. **No conflict** — `isDateBlockedByExistingBooking` against existing bookings of the same dress+size, counted against that size's stock.
+
+Client (`src/components/ProductPage/Calendar/index.tsx`) and server (`lib/utils/checkBookingAvailability.ts`, used by `pages/api/booking.ts` and `pages/api/validateBooking.ts`) share the same functions, so they can't drift apart. `scripts/migrate-booking-windows.js` backfills `blockedFrom`/`blockedUntil` for bookings created before this scheme existed.
+
 ### Admin
 
 `/admin` renders `src/components/Admin/` tabs for Bookings, Dresses, and Users. `BookingStatus` enum (`common/enums/BookingStatus.ts`) drives the status workflow (In Progress → Being Returned → Washing → Drying → Packed → Returned, etc.).
@@ -70,6 +80,10 @@ Unauthenticated users' cart items are stored in `localStorage` under the key `lo
 ### Shared types
 
 All shared TypeScript types (`DressType`, `UserType`, `Booking`, `CartType`, etc.) are in `common/types/index.ts`. Enums live in `common/enums/`.
+
+### UI components
+
+Use the shared components instead of native HTML elements: `src/components/Button/index.tsx` instead of `<button>`, `src/components/Input/index.tsx` instead of `<input>`, and `src/components/Toggle/index.tsx` instead of a native checkbox/toggle.
 
 ### Environment variables required
 

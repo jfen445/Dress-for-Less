@@ -10,6 +10,7 @@ import {
   Sizes,
   UserType,
 } from "../../../common/types";
+import { DeliveryType } from "../../../common/enums/DeliveryType";
 import ImageSelector from "./ImageSelector";
 import Button from "@/components/Button";
 import Calendar from "./Calendar";
@@ -22,6 +23,7 @@ import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
+import Tooltip from "@/components/Tooltip";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
@@ -34,6 +36,9 @@ const Product = () => {
 
   const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
+  const [deliveryType, setDeliveryType] = React.useState<DeliveryType>(
+    DeliveryType.Delivery,
+  );
   const [isAddedToCart, setIsAddedToCart] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
@@ -51,7 +56,7 @@ const Product = () => {
 
   React.useEffect(() => {
     if (isAddedToCart) setIsAddedToCart(false);
-  }, [selectedDate, size, isAddedToCart]);
+  }, [selectedDate, size, deliveryType, isAddedToCart]);
 
   React.useEffect(() => {
     if (params) {
@@ -118,18 +123,24 @@ const Product = () => {
       return;
     }
 
+    console.log("Dress", dress);
+
     const cartItem: CartType = {
       dressId: params?.id,
       userId: user?._id,
       dateBooked: selectedDate,
       size: size,
+      deliveryType: deliveryType,
     };
 
     if (!session || !user) {
       const localCart = getItems() || ([] as CartType[]);
 
       const itemAlreadyInCart = localCart.some(
-        (item) => JSON.stringify(item) === JSON.stringify(cartItem),
+        (item) =>
+          item.dressId === cartItem.dressId &&
+          item.dateBooked === cartItem.dateBooked &&
+          item.size === cartItem.size,
       );
 
       if (itemAlreadyInCart) {
@@ -202,6 +213,46 @@ const Product = () => {
     );
   };
 
+  const DeliverySelector = () => {
+    const selectDeliveryType = (type: DeliveryType) => {
+      setDeliveryType(type);
+      setSelectedDate("");
+    };
+
+    return (
+      <div className="mt-4">
+        <label className="block text-sm font-medium leading-6 text-gray-900">
+          Delivery or pick up
+        </label>
+        <div className="mt-2 flex gap-3">
+          <Button
+            type="button"
+            variant={
+              deliveryType === DeliveryType.Delivery ? "primary" : "tertiary"
+            }
+            onClick={() => selectDeliveryType(DeliveryType.Delivery)}
+          >
+            Delivery
+          </Button>
+          <Button
+            type="button"
+            variant={
+              deliveryType === DeliveryType.Pickup ? "primary" : "tertiary"
+            }
+            onClick={() => selectDeliveryType(DeliveryType.Pickup)}
+          >
+            {"Pickup (Auckland)"}
+          </Button>
+        </div>
+        <p className="mt-4 text-xs text-gray-500">
+          {deliveryType === DeliveryType.Delivery
+            ? "Select the date of your event, your dress will arrive 1-2 days prior to this."
+            : "Select the date of your event, your dress will be ready for pick up 1 day prior to this."}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white">
       <Toast toast={toast} setToast={setToast} href={"/cart"} />
@@ -244,10 +295,105 @@ const Product = () => {
               </h2>
 
               <div className="mt-5">
-                <RadioGroup className="block text-sm font-medium text-gray-700">
+                <RadioGroup className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
                   Stretch: {dress?.stretch}
+                  <Tooltip
+                    position="right"
+                    content={
+                      <div className="space-y-2">
+                        <p>
+                          We rate every dress from 1-3 based on how much the
+                          fabric stretches to help you find the best fit.
+                        </p>
+                        <p>
+                          <strong>1 – Minimal Stretch</strong>
+                          <br />
+                          Little to no stretch. We recommend choosing your usual
+                          size.
+                        </p>
+                        <p>
+                          <strong>2 – Moderate Stretch</strong>
+                          <br />
+                          Some stretch in the fabric. May comfortably fit around
+                          half a size up or down.
+                        </p>
+                        <p>
+                          <strong>3 – High Stretch</strong>
+                          <br />
+                          Very stretchy fabric. Can often fit one full size up
+                          or down, depending on the style.
+                        </p>
+                        <p>
+                          Please note: Every dress fits differently. Any
+                          additional sizing information, fit advice, or
+                          style-specific details will be listed under the Notes
+                          section on each dress.
+                        </p>
+                        <p>
+                          If you&apos;re still unsure about sizing, feel free to
+                          email us or book a try-on appointment - we&apos;re
+                          always happy to help you find the perfect fit!
+                        </p>
+                      </div>
+                    }
+                  />
                 </RadioGroup>
               </div>
+
+              {dress?.condition && (
+                <div className="mt-2">
+                  <RadioGroup className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                    Condition: {dress.condition}
+                    <Tooltip
+                      position="right"
+                      content={
+                        <div className="space-y-2">
+                          <p>
+                            We carefully inspect every dress before and after
+                            each rental and assign it a Condition Rating based
+                            on its overall wear.
+                          </p>
+                          <p>
+                            <strong>Excellent</strong>
+                            <br />
+                            Like new with little to no visible signs of wear.
+                          </p>
+                          <p>
+                            <strong>Great</strong>
+                            <br />
+                            Minor signs of wear from previous rentals that are
+                            not noticeable when worn.
+                          </p>
+                          <p>
+                            <strong>Good</strong>
+                            <br />
+                            Some visible signs of wear, such as light fabric
+                            wear or small imperfections, but the dress is
+                            still in great wearable condition.
+                          </p>
+                          <p>
+                            <strong>Okay</strong>
+                            <br />
+                            More noticeable signs of wear or minor
+                            imperfections. These dresses are still fully
+                            wearable and suitable for hire, but have been
+                            priced accordingly.
+                          </p>
+                          <p>
+                            Please note: As a designer dress rental business,
+                            many of our garments have been loved by previous
+                            customers. We would not aim to rent a dress with
+                            damage that significantly impacts its appearance
+                            or wearability. Any dress-specific imperfections
+                            will be disclosed in the Notes section on the
+                            product page.
+                          </p>
+                        </div>
+                      }
+                    />
+                  </RadioGroup>
+                </div>
+              )}
 
               {dress?.notes && (
                 <div className="mt-5">
@@ -262,10 +408,13 @@ const Product = () => {
 
               <Dropdown />
 
+              <DeliverySelector />
+
               <Calendar
                 setSelectedDate={setSelectedDate}
                 sizes={sizes}
                 selectedSize={size}
+                deliveryType={deliveryType}
               />
 
               <div className="mt-10">

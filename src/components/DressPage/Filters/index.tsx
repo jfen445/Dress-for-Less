@@ -24,6 +24,7 @@ import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
 import dayjs from "dayjs";
 import { useRouter, useSearchParams } from "next/navigation";
+import Button from "@/components/Button";
 
 type Sort = {
   name: string;
@@ -337,14 +338,15 @@ const Filters = () => {
           >
             <div className="flex items-center justify-between px-4">
               <h2 className="text-lg font-medium text-gray-900">Filters</h2>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setOpen(false)}
                 className="-mr-2 flex size-10 items-center justify-center rounded-md bg-white p-2 text-gray-400"
               >
                 <span className="sr-only">Close menu</span>
                 <XMarkIcon aria-hidden="true" className="size-6" />
-              </button>
+              </Button>
             </div>
 
             {/* Filters */}
@@ -480,13 +482,14 @@ const Filters = () => {
               </MenuItems>
             </Menu>
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setOpen(true)}
               className="inline-block text-sm font-medium text-gray-700 hover:text-gray-900 sm:hidden"
             >
               Filters
-            </button>
+            </Button>
 
             <div className="hidden sm:block">
               <div className="flow-root">
@@ -593,8 +596,9 @@ const Filters = () => {
                           className="m-1 inline-flex items-center rounded-full border border-gray-200 bg-white py-1.5 pl-3 pr-2 text-sm font-medium text-gray-900"
                         >
                           <span>{activeFilter.label}</span>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             onClick={() => {
                               updateFilters([activeFilter.value], false);
                               removeFilterFromQueryParams(activeFilter.value);
@@ -616,7 +620,7 @@ const Filters = () => {
                                 strokeLinecap="round"
                               />
                             </svg>
-                          </button>
+                          </Button>
                         </span>
                       )),
                   )}

@@ -12,38 +12,8 @@ import { AccountType } from "../../../common/enums/AccountType";
 import { BookingSchema } from "../../../lib/db/schema";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { checkBlockOut } from "../../../lib/db/blockout-dao";
-import { sendEmailConfirmation } from "../payment/paymentConfirm";
-import dayjs from "dayjs";
-
-function calculateBlockOutPeriod(dateBooked: string): string[] {
-  const date = dayjs(dateBooked);
-  const day = date.day();
-  if (day === 5)
-    return [
-      date.format("YYYY-MM-DD"),
-      date.add(1, "day").format("YYYY-MM-DD"),
-      date.add(2, "day").format("YYYY-MM-DD"),
-    ];
-  if (day === 6)
-    return [
-      date.subtract(1, "day").format("YYYY-MM-DD"),
-      date.format("YYYY-MM-DD"),
-      date.add(1, "day").format("YYYY-MM-DD"),
-    ];
-  if (day === 0)
-    return [
-      date.subtract(2, "day").format("YYYY-MM-DD"),
-      date.subtract(1, "day").format("YYYY-MM-DD"),
-      date.format("YYYY-MM-DD"),
-    ];
-  if (day >= 1 && day <= 4) {
-    const monday = date.subtract(day - 1, "day");
-    return Array.from({ length: 7 }, (_, i) =>
-      monday.add(i, "day").format("YYYY-MM-DD"),
-    );
-  }
-  return [];
-}
+import { calculateBookingWindow } from "../../../lib/utils/bookingWindow";
+import { getNextOrderNumber } from "../../../lib/utils/orderNumber";
 
 export default async function handler(
   req: NextApiRequest,
@@ -73,8 +43,13 @@ export default async function handler(
 
     const allBookingInfo = await Promise.all(
       allBookings.map(async (booking) => {
-        const dressInfo = await getDress(booking.dressId);
-        return { ...booking, dress: dressInfo };
+        const items = await Promise.all(
+          booking.items.map(async (item: any) => {
+            const dressInfo = await getDress(item.dressId);
+            return { ...item, dress: dressInfo };
+          }),
+        );
+        return { ...booking, items };
       }),
     );
 
@@ -132,30 +107,38 @@ export default async function handler(
         .json({ message: "This date is already fully booked" });
 
     const price = parseInt(dress.price);
-    const blockOutPeriod = calculateBlockOutPeriod(dateBooked);
+    const { blockedFrom, blockedUntil } = calculateBookingWindow(dateBooked, deliveryType);
+    const orderNumber = await getNextOrderNumber();
 
     const booking = new BookingSchema({
-      dressId,
       userId,
-      dateBooked,
-      blockOutPeriod,
-      address: address ?? {},
+      orderNumber,
+      items: [
+        {
+          dressId,
+          dateBooked,
+          blockedFrom,
+          blockedUntil,
+          deliveryType,
+          address: address ?? {},
+          size,
+          price,
+          instructions: instructions ?? "",
+        },
+      ],
+      totalPrice: price,
       billingAddress: billingAddress ?? {},
-      deliveryType,
       tracking: "",
       isShipped: false,
       isReturned: false,
       paymentIntent: "ADMIN_MANUAL",
       paymentSuccess: true,
-      size,
-      price,
       status: BookingStatus.NA,
-      instructions: instructions ?? "",
     });
 
     await booking.save();
 
-    // await sendEmailConfirmation([booking.toObject()]);
+    // await sendEmailConfirmation(booking.toObject());
 
     res.status(201).json({ message: "Booking created", booking });
   }

@@ -1,8 +1,6 @@
 import { AppProps } from "next/app";
 import React from "react";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+import "../lib/utils/timezone";
 import "../styles/global.css";
 import MobileNav from "@/components/MobileNav";
 import NavigationBar from "@/components/Navigation";
@@ -14,9 +12,6 @@ import NavigationContextProvider from "@/context/NavigationContext";
 import GlobalContextProvider from "@/context/GlobalContext";
 import ComingSoon from "@/components/ComingSoon";
 import { CartProvider } from "@/context/CartContext";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 export default function App({ Component, pageProps }: AppProps) {
   const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON;

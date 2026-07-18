@@ -15,16 +15,12 @@ import { getClientSecret } from "@/api/payment";
 import AddressForm from "./AddressForm";
 import BillingForm from "./BillingForm";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
-
-const deliveryMethods = [
-  { id: DeliveryType.Delivery, title: "Full delivery ($15)" },
-  { id: DeliveryType.Pickup, title: "Full pick up (Free)" },
-  {
-    id: DeliveryType.PickupDelivery,
-    title: "Pick up and delivery return ($7.50)",
-  },
-  { id: DeliveryType.DeliveryPickup, title: "Delivery and drop off ($7.50)" },
-];
+import {
+  hasDeliveryItem,
+  isDeliveryAllowedForDate,
+  isDateWithinCurrentWeekend,
+} from "../../../../lib/utils/deliveryRules";
+import { auckland } from "../../../../lib/utils/timezone";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
@@ -32,8 +28,6 @@ const CheckoutForm = () => {
   const { data: session } = useSession();
   const {
     products,
-    deliveryOption,
-    setDeliveryOption,
     totalPrice,
     availableCoupons,
     selectedCouponIds,
@@ -57,6 +51,7 @@ const CheckoutForm = () => {
     React.useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
   const [termsError, setTermsError] = React.useState<boolean>(false);
+  const [deliveryError, setDeliveryError] = React.useState<string>();
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
@@ -100,7 +95,28 @@ const CheckoutForm = () => {
       setTermsError(false);
     }
 
-    if (deliveryOption !== DeliveryType.Pickup) {
+    const invalidDeliveryItems = products.filter(
+      (product) =>
+        product.deliveryType === DeliveryType.Delivery &&
+        !isDeliveryAllowedForDate(product.dateBooked),
+    );
+
+    if (invalidDeliveryItems.length > 0) {
+      isError = true;
+      setDeliveryError(
+        `Delivery is no longer available for: ${invalidDeliveryItems
+          .map((item) => item.name)
+          .join(", ")}. Please go back and switch ${
+          invalidDeliveryItems.length > 1 ? "these items" : "this item"
+        } to pickup.`,
+      );
+    } else {
+      setDeliveryError(undefined);
+    }
+
+    const isDelivery = hasDeliveryItem(products);
+
+    if (isDelivery) {
       if (
         !formElements.address.value ||
         !formElements.suburb.value ||
@@ -114,18 +130,17 @@ const CheckoutForm = () => {
       }
     }
 
-    const address: Address | null =
-      deliveryOption === DeliveryType.Pickup
-        ? null
-        : {
-            company: formElements.company.value,
-            address: formElements.address.value,
-            apartment: formElements.apartment.value,
-            suburb: formElements.suburb.value,
-            city: formElements.city.value,
-            country: formElements.region.value,
-            postCode: formElements.postCode.value,
-          };
+    const address: Address | null = !isDelivery
+      ? null
+      : {
+          company: formElements.company.value,
+          address: formElements.address.value,
+          apartment: formElements.apartment.value,
+          suburb: formElements.suburb.value,
+          city: formElements.city.value,
+          country: formElements.region.value,
+          postCode: formElements.postCode.value,
+        };
 
     if (
       !sameAsShipping &&
@@ -172,58 +187,19 @@ const CheckoutForm = () => {
     }
   };
 
-  const isBeforeWednesdayNoon = () => {
-    const now = new Date(); // Get the current date and time
-
-    // Get the current week’s Wednesday
-    const nextWednesday = new Date();
-    nextWednesday.setDate(now.getDate() + ((3 - now.getDay() + 7) % 7)); // 3 represents Wednesday (0 is Sunday)
-
-    // Set Wednesday to 12 PM (noon)
-    nextWednesday.setHours(12, 0, 0, 0); // 12 PM, 0 minutes, 0 seconds, 0 milliseconds
-
-    // Compare current time to next Wednesday 12 PM
-    return now < nextWednesday;
-  };
-
   const isThisWeekendBookings = () => {
-    const dates = products.map((item) => item.dateBooked);
-    const now = new Date();
-
-    // Get current week's Sunday at 11:59:59.999 PM
-    const currentSunday = new Date(now);
-    if (now.getDay() !== 0) {
-      currentSunday.setDate(now.getDate() + (7 - now.getDay()));
-    }
-    currentSunday.setHours(23, 59, 59, 999);
-
-    return dates.some((dateStr) => {
-      const date = new Date(dateStr);
-      return date >= now && date <= currentSunday;
-    });
-  };
-
-  const isDeliveryInvalid = (id: string) => {
-    return (
-      !isBeforeWednesdayNoon() &&
-      isThisWeekendBookings() &&
-      id.includes("delivery")
+    const now = auckland.now();
+    return products.some((item) =>
+      isDateWithinCurrentWeekend(item.dateBooked, now),
     );
   };
 
   const isBookingValid = () => {
-    const currentDayOfWeek = new Date().getDay();
+    const currentDayOfWeek = auckland.now().day();
 
     const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
 
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
-  };
-
-  const onDeliveryMethodChanged = (id: DeliveryType) => {
-    setDeliveryOption(id);
-    if (id === DeliveryType.Pickup) {
-      setSameAsShipping(false);
-    }
   };
 
   const toggleCoupon = (couponId: string) => {
@@ -231,51 +207,6 @@ const CheckoutForm = () => {
       prev.includes(couponId)
         ? prev.filter((id) => id !== couponId)
         : [...prev, couponId],
-    );
-  };
-
-  const RadioGroup = () => {
-    return (
-      <div>
-        <p className="mt-1 text-sm leading-6 text-gray-600">
-          Select a delivery or pick up option
-        </p>
-        <div className="mt-6 space-y-6">
-          {isBookingValid() ? (
-            <>
-              {deliveryMethods.map((deliveryMethod) => (
-                <>
-                  {isDeliveryInvalid(deliveryMethod.id) ? null : (
-                    <div key={deliveryMethod.id} className="flex items-center">
-                      <input
-                        checked={deliveryMethod.id === deliveryOption}
-                        id={deliveryMethod.id}
-                        name="notification-method"
-                        type="radio"
-                        className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                        onChange={(e) =>
-                          onDeliveryMethodChanged(e.target.id as DeliveryType)
-                        }
-                      />
-                      <label
-                        htmlFor={deliveryMethod.id}
-                        className="ml-3 block text-sm font-medium leading-6 text-gray-900"
-                      >
-                        {deliveryMethod.title}
-                      </label>
-                    </div>
-                  )}
-                </>
-              ))}
-            </>
-          ) : (
-            <div className="bg-red-100 p-2 rounded-md">
-              Unfortunately you are no longer able to book for this weekend.
-              Please select another date or contact us for support
-            </div>
-          )}
-        </div>
-      </div>
     );
   };
 
@@ -314,15 +245,11 @@ const CheckoutForm = () => {
               </div>
             </section>
 
-            <section aria-labelledby="shipping-heading" className="mt-10">
-              <h2
-                id="shipping-heading"
-                className="text-lg font-medium text-gray-900"
-              >
-                Delivery Options
-              </h2>
-              <RadioGroup />
-            </section>
+            {deliveryError && (
+              <div className="mt-4 bg-red-100 p-2 rounded-md text-sm text-red-700">
+                {deliveryError}
+              </div>
+            )}
 
             {availableCoupons.length > 0 && (
               <section aria-labelledby="coupons-heading" className="mt-10">
@@ -357,7 +284,7 @@ const CheckoutForm = () => {
 
             {isBookingValid() && (
               <>
-                {deliveryOption !== DeliveryType.Pickup && (
+                {hasDeliveryItem(products) && (
                   <section aria-labelledby="shipping-heading" className="mt-10">
                     <h2
                       id="shipping-heading"
@@ -384,7 +311,7 @@ const CheckoutForm = () => {
                     Billing information
                   </h2>
 
-                  {deliveryOption !== DeliveryType.Pickup && (
+                  {hasDeliveryItem(products) && (
                     <div className="mt-6 flex items-center">
                       <input
                         checked={sameAsShipping}
@@ -405,8 +332,7 @@ const CheckoutForm = () => {
                     </div>
                   )}
 
-                  {(!sameAsShipping ||
-                    deliveryOption === DeliveryType.Pickup) && (
+                  {(!sameAsShipping || !hasDeliveryItem(products)) && (
                     <>
                       <BillingForm />
                       {billingAddressError && (

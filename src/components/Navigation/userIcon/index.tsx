@@ -1,5 +1,6 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import Image from "next/image";
+import Button from "@/components/Button";
 
 const LoggedOnIcon = () => {
   const { data: session } = useSession();
@@ -8,14 +9,18 @@ const LoggedOnIcon = () => {
     return (
       <>
         Signed in as {session.user.email} <br />
-        <button onClick={() => signOut()}>Sign out</button>
+        <Button variant="ghost" onClick={() => signOut()}>
+          Sign out
+        </Button>
       </>
     );
   }
   return (
     <>
       Not signed in <br />
-      <button onClick={() => signIn()}>Sign in</button>
+      <Button variant="ghost" onClick={() => signIn()}>
+        Sign in
+      </Button>
     </>
   );
 };

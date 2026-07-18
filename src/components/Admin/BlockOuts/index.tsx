@@ -63,6 +63,20 @@ const AdminBlockOuts = () => {
   const selectedDress = allDresses?.find((d) => d._id === dressId);
   const getDressName = (id: string) => allDresses?.find((d) => d._id === id)?.name ?? id;
 
+  const availableSizes = SIZES.filter((s) => {
+    if (!selectedDress) return false;
+    const stock = parseInt(
+      (selectedDress[s.toLowerCase() as keyof typeof selectedDress] as string) ?? "0",
+    );
+    return stock > 0;
+  });
+
+  React.useEffect(() => {
+    if (availableSizes.length > 0 && !availableSizes.includes(size)) {
+      setSize(availableSizes[0]);
+    }
+  }, [dressId, availableSizes, size]);
+
   return (
     <>
       <Toast toast={toast} setToast={setToast} />
@@ -110,7 +124,7 @@ const AdminBlockOuts = () => {
                 className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
                 required
               >
-                {SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {availableSizes.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 
@@ -192,12 +206,13 @@ const AdminBlockOuts = () => {
                         </td>
                         <td className="px-3 py-4 text-sm text-gray-500">{b.reason ?? "—"}</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
-                          <button
+                          <Button
+                            variant="ghost"
                             onClick={() => handleDelete(b._id!)}
                             className="text-red-500 hover:text-red-700 text-xs font-medium"
                           >
                             Remove
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}

@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../lib/db/db";
 import { checkDuplicateBooking } from "../../lib/db/booking-dao";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
+import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
 import { Booking } from "../../common/types";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
@@ -21,25 +22,32 @@ export default async function handler(
   await dbConnect();
 
   if (req.method == "POST") {
-    const dresses = req.body.booking as Booking[];
+    const booking = req.body.booking as Booking;
     var errorResponse: String[] = [];
 
-    for (const dress of dresses) {
+    for (const item of booking.items) {
       const checkBooking = await checkDuplicateBooking(
-        dress.dressId,
-        dress.size,
-        dress.dateBooked,
+        item.dressId,
+        item.size,
+        item.dateBooked,
       );
 
-      const blockedOut = await checkBlockOut(dress.dressId, dress.size as string, dress.dateBooked);
+      const blockedOut = await checkBlockOut(item.dressId, item.size as string, item.dateBooked);
 
-      if (checkBooking.length > 0 || blockedOut) {
-        errorResponse.push(dress.dressId);
+      const available = await isBookingAvailable(
+        item.dressId,
+        item.size as string,
+        item.dateBooked,
+        item.deliveryType,
+      );
+
+      if (checkBooking.length > 0 || blockedOut || !available) {
+        errorResponse.push(item.dressId);
       }
     }
 
     if (errorResponse.length > 0) {
-      res.status(404).json({
+      return res.status(404).json({
         message:
           "One or more dresses have already been booked for the selected day.",
         body: errorResponse,

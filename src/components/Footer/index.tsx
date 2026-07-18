@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnvelopeIcon } from "@heroicons/react/24/outline";
 
 const Footer = () => {
   return (
@@ -9,11 +10,20 @@ const Footer = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="py-4 flex gap-4 items-center">
           <Link
+            href={"mailto:dressforless@gmail.com"}
+            className="cursor-pointer"
+          >
+            <span className="[&>svg]:h-5 [&>svg]:w-5">
+              <EnvelopeIcon aria-hidden="true" />
+            </span>
+          </Link>
+
+          <Link
             href={"https://www.instagram.com/dressforlessnz"}
             target="_blank"
             className="cursor-pointer"
           >
-            <span className="[&>svg]:h-5 [&>svg]:w-5 mx-4">
+            <span className="[&>svg]:h-5 [&>svg]:w-5">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="currentColor"

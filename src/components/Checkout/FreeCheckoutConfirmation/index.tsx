@@ -10,7 +10,7 @@ import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
 import { useCartContext } from "@/context/CartContext";
-import { buildBookingList } from "../buildBookingList";
+import { buildBooking } from "../buildBookingList";
 
 interface IFreeCheckoutConfirmation {
   address: Address | null;
@@ -28,8 +28,7 @@ const FreeCheckoutConfirmation = ({
   const router = useRouter();
   const { userInfo } = useUserContext();
   const { refreshCart } = useCartContext();
-  const { products, deliveryOption, selectedCouponIds } =
-    React.useContext(ProductContext);
+  const { products, selectedCouponIds } = React.useContext(ProductContext);
   const [isLoading, setIsLoading] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "A booking error occured. Please try again",
@@ -43,9 +42,8 @@ const FreeCheckoutConfirmation = ({
 
     const sentinelPaymentIntent = `${FREE_COUPON_CHECKOUT_PREFIX}${crypto.randomUUID()}`;
 
-    const bookingList = buildBookingList(
+    const booking = buildBooking(
       products,
-      deliveryOption,
       userInfo?._id ?? "",
       address,
       billingAddress,
@@ -55,7 +53,7 @@ const FreeCheckoutConfirmation = ({
 
     let isValid = true;
 
-    await checkValidBooking(bookingList)
+    await checkValidBooking(booking)
       .then()
       .catch((err) => {
         setToast({
@@ -72,7 +70,7 @@ const FreeCheckoutConfirmation = ({
       return;
     }
 
-    await createBooking(bookingList, sentinelPaymentIntent, selectedCouponIds)
+    await createBooking(booking, sentinelPaymentIntent, selectedCouponIds)
       .then(() => {
         router.push("/order-success?paymentIntent=" + sentinelPaymentIntent);
       })

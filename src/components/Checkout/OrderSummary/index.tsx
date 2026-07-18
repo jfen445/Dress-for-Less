@@ -13,6 +13,7 @@ import { getUserCoupons } from "@/api/coupon";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
+import { hasDeliveryItem, SHIPPING_FEE } from "../../../../lib/utils/deliveryRules";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const OrderSummary = () => {
@@ -20,7 +21,6 @@ const OrderSummary = () => {
   const {
     products,
     setProducts,
-    deliveryOption,
     setTotalPrice,
     selectedCouponIds,
     setDiscountAmount,
@@ -29,19 +29,8 @@ const OrderSummary = () => {
   } = React.useContext(ProductContext);
 
   const shippingCost = React.useCallback(() => {
-    if (deliveryOption === DeliveryType.Delivery) {
-      return "15.00";
-    }
-
-    if (
-      deliveryOption === DeliveryType.PickupDelivery ||
-      deliveryOption === DeliveryType.DeliveryPickup
-    ) {
-      return "7.50";
-    }
-
-    return "0.00";
-  }, [deliveryOption]);
+    return hasDeliveryItem(products) ? SHIPPING_FEE.toFixed(2) : "0.00";
+  }, [products]);
 
   React.useEffect(() => {
     const productIds = new URLSearchParams(window.location.search).getAll("id");
@@ -62,6 +51,7 @@ const OrderSummary = () => {
             dress.dateBooked = item.dateBooked;
             dress.cartItemId = item._id;
             dress.size = item.size;
+            dress.deliveryType = item.deliveryType;
             return dress as CartItemType;
           }),
         );
@@ -91,6 +81,12 @@ const OrderSummary = () => {
 
   const formatDate = (date: string) => {
     return dayjs(date).format("D MMMM YYYY");
+  };
+
+  const formatDeliveryType = (deliveryType: DeliveryType) => {
+    return deliveryType === DeliveryType.Pickup
+      ? "Pickup (Auckland)"
+      : "Delivery";
   };
 
   const sumPrices = (): string => {
@@ -137,6 +133,9 @@ const OrderSummary = () => {
                   <p className="text-gray-500">{product.size}</p>
                   <p className="text-gray-500">
                     {formatDate(product.dateBooked)}
+                  </p>
+                  <p className="text-gray-500">
+                    {formatDeliveryType(product.deliveryType)}
                   </p>
                 </div>
                 <p className="flex-none text-base font-medium">

@@ -1,4 +1,5 @@
 import { defineField } from "sanity";
+import { FaqSection } from "../enums/FaqSection";
 
 const faq = {
   name: "faq",
@@ -14,6 +15,19 @@ const faq = {
       name: "answer",
       title: "Answer",
       type: "string",
+    },
+    {
+      name: "section",
+      title: "Section",
+      type: "string",
+      options: {
+        list: Object.values(FaqSection).map((section) => ({
+          title: section,
+          value: section,
+        })),
+        layout: "dropdown",
+      },
+      validation: (Rule: any) => Rule.required(),
     },
   ],
 };

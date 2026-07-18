@@ -2,7 +2,9 @@ import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import React from "react";
 import { CartItemType } from "../../../common/types";
 import dayjs from "dayjs";
+import { auckland } from "../../../lib/utils/timezone";
 import { useRouter } from "next/router";
+import Button from "../Button";
 
 interface ICartType {
   products: CartItemType[];
@@ -129,8 +131,7 @@ const CartItems = ({
   };
 
   const isInvalidDate = (day: string | number | Date) => {
-    const currentDate = dayjs(new Date());
-    return dayjs(currentDate).isAfter(dayjs(new Date(day)));
+    return auckland.now().isAfter(auckland.toZone(day));
   };
 
   return (
@@ -225,17 +226,21 @@ const CartItems = ({
                             <ExclamationCircleIcon className="size-4 text-red-500 ml-1" />
                           )}
                         </div>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {product.deliveryType}
+                        </p>
                       </div>
 
                       <div className="mt-4 flex flex-1 items-end justify-end">
                         <div className="ml-4">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             className="text-sm font-medium text-secondary-pink hover:text-indigo-500"
                             onClick={() => removeItem(product)}
                           >
                             <span>Remove</span>
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>

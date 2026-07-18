@@ -6,6 +6,7 @@ import {
   deleteCoupon,
   getAllAdminUsers,
 } from "@/api/admin";
+import { getCouponStatus } from "../../../../lib/utils/couponRules";
 import { Coupon, UserType } from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
@@ -106,16 +107,6 @@ const AdminCoupons = () => {
   const getUserLabel = (id: string) => {
     const u = users.find((u) => u._id === id);
     return u ? `${u.name} - ${u.email}` : id;
-  };
-
-  const getStatus = (
-    c: Coupon,
-  ): "Scheduled" | "Active" | "Expired" | "Redeemed" => {
-    if (c.isRedeemed) return "Redeemed";
-    const now = dayjs().toISOString();
-    if (c.expiryDate < now) return "Expired";
-    if (c.startDate > now) return "Scheduled";
-    return "Active";
   };
 
   const statusClass = (status: string) =>
@@ -263,7 +254,7 @@ const AdminCoupons = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {coupons.map((c) => {
-                      const status = getStatus(c);
+                      const status = getCouponStatus(c);
                       return (
                         <tr key={c._id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
@@ -286,12 +277,13 @@ const AdminCoupons = () => {
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
-                            <button
+                            <Button
+                              variant="ghost"
                               onClick={() => handleDelete(c._id!)}
                               className="text-red-500 hover:text-red-700 text-xs font-medium"
                             >
                               Remove
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       );

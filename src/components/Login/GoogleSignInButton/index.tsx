@@ -22,7 +22,8 @@ const GoogleSignInButton = () => {
   };
 
   return (
-    <button
+    <Button
+      variant="ghost"
       className="w-full bg-black text-white flex items-center align-center p-2 rounded-md justify-center"
       onClick={() => handleSignIn()}
     >
@@ -41,7 +42,7 @@ const GoogleSignInButton = () => {
         ></path>
       </svg>
       {isLoading ? "Logging in..." : "Continue with Google"}
-    </button>
+    </Button>
   );
 };
 
