@@ -1,4 +1,27 @@
 import AboutImage from "../../public/about.jpg";
+import {
+  TruckIcon,
+  SparklesIcon,
+  MapPinIcon,
+} from "@heroicons/react/24/outline";
+
+const incentives = [
+  {
+    name: "NZ wide postage",
+    description: "Fast and reliable delivery.",
+    icon: TruckIcon,
+  },
+  {
+    name: "500+ designer dresses",
+    description: "New styles every week.",
+    icon: SparklesIcon,
+  },
+  {
+    name: "Auckland try ons",
+    description: "Pick-up available.",
+    icon: MapPinIcon,
+  },
+];
 
 const AboutPage = () => {
   return (
@@ -39,6 +62,28 @@ const AboutPage = () => {
                 className="object-cover object-center"
               />
             </div>
+          </div>
+
+          <div className="mt-16 grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-3 lg:divide-x lg:divide-rose-200">
+            {incentives.map((incentive) => (
+              <div
+                key={incentive.name}
+                className="text-center lg:px-8 first:lg:pl-0 last:lg:pr-0"
+              >
+                <incentive.icon
+                  aria-hidden="true"
+                  className="mx-auto h-8 w-8 text-rose-400"
+                />
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {incentive.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {incentive.description}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
