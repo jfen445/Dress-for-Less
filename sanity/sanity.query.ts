@@ -31,11 +31,12 @@ export async function getAllDressesFromSanity() {
 
 export async function getFaq() {
   return client.fetch(
-    groq`*[_type == "faq"]{
+    groq`*[_type == "faq"] | order(order asc) {
     _id,
     question,
     answer,
     section,
+    order,
   }`
   );
 }

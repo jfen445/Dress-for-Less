@@ -178,6 +178,7 @@ export type Faq = {
   question: string;
   answer: string;
   section?: string;
+  order?: number;
 };
 
 export type OrderHistory = {
