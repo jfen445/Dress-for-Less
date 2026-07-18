@@ -23,6 +23,7 @@ import CoverFlow from "../Swiper";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
+import Tooltip from "@/components/Tooltip";
 
 const Product = () => {
   const { getDressWithId } = useGlobalContext();
@@ -121,6 +122,8 @@ const Product = () => {
       setIsLoading(false);
       return;
     }
+
+    console.log("Dress", dress);
 
     const cartItem: CartType = {
       dressId: params?.id,
@@ -292,10 +295,105 @@ const Product = () => {
               </h2>
 
               <div className="mt-5">
-                <RadioGroup className="block text-sm font-medium text-gray-700">
+                <RadioGroup className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
                   Stretch: {dress?.stretch}
+                  <Tooltip
+                    position="right"
+                    content={
+                      <div className="space-y-2">
+                        <p>
+                          We rate every dress from 1-3 based on how much the
+                          fabric stretches to help you find the best fit.
+                        </p>
+                        <p>
+                          <strong>1 – Minimal Stretch</strong>
+                          <br />
+                          Little to no stretch. We recommend choosing your usual
+                          size.
+                        </p>
+                        <p>
+                          <strong>2 – Moderate Stretch</strong>
+                          <br />
+                          Some stretch in the fabric. May comfortably fit around
+                          half a size up or down.
+                        </p>
+                        <p>
+                          <strong>3 – High Stretch</strong>
+                          <br />
+                          Very stretchy fabric. Can often fit one full size up
+                          or down, depending on the style.
+                        </p>
+                        <p>
+                          Please note: Every dress fits differently. Any
+                          additional sizing information, fit advice, or
+                          style-specific details will be listed under the Notes
+                          section on each dress.
+                        </p>
+                        <p>
+                          If you&apos;re still unsure about sizing, feel free to
+                          email us or book a try-on appointment - we&apos;re
+                          always happy to help you find the perfect fit!
+                        </p>
+                      </div>
+                    }
+                  />
                 </RadioGroup>
               </div>
+
+              {dress?.condition && (
+                <div className="mt-2">
+                  <RadioGroup className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                    Condition: {dress.condition}
+                    <Tooltip
+                      position="right"
+                      content={
+                        <div className="space-y-2">
+                          <p>
+                            We carefully inspect every dress before and after
+                            each rental and assign it a Condition Rating based
+                            on its overall wear.
+                          </p>
+                          <p>
+                            <strong>Excellent</strong>
+                            <br />
+                            Like new with little to no visible signs of wear.
+                          </p>
+                          <p>
+                            <strong>Great</strong>
+                            <br />
+                            Minor signs of wear from previous rentals that are
+                            not noticeable when worn.
+                          </p>
+                          <p>
+                            <strong>Good</strong>
+                            <br />
+                            Some visible signs of wear, such as light fabric
+                            wear or small imperfections, but the dress is
+                            still in great wearable condition.
+                          </p>
+                          <p>
+                            <strong>Okay</strong>
+                            <br />
+                            More noticeable signs of wear or minor
+                            imperfections. These dresses are still fully
+                            wearable and suitable for hire, but have been
+                            priced accordingly.
+                          </p>
+                          <p>
+                            Please note: As a designer dress rental business,
+                            many of our garments have been loved by previous
+                            customers. We would not aim to rent a dress with
+                            damage that significantly impacts its appearance
+                            or wearability. Any dress-specific imperfections
+                            will be disclosed in the Notes section on the
+                            product page.
+                          </p>
+                        </div>
+                      }
+                    />
+                  </RadioGroup>
+                </div>
+              )}
 
               {dress?.notes && (
                 <div className="mt-5">
