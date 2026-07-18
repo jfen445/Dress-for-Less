@@ -44,6 +44,7 @@ export interface IBooking {
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
+  orderNumber: string;
 }
 
 export interface IAddress {

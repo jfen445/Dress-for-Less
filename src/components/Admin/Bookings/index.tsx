@@ -197,6 +197,14 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     return results.slice(0, 8);
   }, [allBookingsHistory, searchQuery]);
 
+  const orderSearchResults = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return allBookingsHistory
+      .filter((booking) => booking.orderNumber?.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [allBookingsHistory, searchQuery]);
+
   const openDressHistory = (
     dressId: string,
     name: string,
@@ -231,6 +239,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       lineItems,
     });
     setHistoryModalOpen(true);
+    closeSearch();
+  };
+
+  const openOrder = (booking: Booking) => {
+    setBookingToEdit(booking);
+    setEditModalOpen(true);
     closeSearch();
   };
 
@@ -358,6 +372,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
   const extractObj = (lineItems: BookingLineItem[]) => {
     return lineItems?.map(({ booking, item }) => ({
+      OrderNumber: booking.orderNumber ?? "",
       Name: booking.user ? booking.user[0].name : "",
       Email: booking.user ? booking.user[0].email : "",
       Company: item.address?.company ?? "",
@@ -549,6 +564,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 </td>
 
                 <td className="px-3 py-5 text-sm text-gray-500">
+                  {currentBooking.orderNumber}
+                </td>
+
+                <td className="px-3 py-5 text-sm text-gray-500">
                   <div>{primaryItem?.size}</div>
                   {additionalItems.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
@@ -616,7 +635,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               {/* EXPANDED CONTENT ROW — full detail for every item in this order */}
               {expandedBookingId === currentBooking._id && (
                 <tr>
-                  <td colSpan={7} className="bg-gray-50 p-6">
+                  <td colSpan={8} className="bg-gray-50 p-6">
                     <div className="space-y-6">
                       {currentBooking.items.map((item: any, index: number) => (
                         <div
@@ -826,7 +845,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 }}
                 onFocus={() => setIsSearchOpen(true)}
                 onKeyDown={(e) => e.key === "Escape" && closeSearch()}
-                placeholder="Search dress or customer..."
+                placeholder="Search dress, customer, or order #..."
                 className="w-64 rounded-md border-0 py-1.5 pl-8 pr-3 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-pink-500"
               />
             </div>
@@ -834,12 +853,39 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             {isSearchOpen && searchQuery.trim().length > 0 && (
               <div className="absolute right-0 top-full z-20 mt-1 w-96 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                 {dressSearchResults.length === 0 &&
-                userSearchResults.length === 0 ? (
+                userSearchResults.length === 0 &&
+                orderSearchResults.length === 0 ? (
                   <p className="px-4 py-3 text-sm text-gray-500">
-                    No dresses or customers found.
+                    No dresses, customers, or orders found.
                   </p>
                 ) : (
                   <>
+                    {orderSearchResults.length > 0 && (
+                      <div className="py-2">
+                        <p className="px-4 pb-1 text-xs font-semibold uppercase text-gray-400">
+                          Orders
+                        </p>
+                        <ul>
+                          {orderSearchResults.map((booking) => (
+                            <li key={booking._id}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => openOrder(booking)}
+                                className="flex w-full flex-col items-start px-4 py-2 text-left hover:bg-gray-50"
+                              >
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                  {booking.orderNumber}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">
+                                  {(booking as any).user?.[0]?.name}
+                                </p>
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {dressSearchResults.length > 0 && (
                       <div className="py-2">
                         <p className="px-4 pb-1 text-xs font-semibold uppercase text-gray-400">
@@ -976,6 +1022,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Order #
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         Size
                       </th>
                       <th
@@ -1012,7 +1064,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         <th
                           scope="colgroup"
-                          colSpan={6}
+                          colSpan={7}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
                           This week bookings
@@ -1029,7 +1081,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         <th
                           scope="colgroup"
-                          colSpan={6}
+                          colSpan={7}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
                           Upcoming bookings
@@ -1046,7 +1098,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       >
                         <th
                           scope="colgroup"
-                          colSpan={6}
+                          colSpan={7}
                           className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                         >
                           Previous bookings

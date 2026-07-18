@@ -128,6 +128,7 @@ export type Booking = {
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
+  orderNumber?: string;
 };
 
 // Pairs a Booking (order) with one of its line items — used by admin views
@@ -173,8 +174,10 @@ export type TryOnAvailability = {
 };
 
 export type Faq = {
+  _id?: string;
   question: string;
   answer: string;
+  section?: string;
 };
 
 export type OrderHistory = {
@@ -195,6 +198,7 @@ export type OrderHistory = {
   dressName: string;
   dressDescription: string;
   dressImages: string;
+  orderNumber?: string;
 };
 
 export type TryOnBooking = {
@@ -242,4 +246,5 @@ export type OrderReceipt = {
   dressName: string;
   dressDescription: string;
   dressImage: string;
+  orderNumber?: string;
 };

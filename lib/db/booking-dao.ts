@@ -1,7 +1,7 @@
 import { BookingSchema } from "./schema";
 
 const BOOKING_PROJECTION =
-  "userId items totalPrice billingAddress tracking isShipped isReturned paymentIntent paymentSuccess status couponIds discountAmount createdAt";
+  "userId items totalPrice billingAddress tracking isShipped isReturned paymentIntent paymentSuccess status couponIds discountAmount orderNumber createdAt";
 
 export async function getBookingAvailabilityByDress(dressId: String) {
   return BookingSchema.aggregate([

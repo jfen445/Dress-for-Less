@@ -13,6 +13,7 @@ import { BookingSchema } from "../../../lib/db/schema";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { checkBlockOut } from "../../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../../lib/utils/bookingWindow";
+import { getNextOrderNumber } from "../../../lib/utils/orderNumber";
 
 export default async function handler(
   req: NextApiRequest,
@@ -107,9 +108,11 @@ export default async function handler(
 
     const price = parseInt(dress.price);
     const { blockedFrom, blockedUntil } = calculateBookingWindow(dateBooked, deliveryType);
+    const orderNumber = await getNextOrderNumber();
 
     const booking = new BookingSchema({
       userId,
+      orderNumber,
       items: [
         {
           dressId,

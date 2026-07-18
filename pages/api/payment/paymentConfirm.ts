@@ -92,6 +92,7 @@ export async function sendEmailConfirmation(booking: Booking) {
         dressName: dress?.name ?? "",
         dressDescription: dress?.description ?? "",
         dressImage: dress?.images?.[0] ?? "",
+        orderNumber: booking.orderNumber,
       };
     }),
   );

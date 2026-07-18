@@ -23,6 +23,7 @@ import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
 import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
 import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
+import { getNextOrderNumber } from "../../lib/utils/orderNumber";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 
@@ -196,6 +197,13 @@ export default async function handler(
       shippingFee -
       discountAmount;
 
+    const existingBooking = await BookingSchema.findOne(
+      { paymentIntent },
+      "orderNumber",
+    );
+    const orderNumber =
+      existingBooking?.orderNumber ?? (await getNextOrderNumber());
+
     const booking: IBooking = {
       userId: bookingPayload.userId,
       items: bookingItems,
@@ -217,6 +225,7 @@ export default async function handler(
       status: bookingPayload.status,
       couponIds,
       discountAmount,
+      orderNumber,
     };
 
     const filter = { paymentIntent };

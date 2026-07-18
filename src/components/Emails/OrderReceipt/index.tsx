@@ -45,6 +45,11 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
             <Heading style={global.heading}>
               Your dress has been confirmed
             </Heading>
+            {orderDetails.orderNumber && (
+              <Text style={{ ...global.text, fontWeight: "bold" }}>
+                Order number: {orderDetails.orderNumber}
+              </Text>
+            )}
             <Text style={global.text}>
               You order is on its way soon. We will send you a tracking link
               once shipped.

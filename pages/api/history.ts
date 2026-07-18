@@ -55,6 +55,7 @@ export default async function handler(
             dressName: dress.name,
             dressDescription: dress.description,
             dressImages: dress.images[0],
+            orderNumber: booking.orderNumber,
           };
 
           orderHistory.push(order);

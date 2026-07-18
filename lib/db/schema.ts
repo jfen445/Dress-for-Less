@@ -66,9 +66,13 @@ const bookingSchema = new Schema(
     status: { type: String, required: true },
     couponIds: { type: [String], required: false, default: [] },
     discountAmount: { type: Number, required: false, default: 0 },
+    orderNumber: { type: String, required: false },
   },
   { timestamps: true },
 );
+
+// Sparse: legacy bookings won't have an orderNumber until the backfill script runs.
+bookingSchema.index({ orderNumber: 1 }, { unique: true, sparse: true });
 
 const BookingSchema =
   mongoose.models.Bookings ?? mongoose.model("Bookings", bookingSchema);
@@ -148,6 +152,14 @@ const couponSchema = new Schema(
 const CouponSchema =
   mongoose.models.Coupons ?? mongoose.model("Coupons", couponSchema);
 
+const counterSchema = new Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, required: true, default: 0 },
+});
+
+const CounterSchema =
+  mongoose.models.Counters ?? mongoose.model("Counters", counterSchema);
+
 export {
   UserSchema,
   BookingSchema,
@@ -156,4 +168,5 @@ export {
   TryOnBookingSchema,
   TryOnAvailabilitySchema,
   CouponSchema,
+  CounterSchema,
 };

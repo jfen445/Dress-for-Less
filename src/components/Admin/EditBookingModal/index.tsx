@@ -229,9 +229,12 @@ const EditBookingModal = ({
 
   return (
     <Modal isOpen={isOpen} setOpen={setOpen}>
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">
         Edit Booking
       </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        {booking?.orderNumber ? `Order: ${booking.orderNumber}` : " "}
+      </p>
       <form
         onSubmit={handleSubmit}
         className="space-y-6 max-h-[75vh] overflow-y-auto pr-1"
