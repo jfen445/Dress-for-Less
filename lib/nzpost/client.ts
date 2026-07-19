@@ -1,18 +1,9 @@
-const NZPOST_OAUTH_URL = "https://oauth.nzpost.co.nz/as/token.oauth2";
+import { nzPostFetch } from "./auth";
+
+export { NZPostApiError } from "./auth";
+
 const NZPOST_ADDRESS_BASE =
   "https://api.nzpost.co.nz/parceladdress/2.0/domestic/addresses";
-const REQUEST_TIMEOUT_MS = 8000;
-const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
-
-export class NZPostApiError extends Error {
-  status?: number;
-
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = "NZPostApiError";
-    this.status = status;
-  }
-}
 
 export type NZPostAddressSuggestion = {
   fullAddress: string;
@@ -63,93 +54,6 @@ type NZPostDetailResponse = {
   };
   message_id: string;
 };
-
-let cachedToken: { accessToken: string; expiresAt: number } | null = null;
-
-async function fetchAccessToken(): Promise<string> {
-  const clientId = process.env.NZPOST_CLIENT_ID as string;
-  const clientSecret = process.env.NZPOST_CLIENT_SECRET as string;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(NZPOST_OAUTH_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "client_credentials",
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      throw new NZPostApiError(
-        `NZ Post token request failed with status ${response.status}`,
-        response.status,
-      );
-    }
-
-    const data = (await response.json()) as {
-      access_token: string;
-      expires_in: number;
-    };
-
-    return data.access_token;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function getAccessToken(forceRefresh = false): Promise<string> {
-  if (
-    !forceRefresh &&
-    cachedToken &&
-    cachedToken.expiresAt - TOKEN_REFRESH_MARGIN_MS > Date.now()
-  ) {
-    return cachedToken.accessToken;
-  }
-
-  const accessToken = await fetchAccessToken();
-  // expires_in is ~86399s; we don't trust it precisely, just cache with a safety margin.
-  cachedToken = { accessToken, expiresAt: Date.now() + 23 * 60 * 60 * 1000 };
-  return accessToken;
-}
-
-async function nzPostFetch<T>(url: string): Promise<T> {
-  let token = await getAccessToken();
-
-  const doFetch = async (accessToken: string) => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      return await fetch(url, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-  };
-
-  let response = await doFetch(token);
-
-  if (response.status === 401) {
-    token = await getAccessToken(true);
-    response = await doFetch(token);
-  }
-
-  if (!response.ok) {
-    throw new NZPostApiError(
-      `NZ Post API request failed with status ${response.status}`,
-      response.status,
-    );
-  }
-
-  return (await response.json()) as T;
-}
 
 function mapDetail(
   detail: NZPostDetailResponse["address"],

@@ -1,4 +1,4 @@
-import { getAllBookings } from "@/api/admin";
+import { getAllBookings, createLabels } from "@/api/admin";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
 import { Booking, BookingLineItem, UserType } from "../../../../common/types";
@@ -10,7 +10,9 @@ import DeleteBookingModal from "../DeleteBookingModal";
 import EditBookingModal from "../EditBookingModal";
 import EmailBookingsModal from "../EmailBookingsModal";
 import DownloadBookingsModal from "../DownloadBookingsModal";
+import CreateLabelModal from "../CreateLabelModal";
 import BookingHistoryModal from "../BookingHistoryModal";
+import { auckland } from "../../../../lib/utils/timezone";
 import {
   MagnifyingGlassIcon,
   PencilSquareIcon,
@@ -48,6 +50,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
   const [downloadModalOpen, setDownloadModalOpen] =
+    React.useState<boolean>(false);
+  const [createLabelModalOpen, setCreateLabelModalOpen] =
     React.useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
   const [bookingToDelete, setBookingToDelete] = React.useState<Booking | null>(
@@ -300,6 +304,83 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       ),
     [filteredThisWeekBookings],
   );
+
+  // "bookings" (from context) is everything after this Sunday, unbounded —
+  // narrow it to just next week's Monday-Sunday window for the label picker.
+  const nextWeekLineItems = React.useMemo(() => {
+    const now = auckland.now();
+    const currentSunday = (
+      now.day() === 0 ? now : now.add(7 - now.day(), "day")
+    ).endOf("day");
+    const nextSunday = currentSunday.add(7, "day");
+
+    let result = bookings.filter((b) => {
+      const date = auckland.toZone(b.items[0]?.dateBooked);
+      return date.isAfter(currentSunday) && date.isBefore(nextSunday);
+    });
+
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        b.items.some((item) =>
+          deliveryType.includes(item.deliveryType as DeliveryType),
+        ),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
+
+    return result.flatMap((booking) =>
+      booking.items.map((item) => ({ booking, item })),
+    );
+  }, [bookings, deliveryType, selectedStatuses]);
+
+  const labelLineItems = React.useMemo(
+    () => [...thisWeekLineItems, ...nextWeekLineItems],
+    [thisWeekLineItems, nextWeekLineItems],
+  );
+
+  const handleCreateLabels = async (lineItemsToLabel: BookingLineItem[]) => {
+    const bookingIds = [
+      ...new Set(lineItemsToLabel.map((li) => li.booking._id as string)),
+    ];
+
+    try {
+      const { data } = await createLabels(bookingIds);
+      const results = data.results as {
+        bookingId: string;
+        success: boolean;
+        consignmentId?: string;
+        message?: string;
+      }[];
+      const successCount = results.filter((r) => r.success).length;
+      const failures = results.filter((r) => !r.success);
+
+      if (failures.length === 0) {
+        setToast({
+          message: `${successCount} label${successCount === 1 ? "" : "s"} created successfully`,
+          variant: ToastVariant.SUCCESS,
+          show: true,
+        });
+      } else {
+        setToast({
+          message: `${successCount} of ${results.length} labels created. Failed: ${failures
+            .map((f) => f.message ?? f.bookingId)
+            .join(", ")}`,
+          variant: ToastVariant.WARNING,
+          show: true,
+        });
+      }
+
+      getBookings();
+    } catch (err) {
+      setToast({
+        message: "An error occurred while creating labels",
+        variant: ToastVariant.WARNING,
+        show: true,
+      });
+    }
+  };
 
   const updateCurrentBooking = async (
     bookingId: string,
@@ -779,6 +860,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           )
         }
       />
+      <CreateLabelModal
+        isOpen={createLabelModalOpen}
+        setOpen={setCreateLabelModalOpen}
+        lineItems={labelLineItems}
+        onCreateLabels={handleCreateLabels}
+      />
       <BookingHistoryModal
         isOpen={historyModalOpen}
         setOpen={setHistoryModalOpen}
@@ -970,6 +1057,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
+            {deliveryType?.includes(DeliveryType.Delivery) && (
+              <Button onClick={() => setCreateLabelModalOpen(true)}>
+                Create label
+              </Button>
+            )}
             <Button onClick={() => setDownloadModalOpen(true)}>Download</Button>
           </div>
         </div>
