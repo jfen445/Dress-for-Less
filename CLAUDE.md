@@ -63,6 +63,10 @@ Unauthenticated users' cart items are stored in `localStorage` under the key `lo
 3. Checkout page (`/checkout`) → address form + Stripe card element → creates PaymentIntent → confirms payment → creates booking in MongoDB
 4. `/order-success` — confirmation page
 
+### Rural delivery detection
+
+The shipping address field on checkout (`AddressForm`) is an NZ Post-backed autocomplete (`AddressAutocomplete`, Headless UI `Combobox`): typing calls `pages/api/address/search.ts`, selecting a suggestion calls `pages/api/address/[addressId].ts` — both proxy `lib/nzpost/client.ts` (OAuth2 client_credentials against NZ Post's ParcelAddress API) so the credentials never reach the browser. A selected address's `isRuralDelivery`/`dpid` land in `ProductContext.validatedAddress` (not `CheckoutForm` local state, since sibling `OrderSummary` needs it too for the live total). Hand-editing the address text after selecting a suggestion clears `validatedAddress`, requiring re-selection. When rural, a $5 surcharge (`RURAL_SURCHARGE` in `lib/utils/deliveryRules.ts`, alongside `calculateShippingFee`) is added to the displayed total and the client-computed Stripe amount, matching how the base `SHIPPING_FEE` already flows through. `pages/api/booking.ts` independently re-confirms rural status server-side via `resolveRuralDeliveryStatus` (by DPID) before computing the persisted `totalPrice`, rather than trusting the client-supplied flag — falling back to it only if NZ Post is unreachable at that moment.
+
 ### Booking availability
 
 Each `BookingItem` stores a `blockedFrom`/`blockedUntil` window (not the individual dates) marking when a dress is physically unavailable — computed once at creation by `calculateBookingWindow` (`lib/utils/bookingWindow.ts`) from the event date's weekday and `deliveryType`. Delivery/Post dispatch and turnaround offsets vary by weekday (see the lookup table in that file); Pickup is constant (1 day before, ready 3 days after) when stored. Availability for a new candidate date is checked with `isDateBlockedByExistingBooking`, which compares the candidate's own window (computed with an *optimistic* same-day Pickup offset, since "collect day-before or day-of" is a real choice — existing bookings always use the conservative day-before figure) against each existing booking's stored window.
@@ -87,4 +91,4 @@ Use the shared components instead of native HTML elements: `src/components/Butto
 
 ### Environment variables required
 
-`MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `RESEND_API_KEY`, `RESEND_EMAIL_ADDRESS`, `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, and optionally `NEXT_PUBLIC_COMING_SOON` (set to `"true"` to show the coming-soon page instead of the app).
+`MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `RESEND_API_KEY`, `RESEND_EMAIL_ADDRESS`, `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NZPOST_CLIENT_ID`, `NZPOST_CLIENT_SECRET`, and optionally `NEXT_PUBLIC_COMING_SOON` (set to `"true"` to show the coming-soon page instead of the app).

@@ -57,7 +57,12 @@ const OrderSuccess = ({
     };
 
     confirm();
-  }, [params, router.query, router.query.payment_intent_client_secret, paymentIntent]);
+  }, [
+    params,
+    router.query,
+    router.query.payment_intent_client_secret,
+    paymentIntent,
+  ]);
 
   React.useEffect(() => {
     refreshCart();
@@ -111,7 +116,9 @@ const OrderSuccess = ({
               {booking?.orderNumber && (
                 <dl className="mt-12 text-sm font-medium">
                   <dt className="text-gray-900">Order number</dt>
-                  <dd className="mt-2 text-indigo-600">{booking.orderNumber}</dd>
+                  <dd className="mt-2 text-secondary-pink">
+                    #{booking.orderNumber}
+                  </dd>
                 </dl>
               )}
             </div>
@@ -289,7 +296,9 @@ const OrderSuccess = ({
                       $
                       {Math.max(
                         0,
-                        subtotal + deliveryCost - (booking?.discountAmount ?? 0),
+                        subtotal +
+                          deliveryCost -
+                          (booking?.discountAmount ?? 0),
                       )}
                     </dd>
                   </div>

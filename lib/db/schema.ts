@@ -28,6 +28,10 @@ const addressSchema = new Schema({
   postCode: { type: String, required: false },
   company: { type: String, required: false },
   apartment: { type: String, required: false },
+  nzPostAddressId: { type: String, required: false },
+  nzPostDpid: { type: String, required: false },
+  isRuralDelivery: { type: Boolean, required: false, default: false },
+  ruralDeliveryNumber: { type: String, required: false },
 });
 
 const billingAddressSchema = new Schema({

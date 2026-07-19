@@ -33,6 +33,7 @@ const CheckoutForm = () => {
     availableCoupons,
     selectedCouponIds,
     setSelectedCouponIds,
+    validatedAddress,
   } = React.useContext(ProductContext);
   const [clientSecret, setClientSecret] = React.useState<string>();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -132,6 +133,10 @@ const CheckoutForm = () => {
       }
     }
 
+    const isAddressStillValid =
+      validatedAddress !== null &&
+      validatedAddress.addressText === formElements.address.value;
+
     const address: Address | null = !isDelivery
       ? null
       : {
@@ -142,6 +147,18 @@ const CheckoutForm = () => {
           city: formElements.city.value,
           country: formElements.region.value,
           postCode: formElements.postCode.value,
+          nzPostAddressId: isAddressStillValid
+            ? validatedAddress!.nzPostAddressId
+            : undefined,
+          nzPostDpid: isAddressStillValid
+            ? validatedAddress!.nzPostDpid
+            : undefined,
+          isRuralDelivery: isAddressStillValid
+            ? validatedAddress!.isRuralDelivery
+            : false,
+          ruralDeliveryNumber: isAddressStillValid
+            ? validatedAddress!.ruralDeliveryNumber
+            : undefined,
         };
 
     if (

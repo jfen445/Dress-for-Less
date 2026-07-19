@@ -98,6 +98,11 @@ export type Address = {
   postCode: string;
   company?: string;
   apartment?: string;
+  // NZ Post ParcelAddress validation — shipping address only, undefined/false = unvalidated or manual entry
+  nzPostAddressId?: string;
+  nzPostDpid?: string;
+  isRuralDelivery?: boolean;
+  ruralDeliveryNumber?: string;
 };
 
 export type BookingItem = {

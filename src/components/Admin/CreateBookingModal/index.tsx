@@ -31,12 +31,20 @@ const inputCls =
   "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
 const labelCls = "block text-sm font-medium text-gray-700 mb-1";
 
+type EditableAddressField =
+  | "address"
+  | "apartment"
+  | "suburb"
+  | "city"
+  | "postCode"
+  | "company";
+
 const AddressFields = ({
   value,
   onChange,
 }: {
   value: Address;
-  onChange: (field: keyof Address, val: string) => void;
+  onChange: (field: EditableAddressField, val: string) => void;
 }) => (
   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
     {(
@@ -47,7 +55,7 @@ const AddressFields = ({
         { field: "city", label: "City", required: false },
         { field: "postCode", label: "Postal code", required: true },
         { field: "company", label: "Company", required: false },
-      ] as { field: keyof Address; label: string; required: boolean }[]
+      ] as { field: EditableAddressField; label: string; required: boolean }[]
     ).map(({ field, label, required }) => (
       <div key={field}>
         <label className={labelCls}>

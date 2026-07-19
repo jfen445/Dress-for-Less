@@ -22,8 +22,12 @@ import { getDress } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
 import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
-import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
+import {
+  calculateShippingFee,
+  hasDeliveryItem,
+} from "../../lib/utils/deliveryRules";
 import { getNextOrderNumber } from "../../lib/utils/orderNumber";
+import { resolveRuralDeliveryStatus } from "../../lib/nzpost/client";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 
@@ -122,14 +126,38 @@ export default async function handler(
       discountAmount = coupons.reduce((sum, c) => sum + c.discountAmount, 0);
     }
 
+    // Re-confirm rural status with NZ Post (by DPID) rather than trusting the
+    // client-supplied flag, since this is a real-money line item. Computed
+    // once, before the free-coupon branch, so both fee calculations below
+    // (coupon coverage check and the persisted totalPrice) agree.
+    const shippingItemAddress = items.find(
+      (item) => item.address?.nzPostDpid,
+    )?.address;
+    const { isRural: isRuralDelivery, verified: ruralVerified } =
+      hasDeliveryItem(items)
+        ? await resolveRuralDeliveryStatus(
+            shippingItemAddress?.nzPostDpid,
+            shippingItemAddress?.isRuralDelivery ?? false,
+          )
+        : { isRural: false, verified: true };
+
+    if (!ruralVerified) {
+      console.warn(
+        "NZ Post rural re-verification unavailable; falling back to client-supplied flag",
+        { paymentIntent, dpid: shippingItemAddress?.nzPostDpid },
+      );
+    }
+
     const isFreeCouponCheckout = paymentIntent.startsWith(
       FREE_COUPON_CHECKOUT_PREFIX,
     );
 
+    let stripePayment: Stripe.PaymentIntent | undefined;
+
     if (isFreeCouponCheckout) {
       const sumPrices =
         items.reduce((sum, item) => sum + item.price, 0) +
-        (hasDeliveryItem(items) ? SHIPPING_FEE : 0);
+        calculateShippingFee(hasDeliveryItem(items), isRuralDelivery);
       if (discountAmount < sumPrices) {
         return res
           .status(400)
@@ -143,6 +171,8 @@ export default async function handler(
           message: "Payment not confirmed. Please try again.",
         });
       }
+
+      stripePayment = payment;
     }
 
     for (const item of items) {
@@ -184,18 +214,43 @@ export default async function handler(
         city: item.address?.city ?? "",
         country: item.address?.country ?? "",
         postCode: item.address?.postCode ?? "",
+        nzPostAddressId: item.address?.nzPostAddressId,
+        nzPostDpid: item.address?.nzPostDpid,
+        // Overwritten with the server-verified value for the item(s) sharing
+        // the checkout's shipping address, rather than trusting the client.
+        isRuralDelivery: item.address?.nzPostDpid
+          ? isRuralDelivery
+          : false,
+        ruralDeliveryNumber: item.address?.ruralDeliveryNumber,
       },
       size: item.size,
       price: item.price,
       instructions: item.instructions ?? "",
     }));
 
-    const shippingFee = hasDeliveryItem(bookingItems) ? SHIPPING_FEE : 0;
+    const shippingFee = calculateShippingFee(
+      hasDeliveryItem(bookingItems),
+      isRuralDelivery,
+    );
 
     const totalPrice =
       bookingItems.reduce((sum, item) => sum + item.price, 0) +
       shippingFee -
       discountAmount;
+
+    if (
+      stripePayment &&
+      stripePayment.amount !== Math.round(totalPrice * 100)
+    ) {
+      console.error(
+        "Stripe charge amount does not match server-verified booking total — proceeding with the verified total, flagging for manual reconciliation",
+        {
+          paymentIntent,
+          stripeAmountCents: stripePayment.amount,
+          verifiedTotalCents: Math.round(totalPrice * 100),
+        },
+      );
+    }
 
     const existingBooking = await BookingSchema.findOne(
       { paymentIntent },
@@ -331,6 +386,7 @@ export default async function handler(
             price,
             instructions: instructions ?? existingItem?.instructions ?? "",
           },
+          // TODO: doesn't re-add SHIPPING_FEE (or a rural surcharge) — pre-existing gap.
           totalPrice: price - (existingBooking.discountAmount ?? 0),
           billingAddress: billingAddress ?? {},
           status: status ?? existingBooking.status,

@@ -13,7 +13,12 @@ import { getUserCoupons } from "@/api/coupon";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
-import { hasDeliveryItem, SHIPPING_FEE } from "../../../../lib/utils/deliveryRules";
+import {
+  calculateShippingFee,
+  hasDeliveryItem,
+  RURAL_SURCHARGE,
+  SHIPPING_FEE,
+} from "../../../../lib/utils/deliveryRules";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
 const OrderSummary = () => {
@@ -26,11 +31,25 @@ const OrderSummary = () => {
     setDiscountAmount,
     availableCoupons,
     setAvailableCoupons,
+    validatedAddress,
   } = React.useContext(ProductContext);
 
-  const shippingCost = React.useCallback(() => {
+  const isRuralDelivery = validatedAddress?.isRuralDelivery ?? false;
+
+  // Display-only: the base shipping line, shown separately from the rural
+  // surcharge line below so the two don't visually double up.
+  const baseShippingCost = React.useCallback(() => {
     return hasDeliveryItem(products) ? SHIPPING_FEE.toFixed(2) : "0.00";
   }, [products]);
+
+  // Total shipping-related fee (base + rural surcharge, if any) — used for
+  // the actual total/Stripe amount, not for display.
+  const shippingCost = React.useCallback(() => {
+    return calculateShippingFee(
+      hasDeliveryItem(products),
+      isRuralDelivery,
+    ).toFixed(2);
+  }, [products, isRuralDelivery]);
 
   React.useEffect(() => {
     const productIds = new URLSearchParams(window.location.search).getAll("id");
@@ -153,8 +172,15 @@ const OrderSummary = () => {
 
             <div className="flex items-center justify-between">
               <dt className="text-gray-600">Shipping</dt>
-              <dd>${shippingCost()}</dd>
+              <dd>${baseShippingCost()}</dd>
             </div>
+
+            {isRuralDelivery && (
+              <div className="flex items-center justify-between">
+                <dt className="text-gray-600">Rural delivery surcharge</dt>
+                <dd>${RURAL_SURCHARGE.toFixed(2)}</dd>
+              </div>
+            )}
 
             {couponDiscount() > 0 && (
               <div className="flex items-center justify-between">
@@ -200,8 +226,15 @@ const OrderSummary = () => {
 
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-600">Shipping</dt>
-                  <dd>${shippingCost()}</dd>
+                  <dd>${baseShippingCost()}</dd>
                 </div>
+
+                {isRuralDelivery && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-gray-600">Rural delivery surcharge</dt>
+                    <dd>${RURAL_SURCHARGE.toFixed(2)}</dd>
+                  </div>
+                )}
 
                 {couponDiscount() > 0 && (
                   <div className="flex items-center justify-between">

@@ -55,4 +55,8 @@ export interface IAddress {
   postCode?: string;
   company?: string;
   apartment?: string;
+  nzPostAddressId?: string;
+  nzPostDpid?: string;
+  isRuralDelivery?: boolean;
+  ruralDeliveryNumber?: string;
 }

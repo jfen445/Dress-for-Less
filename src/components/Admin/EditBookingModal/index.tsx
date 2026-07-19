@@ -28,6 +28,14 @@ const emptyAddress = (): Address => ({
   postCode: "",
 });
 
+type EditableAddressField =
+  | "address"
+  | "apartment"
+  | "suburb"
+  | "city"
+  | "postCode"
+  | "company";
+
 interface IEditBookingModal {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -186,7 +194,7 @@ const EditBookingModal = ({
     onChange,
   }: {
     value: Address;
-    onChange: (field: keyof Address, val: string) => void;
+    onChange: (field: EditableAddressField, val: string) => void;
   }) => (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {(
@@ -197,7 +205,7 @@ const EditBookingModal = ({
           { field: "city", label: "City", required: true },
           { field: "postCode", label: "Postal code", required: true },
           { field: "company", label: "Company", required: false },
-        ] as { field: keyof Address; label: string; required: boolean }[]
+        ] as { field: EditableAddressField; label: string; required: boolean }[]
       ).map(({ field, label, required }) => (
         <div key={field}>
           <label className={labelCls}>
