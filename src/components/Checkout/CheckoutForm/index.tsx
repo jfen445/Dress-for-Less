@@ -161,8 +161,10 @@ const CheckoutForm = () => {
             : undefined,
         };
 
+    const needsOwnBillingAddress = !sameAsShipping || !isDelivery;
+
     if (
-      !sameAsShipping &&
+      needsOwnBillingAddress &&
       (!formElements.billingAddress.value ||
         !formElements.billingSuburb.value ||
         !formElements.billingCity.value ||
@@ -177,7 +179,7 @@ const CheckoutForm = () => {
 
     if (isError) return;
 
-    const billingAddress: Address | null = !sameAsShipping
+    const billingAddress: Address | null = needsOwnBillingAddress
       ? {
           company: formElements.billingCompany.value,
           address: formElements.billingAddress.value,

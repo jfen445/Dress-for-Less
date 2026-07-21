@@ -8,7 +8,6 @@ import { useUserContext } from "@/context/UserContext";
 import Spinner from "@/components/Spinner";
 import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
-import { DeliveryType } from "../../common/enums/DeliveryType";
 import { useCartContext } from "@/context/CartContext";
 import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
 
@@ -130,14 +129,14 @@ const OrderSuccess = ({
               {lineItems.map(({ item, dress }) => (
                 <div
                   key={item._id ?? item.dressId}
-                  className="flex space-x-6 border-b border-gray-200 py-10"
+                  className="flex flex-col space-y-6 border-b border-gray-200 py-10 sm:flex-row sm:space-x-6 sm:space-y-0"
                 >
                   <img
                     alt={dress?.images[0]}
                     src={dress?.images[0]}
                     className="h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40"
                   />
-                  <div className="flex flex-auto flex-col">
+                  <div className="flex min-w-0 flex-auto flex-col">
                     <div>
                       <h4 className="font-medium text-gray-900">
                         <a href={`/dresses?id=${dress?._id}`}>{dress?.name}</a>
@@ -147,12 +146,12 @@ const OrderSuccess = ({
                       </p>
                     </div>
                     <div className="mt-6 flex flex-1 items-end">
-                      <dl className="flex space-x-4 divide-x divide-gray-200 text-sm sm:space-x-6">
-                        <div className="flex">
+                      <dl className="flex flex-wrap gap-y-2 divide-x divide-gray-200 text-sm sm:space-x-6">
+                        <div className="flex pr-4 sm:pr-0">
                           <dt className="font-medium text-gray-900">Size</dt>
                           <dd className="ml-2 text-gray-700">{item.size}</dd>
                         </div>
-                        <div className="flex pl-4 sm:pl-6">
+                        <div className="flex pl-4 pr-4 sm:pr-0 sm:pl-6">
                           <dt className="font-medium text-gray-900">Price</dt>
                           <dd className="ml-2 text-gray-700">{dress?.price}</dd>
                         </div>
@@ -174,7 +173,7 @@ const OrderSuccess = ({
                 <h3 className="sr-only">Your information</h3>
 
                 <h4 className="sr-only">Addresses</h4>
-                <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
+                <dl className="grid grid-cols-1 gap-x-6 gap-y-8 py-10 text-sm sm:grid-cols-2 sm:gap-y-0">
                   {hasDeliveryItem(booking?.items ?? []) &&
                     firstItem?.address && (
                       <div>
@@ -258,7 +257,7 @@ const OrderSuccess = ({
                 )}
 
                 <h4 className="sr-only">Payment</h4>
-                <dl className="grid grid-cols-2 gap-x-6 border-t border-gray-200 py-10 text-sm">
+                <dl className="grid grid-cols-1 gap-x-6 border-t border-gray-200 py-10 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="font-medium text-gray-900">
                       Shipping method
