@@ -1,5 +1,9 @@
 import React from "react";
-import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+} from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { FaqSection as FaqSectionEnum } from "../../../common/enums/FaqSection";
@@ -34,12 +38,11 @@ const FaqSection = () => {
               Can’t find the answer you’re looking for? Reach out to us directly
               via{" "}
               <a
-                href="#mailto:dressforless@gmail.com"
-                target="_blank"
+                href="mailto:dressforless@gmail.com"
                 className="font-semibold text-secondary-pink hover:text-indigo-500"
               >
                 email
-              </a>{" "}
+              </a>
               .
             </p>
           </div>
@@ -51,7 +54,11 @@ const FaqSection = () => {
                 </h3>
                 <dl className="mt-6 space-y-6 divide-y divide-gray-100">
                   {items.map((f) => (
-                    <Disclosure as="div" key={f._id ?? f.question} className="pt-6 first:pt-0">
+                    <Disclosure
+                      as="div"
+                      key={f._id ?? f.question}
+                      className="pt-6 first:pt-0"
+                    >
                       {({ open }) => (
                         <>
                           <dt>
@@ -73,7 +80,9 @@ const FaqSection = () => {
                             as="dd"
                             static
                             className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
-                              open ? "mt-2 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                              open
+                                ? "mt-2 grid-rows-[1fr] opacity-100"
+                                : "grid-rows-[0fr] opacity-0"
                             }`}
                           >
                             <div className="overflow-hidden">

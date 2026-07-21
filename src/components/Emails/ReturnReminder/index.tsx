@@ -36,6 +36,7 @@ export const getReturnReminderSubject = (_deliveryType: string) =>
   "Friendly reminder to return your Dress for Less rental 💌";
 
 const ReturnReminderEmail = ({
+  name,
   dressImage,
   dressName,
   deliveryType,
@@ -69,7 +70,7 @@ const ReturnReminderEmail = ({
           <Hr style={hr} />
 
           <Section style={body}>
-            <Text style={p}>Hi lovely,</Text>
+            <Text style={p}>Hi {name},</Text>
 
             <Text style={p}>
               We hope you had an amazing time in your Dress for Less rental!
