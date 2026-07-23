@@ -89,12 +89,14 @@ interface ICreateBookingModal {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onCreated: () => void;
+  defaultDeliveryType?: DeliveryType;
 }
 
 const CreateBookingModal = ({
   isOpen,
   setOpen,
   onCreated,
+  defaultDeliveryType = DeliveryType.Delivery,
 }: ICreateBookingModal) => {
   const { allDresses } = useGlobalContext();
   const sortedDresses = React.useMemo(
@@ -112,9 +114,8 @@ const CreateBookingModal = ({
   const [newUserFirstName, setNewUserFirstName] = React.useState("");
   const [newUserLastName, setNewUserLastName] = React.useState("");
   const [dateBooked, setDateBooked] = React.useState("");
-  const [deliveryType, setDeliveryType] = React.useState<DeliveryType>(
-    DeliveryType.Delivery,
-  );
+  const [deliveryType, setDeliveryType] =
+    React.useState<DeliveryType>(defaultDeliveryType);
   const [address, setAddress] = React.useState<Address>(emptyAddress());
   const [billingAddress, setBillingAddress] =
     React.useState<Address>(emptyAddress());
@@ -132,7 +133,8 @@ const CreateBookingModal = ({
     getAllAdminUsers()
       .then((res) => setUsers(res.data as UserType[]))
       .catch(() => {});
-  }, [isOpen]);
+    setDeliveryType(defaultDeliveryType);
+  }, [isOpen, defaultDeliveryType]);
 
   React.useEffect(() => {
     if (sortedDresses.length > 0 && !dressId) {
@@ -182,7 +184,7 @@ const CreateBookingModal = ({
     setNewUserFirstName("");
     setNewUserLastName("");
     setDateBooked("");
-    setDeliveryType(DeliveryType.Delivery);
+    setDeliveryType(defaultDeliveryType);
     setAddress(emptyAddress());
     setBillingAddress(emptyAddress());
     setInstructions("");

@@ -38,7 +38,8 @@ const FaqSection = () => {
               Can’t find the answer you’re looking for? Reach out to us directly
               via{" "}
               <a
-                href="mailto:dressforless@gmail.com"
+                href="#mailto:dressforless@gmail.com"
+                target="_blank"
                 className="font-semibold text-secondary-pink hover:text-indigo-500"
               >
                 email

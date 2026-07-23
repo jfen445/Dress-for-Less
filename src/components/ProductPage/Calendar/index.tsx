@@ -156,22 +156,8 @@ const Calendar = ({
       return true;
     }
 
-    const today = auckland.now();
-    const startOfWeek = today.startOf("week").add(1, "day"); // Move to Monday
-    const endOfWeek = today.startOf("week").add(7, "day"); // Move to Sunday (inclusive)
-
-    const isThisWeek =
-      !date.isBefore(startOfWeek, "day") && !date.isAfter(endOfWeek, "day");
-
-    const isAfterWednesday = today.day() > 3;
-    const isWeekend = date.day() === 5 || date.day() === 6 || date.day() === 0;
-
-    // Disable Friday - Sunday only for this week if today is after Wednesday
-    if (isThisWeek && isAfterWednesday && isWeekend) {
-      return true;
-    }
-
     // Disable if date is more than 6 months in the future
+    const today = auckland.now();
     const sixMonthsFromNow = today.add(6, "month");
     if (date.isAfter(sixMonthsFromNow, "day")) {
       return true;

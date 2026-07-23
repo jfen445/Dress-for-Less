@@ -29,6 +29,18 @@ type AdminBookingsProps = {
   deliveryType: DeliveryType[];
 };
 
+const getOrdinalSuffix = (day: number): string => {
+  if (day % 10 === 1 && day !== 11) return "st";
+  if (day % 10 === 2 && day !== 12) return "nd";
+  if (day % 10 === 3 && day !== 13) return "rd";
+  return "th";
+};
+
+const formatBookingDate = (date: string): string => {
+  const d = dayjs(date);
+  return `${d.format("dddd")} ${d.date()}${getOrdinalSuffix(d.date())} ${d.format("MMMM")}`;
+};
+
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const {
     bookings,
@@ -603,7 +615,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 className={`cursor-pointer ${getStatusBgColour(currentBooking.status)}`}
                 onClick={() => toggleRow(currentBooking._id)}
               >
-                <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
+                <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                  {currentBooking.orderNumber}
+                </td>
+
+                <td className="px-3 py-5 text-sm">
                   <div className="flex items-center">
                     <img
                       src={primaryItem?.dress?.images[0]}
@@ -645,10 +661,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 </td>
 
                 <td className="px-3 py-5 text-sm text-gray-500">
-                  {currentBooking.orderNumber}
-                </td>
-
-                <td className="px-3 py-5 text-sm text-gray-500">
                   <div>{primaryItem?.size}</div>
                   {additionalItems.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
@@ -669,7 +681,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 </td>
 
                 <td className="px-3 py-5 text-sm text-gray-500">
-                  {dayjs(primaryItem?.dateBooked).format("MMMM D, YYYY")}
+                  {formatBookingDate(primaryItem?.dateBooked)}
                 </td>
 
                 <td className="px-3 py-5 text-sm">
@@ -829,6 +841,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <CreateBookingModal
         isOpen={createModalOpen}
         setOpen={setCreateModalOpen}
+        defaultDeliveryType={deliveryType?.[0]}
         onCreated={() => {
           getBookings();
           setToast({
@@ -1108,13 +1121,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         scope="col"
                         className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
                       >
-                        Dress
+                        Order #
                       </th>
                       <th
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
-                        Order #
+                        Dress
                       </th>
                       <th
                         scope="col"
