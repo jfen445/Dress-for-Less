@@ -49,10 +49,18 @@ const LoginComponent = () => {
             <div className="sm:rounded-5xl mt-2 flex-auto bg-white shadow-2xl shadow-gray-900/10 py-8 px-4">
               <PasswordSignInForm />
               <p className="mt-4 text-center text-sm text-gray-600">
+                <Link
+                  href="/forgot-password"
+                  className="font-medium text-secondary-pink hover:text-indigo-500"
+                >
+                  Forgot your password?
+                </Link>
+              </p>
+              <p className="mt-2 text-center text-sm text-gray-600">
                 No account?{" "}
                 <Link
                   href="/create"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                  className="font-medium text-secondary-pink hover:text-indigo-500"
                 >
                   Create one
                 </Link>

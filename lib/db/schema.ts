@@ -17,6 +17,9 @@ const userSchema = new Schema({
     required: true,
     default: "user",
   },
+  // Epoch ms of the last password change. JWTs issued before this are treated
+  // as signed out (see the session callback), so a reset ends existing sessions.
+  passwordChangedAt: { type: Number, required: false },
 });
 
 const UserSchema =
@@ -192,6 +195,23 @@ const counterSchema = new Schema({
 const CounterSchema =
   mongoose.models.Counters ?? mongoose.model("Counters", counterSchema);
 
+const passwordResetTokenSchema = new Schema(
+  {
+    userId: { type: mongoose.Schema.ObjectId, required: true },
+    // SHA-256 hash of the emailed token — never the raw token itself.
+    tokenHash: { type: String, required: true, index: true },
+    expiresAt: { type: Date, required: true },
+  },
+  { timestamps: true },
+);
+
+// TTL index: Mongo auto-deletes each doc once `expiresAt` passes.
+passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+const PasswordResetTokenSchema =
+  mongoose.models.PasswordResetTokens ??
+  mongoose.model("PasswordResetTokens", passwordResetTokenSchema);
+
 export {
   UserSchema,
   BookingSchema,
@@ -201,4 +221,5 @@ export {
   TryOnAvailabilitySchema,
   CouponSchema,
   CounterSchema,
+  PasswordResetTokenSchema,
 };

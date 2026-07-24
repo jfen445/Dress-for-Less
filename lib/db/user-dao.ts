@@ -66,6 +66,20 @@ export async function findUserWithPassword(email: string) {
   );
 }
 
+// Sets a new password hash and stamps `passwordChangedAt` so any JWT issued
+// before now is invalidated by the session callback.
+export async function updateUserPassword(userId: string, passwordHash: string) {
+  return UserSchema.updateOne(
+    { _id: userId },
+    { $set: { password: passwordHash, passwordChangedAt: Date.now() } },
+  );
+}
+
+// Cheap lookup used by the session callback to detect password changes.
+export async function findUserAuthState(email: string) {
+  return UserSchema.findOne({ email }, "passwordChangedAt");
+}
+
 export async function findUserById(id: string) {
   return UserSchema.findById(
     id,
