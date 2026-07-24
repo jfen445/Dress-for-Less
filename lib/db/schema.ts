@@ -145,13 +145,32 @@ const TryOnAvailabilitySchema =
 
 const couponSchema = new Schema(
   {
-    userId: { type: mongoose.Schema.ObjectId, required: true },
+    userId: {
+      type: mongoose.Schema.ObjectId,
+      required: function (this: any) {
+        return !this.isGlobal;
+      },
+    },
     discountAmount: { type: Number, required: true },
     discountType: {
       type: String,
       enum: Object.values(CouponType),
       required: true,
       default: CouponType.Flat,
+    },
+    // Global coupons are available to every customer (each may redeem once,
+    // tracked in redeemedByUserIds) rather than being owned by a single userId.
+    isGlobal: { type: Boolean, required: true, default: false },
+    maxRedemptions: {
+      type: Number,
+      required: function (this: any) {
+        return this.isGlobal;
+      },
+    },
+    redeemedByUserIds: {
+      type: [mongoose.Schema.ObjectId],
+      required: false,
+      default: [],
     },
     startDate: { type: String, required: true },
     expiryDate: { type: String, required: true },

@@ -90,9 +90,11 @@ export async function getCoupons() {
 }
 
 export async function createCoupon(data: {
-  userId: string;
+  userId?: string;
   discountAmount: number;
   discountType: CouponType;
+  isGlobal?: boolean;
+  maxRedemptions?: number;
   startDate: string;
   durationDays: number;
 }) {

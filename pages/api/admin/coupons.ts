@@ -44,11 +44,17 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { userId, discountAmount, discountType, startDate, durationDays } =
-      req.body;
+    const {
+      userId,
+      discountAmount,
+      discountType,
+      isGlobal,
+      maxRedemptions,
+      startDate,
+      durationDays,
+    } = req.body;
 
     if (
-      !userId ||
       discountAmount === undefined ||
       discountAmount === null ||
       !discountType ||
@@ -58,12 +64,26 @@ export default async function handler(
     ) {
       return res.status(400).json({
         message:
-          "userId, discountAmount, discountType, startDate, and durationDays are required",
+          "discountAmount, discountType, startDate, and durationDays are required",
       });
     }
 
     if (!Object.values(CouponType).includes(discountType)) {
       return res.status(400).json({ message: "discountType is invalid" });
+    }
+
+    let redemptionLimit: number | undefined;
+    if (isGlobal) {
+      redemptionLimit = Number(maxRedemptions);
+      if (!Number.isInteger(redemptionLimit) || redemptionLimit <= 0) {
+        return res.status(400).json({
+          message: "maxRedemptions must be a positive whole number for a global coupon",
+        });
+      }
+    } else if (!userId) {
+      return res
+        .status(400)
+        .json({ message: "userId is required for a non-global coupon" });
     }
 
     const amount = Number(discountAmount);
@@ -95,9 +115,11 @@ export default async function handler(
     const expiryDate = normalizedStart.add(days, "day").endOf("day").toISOString();
 
     const created = await createCoupon({
-      userId,
+      userId: isGlobal ? undefined : userId,
       discountAmount: amount,
       discountType,
+      isGlobal: !!isGlobal,
+      maxRedemptions: redemptionLimit,
       startDate: normalizedStart.toISOString(),
       expiryDate,
     });

@@ -15,7 +15,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import { auckland } from "../../lib/utils/timezone";
 import {
-  isCouponActive,
+  isCouponUsableByUser,
   calculateCouponDiscount,
 } from "../../lib/utils/couponRules";
 import { createUser, findUser } from "../../lib/db/user-dao";
@@ -96,6 +96,8 @@ export default async function handler(
     const itemsSubtotal = items.reduce((sum, item) => sum + item.price, 0);
 
     let discountAmount = 0;
+    let coupons: any[] = [];
+    let redeemingUserId: string | undefined;
 
     if (couponIds.length > 0) {
       if (!session.user?.email) {
@@ -107,8 +109,9 @@ export default async function handler(
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      redeemingUserId = user._id.toString();
 
-      const coupons = await getCouponsByIds(couponIds);
+      coupons = await getCouponsByIds(couponIds);
 
       if (coupons.length !== couponIds.length) {
         return res
@@ -118,8 +121,7 @@ export default async function handler(
 
       const now = auckland.now().toISOString();
       const invalidCoupon = coupons.find(
-        (c) =>
-          c.userId.toString() !== user._id.toString() || !isCouponActive(c, now),
+        (c) => !isCouponUsableByUser(c, redeemingUserId!, now),
       );
 
       if (invalidCoupon) {
@@ -294,7 +296,7 @@ export default async function handler(
     await BookingSchema.updateOne(filter, booking, options);
 
     if (couponIds.length > 0) {
-      await redeemCoupons(couponIds);
+      await redeemCoupons(coupons, redeemingUserId!);
     }
 
     res.status(200).json({ message: "Booking successful", booking });

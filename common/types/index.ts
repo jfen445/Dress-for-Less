@@ -226,9 +226,12 @@ export type TryOnBooking = {
 
 export type Coupon = {
   _id?: string;
-  userId: string;
+  userId?: string;
   discountAmount: number;
   discountType: CouponType;
+  isGlobal: boolean;
+  maxRedemptions?: number;
+  redeemedByUserIds?: string[];
   startDate: string;
   expiryDate: string;
   isRedeemed: boolean;

@@ -24,6 +24,8 @@ const AdminCoupons = () => {
   });
 
   const [userId, setUserId] = React.useState("");
+  const [isGlobal, setIsGlobal] = React.useState(false);
+  const [maxRedemptions, setMaxRedemptions] = React.useState("");
   const [discountType, setDiscountType] = React.useState<CouponType>(
     CouponType.Flat,
   );
@@ -56,7 +58,8 @@ const AdminCoupons = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!userId || !discountAmount || !startDate || !durationDays) return;
+    if (!isGlobal && !userId) return;
+    if (!discountAmount || !startDate || !durationDays) return;
 
     const amount = Number(discountAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -77,6 +80,19 @@ const AdminCoupons = () => {
       return;
     }
 
+    let redemptionLimit: number | undefined;
+    if (isGlobal) {
+      redemptionLimit = Number(maxRedemptions);
+      if (!Number.isInteger(redemptionLimit) || redemptionLimit <= 0) {
+        setToast({
+          message: "Max redemptions must be a positive whole number",
+          variant: ToastVariant.WARNING,
+          show: true,
+        });
+        return;
+      }
+    }
+
     const days = Number(durationDays);
     if (!Number.isInteger(days) || days <= 0) {
       setToast({
@@ -89,13 +105,17 @@ const AdminCoupons = () => {
 
     setIsSubmitting(true);
     createCoupon({
-      userId,
+      userId: isGlobal ? undefined : userId,
       discountAmount: amount,
       discountType,
+      isGlobal,
+      maxRedemptions: redemptionLimit,
       startDate,
       durationDays: days,
     })
       .then(() => {
+        setIsGlobal(false);
+        setMaxRedemptions("");
         setDiscountType(CouponType.Flat);
         setDiscountAmount("");
         setStartDate("");
@@ -124,10 +144,15 @@ const AdminCoupons = () => {
       );
   };
 
-  const getUserLabel = (id: string) => {
+  const getUserLabel = (id?: string) => {
     const u = users.find((u) => u._id === id);
     return u ? `${u.name} - ${u.email}` : id;
   };
+
+  const getCustomerLabel = (c: Coupon) =>
+    c.isGlobal
+      ? `Global — ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
+      : getUserLabel(c.userId);
 
   const statusClass = (status: string) =>
     status === "Active"
@@ -157,6 +182,21 @@ const AdminCoupons = () => {
           onSubmit={handleSubmit}
           className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end"
         >
+          <div className="sm:col-span-2 lg:col-span-6">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={isGlobal}
+                onChange={(e) => {
+                  setIsGlobal(e.target.checked);
+                  if (e.target.checked) setUserId("");
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Global coupon — available to every customer
+            </label>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Customer
@@ -164,8 +204,9 @@ const AdminCoupons = () => {
             <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
-              required
+              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:text-gray-400"
+              required={!isGlobal}
+              disabled={isGlobal}
             >
               <option value="">Select a customer…</option>
               {users.map((u) => (
@@ -175,6 +216,23 @@ const AdminCoupons = () => {
               ))}
             </select>
           </div>
+
+          {isGlobal && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Max redemptions
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={maxRedemptions}
+                onChange={(e) => setMaxRedemptions(e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+                required
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -294,7 +352,7 @@ const AdminCoupons = () => {
                       return (
                         <tr key={c._id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                            {getUserLabel(c.userId)}
+                            {getCustomerLabel(c)}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             {c.discountType === CouponType.Percentage
