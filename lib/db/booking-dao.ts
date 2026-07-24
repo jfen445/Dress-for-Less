@@ -1,4 +1,5 @@
 import { BookingSchema } from "./schema";
+import { auckland } from "../utils/timezone";
 
 const BOOKING_PROJECTION =
   "userId items totalPrice billingAddress tracking isShipped isReturned paymentIntent paymentSuccess status couponIds discountAmount orderNumber createdAt";
@@ -15,6 +16,32 @@ export async function getBookingAvailabilityByDress(dressId: String) {
         dateBooked: "$items.dateBooked",
         blockedFrom: "$items.blockedFrom",
         blockedUntil: "$items.blockedUntil",
+      },
+    },
+  ]);
+}
+
+// Every currently-active booking item across all dresses — i.e. where today
+// falls within that item's stored blockedFrom/blockedUntil window. One query
+// for the whole catalogue rather than one per dress, since a dress can have
+// more than one size concurrently active and the caller groups by dressId.
+export async function getCurrentlyActiveBookingsByDress() {
+  const today = auckland.now().format("YYYY-MM-DD");
+  return BookingSchema.aggregate([
+    { $unwind: "$items" },
+    {
+      $match: {
+        paymentSuccess: true,
+        "items.blockedFrom": { $lte: today },
+        "items.blockedUntil": { $gte: today },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        dressId: "$items.dressId",
+        size: "$items.size",
+        status: 1,
       },
     },
   ]);

@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
@@ -570,36 +571,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     }
   };
 
-  const getStatusColour = (status: BookingStatus) => {
-    let colour = "";
-    switch (status) {
-      case BookingStatus.BeingReturned:
-        colour = "bg-purple-200 text-purple-900 ring-purple-700/30";
-        break;
-      case BookingStatus.Washing:
-        colour = "bg-blue-200 text-blue-900 ring-blue-700/30";
-        break;
-      case BookingStatus.Drying:
-        colour = "bg-lime-200 text-lime-900 ring-lime-700/30";
-        break;
-      case BookingStatus.Packed:
-        colour = "bg-green-300 text-green-950 ring-green-800/40";
-        break;
-      case BookingStatus.Delayed:
-        colour = "bg-red-200 text-red-900 ring-red-700/30";
-        break;
-      case BookingStatus.Reparing:
-        colour = "bg-stone-200 text-stone-900 ring-stone-700/30";
-        break;
-      case BookingStatus.Returned:
-        colour = "bg-teal-200 text-teal-900 ring-teal-700/30";
-        break;
-      case BookingStatus.NA:
-        colour = "bg-gray-200 text-gray-900 ring-gray-700/30";
-        break;
-    }
-    return colour;
-  };
 
   const renderBookingRow = (bookingList: Booking[]) => {
     return (

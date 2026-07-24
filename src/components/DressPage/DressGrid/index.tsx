@@ -24,16 +24,16 @@ const DressGrid = () => {
 
   const totalPages = React.useMemo(
     () => Math.max(1, Math.ceil((filteredDressList?.length ?? 0) / PAGE_SIZE)),
-    [filteredDressList]
+    [filteredDressList],
   );
 
   const paginatedDressList = React.useMemo(
     () =>
       filteredDressList?.slice(
         (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE
+        currentPage * PAGE_SIZE,
       ),
-    [filteredDressList, currentPage]
+    [filteredDressList, currentPage],
   );
 
   return (

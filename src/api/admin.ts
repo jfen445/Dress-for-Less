@@ -5,6 +5,10 @@ export async function getAllBookings() {
   return api.get(`/api/admin/bookings`);
 }
 
+export async function getDressBookingStatuses() {
+  return api.get(`/api/admin/dressStatus`);
+}
+
 export async function getAllAdminUsers() {
   return api.get(`/api/admin/users`);
 }
