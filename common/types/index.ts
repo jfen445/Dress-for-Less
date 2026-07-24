@@ -117,6 +117,7 @@ export type BookingItem = {
   size: String;
   price: number;
   instructions?: string;
+  notes?: string;
   dress?: DressType;
 };
 

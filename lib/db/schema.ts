@@ -55,6 +55,7 @@ const bookingItemSchema = new Schema({
   size: { type: String, required: true },
   price: { type: Number, required: true },
   instructions: { type: String, required: false },
+  notes: { type: String, required: false },
 });
 
 const bookingSchema = new Schema(

@@ -797,6 +797,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                                 {item.instructions}
                               </p>
                             )}
+
+                            {item.notes && (
+                              <p>
+                                <span className="font-medium">Notes:</span>{" "}
+                                {item.notes}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}

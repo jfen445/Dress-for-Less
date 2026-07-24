@@ -48,6 +48,7 @@ type EditableLineItem = {
   dressId: string;
   size: string;
   dateBooked: string;
+  notes: string;
 };
 
 type EditableAddressField =
@@ -112,6 +113,7 @@ const EditBookingModal = ({
         dressId: item.dressId ?? "",
         size: (item.size as string) ?? "",
         dateBooked: item.dateBooked ?? "",
+        notes: item.notes ?? "",
       })),
     );
     setCustomerMode("existing");
@@ -175,6 +177,7 @@ const EditBookingModal = ({
         dressId: dress?._id ?? "",
         size: availableSizes[0] ?? "",
         dateBooked: "",
+        notes: "",
       },
     ]);
   };
@@ -210,11 +213,12 @@ const EditBookingModal = ({
     setIsSubmitting(true);
     try {
       await updateBooking(booking._id, {
-        items: items.map(({ itemId, dressId, size, dateBooked }) => ({
+        items: items.map(({ itemId, dressId, size, dateBooked, notes }) => ({
           itemId,
           dressId,
           size,
           dateBooked,
+          notes,
         })),
         ...(customerMode === "existing"
           ? { userId }
@@ -399,6 +403,23 @@ const EditBookingModal = ({
                     )}
                   </div>
                 )}
+
+                <div>
+                  <label className={labelCls}>
+                    Notes{" "}
+                    <span className="text-gray-400 font-normal">
+                      (optional)
+                    </span>
+                  </label>
+                  <textarea
+                    value={item.notes}
+                    onChange={(e) =>
+                      updateItem(item.id, { notes: e.target.value })
+                    }
+                    rows={2}
+                    className={inputCls}
+                  />
+                </div>
               </div>
             );
           })}

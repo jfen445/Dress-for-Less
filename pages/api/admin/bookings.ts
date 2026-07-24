@@ -147,6 +147,7 @@ export default async function handler(
         size: item.size,
         price,
         instructions: instructions ?? "",
+        notes: item.notes ?? "",
       });
     }
 

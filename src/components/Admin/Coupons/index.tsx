@@ -12,6 +12,7 @@ import { CouponType } from "../../../../common/enums/CouponType";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
+import Modal from "@/components/Modal";
 
 const AdminCoupons = () => {
   const [coupons, setCoupons] = React.useState<Coupon[]>([]);
@@ -33,6 +34,10 @@ const AdminCoupons = () => {
   const [startDate, setStartDate] = React.useState("");
   const [durationDays, setDurationDays] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [couponToDelete, setCouponToDelete] = React.useState<Coupon | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchCoupons = () => {
     setIsLoading(true);
@@ -132,16 +137,23 @@ const AdminCoupons = () => {
       .finally(() => setIsSubmitting(false));
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeleteConfirm = () => {
+    const id = couponToDelete?._id;
+    if (!id) return;
+    setIsDeleting(true);
     deleteCoupon(id)
-      .then(() => setCoupons((prev) => prev.filter((c) => c._id !== id)))
+      .then(() => {
+        setCoupons((prev) => prev.filter((c) => c._id !== id));
+        setCouponToDelete(null);
+      })
       .catch(() =>
         setToast({
           message: "Failed to remove coupon",
           variant: ToastVariant.WARNING,
           show: true,
         }),
-      );
+      )
+      .finally(() => setIsDeleting(false));
   };
 
   const getUserLabel = (id?: string) => {
@@ -376,7 +388,7 @@ const AdminCoupons = () => {
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
                             <Button
                               variant="ghost"
-                              onClick={() => handleDelete(c._id!)}
+                              onClick={() => setCouponToDelete(c)}
                               className="text-red-500 hover:text-red-700 text-xs font-medium"
                             >
                               Remove
@@ -392,6 +404,44 @@ const AdminCoupons = () => {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={!!couponToDelete}
+        setOpen={(open) => {
+          if (!open) setCouponToDelete(null);
+        }}
+      >
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Delete coupon
+        </h2>
+        <p className="text-sm text-gray-700">
+          Are you sure you want to delete the{" "}
+          <span className="font-medium">
+            {couponToDelete ? getCustomerLabel(couponToDelete) : ""}
+          </span>{" "}
+          coupon? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3 pt-6">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setCouponToDelete(null)}
+            disabled={isDeleting}
+            className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
+          >
+            {isDeleting ? "Deleting…" : "Delete"}
+          </Button>
+        </div>
+      </Modal>
     </>
   );
 };

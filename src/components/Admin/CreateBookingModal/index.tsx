@@ -46,6 +46,7 @@ type BookingLineItem = {
   dressId: string;
   size: string;
   dateBooked: string;
+  notes: string;
 };
 
 const emptyLineItem = (id: string): BookingLineItem => ({
@@ -53,6 +54,7 @@ const emptyLineItem = (id: string): BookingLineItem => ({
   dressId: "",
   size: "",
   dateBooked: "",
+  notes: "",
 });
 
 const inputCls =
@@ -232,6 +234,7 @@ const CreateBookingModal = ({
         dressId: dress?._id ?? "",
         size: availableSizes[0] ?? "",
         dateBooked: "",
+        notes: "",
       },
     ]);
   };
@@ -270,10 +273,11 @@ const CreateBookingModal = ({
     setIsSubmitting(true);
     try {
       await createAdminBooking({
-        items: items.map(({ dressId, size, dateBooked }) => ({
+        items: items.map(({ dressId, size, dateBooked, notes }) => ({
           dressId,
           size,
           dateBooked,
+          notes,
         })),
         ...(customerMode === "existing"
           ? { userId }
@@ -415,6 +419,23 @@ const CreateBookingModal = ({
                       )}
                     </div>
                   )}
+
+                  <div>
+                    <label className={labelCls}>
+                      Notes{" "}
+                      <span className="text-gray-400 font-normal">
+                        (optional)
+                      </span>
+                    </label>
+                    <textarea
+                      value={item.notes}
+                      onChange={(e) =>
+                        updateItem(item.id, { notes: e.target.value })
+                      }
+                      rows={2}
+                      className={inputCls}
+                    />
+                  </div>
                 </div>
               );
             })}

@@ -28,7 +28,12 @@ export async function deleteBlockOut(id: string) {
 }
 
 export async function createAdminBooking(data: {
-  items: { dressId: string; size: string; dateBooked: string }[];
+  items: {
+    dressId: string;
+    size: string;
+    dateBooked: string;
+    notes?: string;
+  }[];
   userId?: string;
   newUser?: { email: string; firstName: string; lastName: string };
   deliveryType: string;

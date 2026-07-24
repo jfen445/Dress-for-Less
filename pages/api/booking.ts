@@ -425,6 +425,7 @@ export default async function handler(
           size: item.size,
           price,
           instructions: instructions ?? existingItem?.instructions ?? "",
+          notes: item.notes ?? existingItem?.notes ?? "",
         });
       }
 

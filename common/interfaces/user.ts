@@ -29,6 +29,7 @@ export interface IBookingItem {
   size: String;
   price: number;
   instructions?: string;
+  notes?: string;
 }
 
 export interface IBooking {
