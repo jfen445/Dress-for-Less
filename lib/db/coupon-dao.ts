@@ -1,4 +1,5 @@
 import { CouponSchema } from "./schema";
+import { CouponType } from "../../common/enums/CouponType";
 
 export async function getAllCoupons() {
   return CouponSchema.find({});
@@ -7,6 +8,7 @@ export async function getAllCoupons() {
 export async function createCoupon(data: {
   userId: string;
   discountAmount: number;
+  discountType: CouponType;
   startDate: string;
   expiryDate: string;
 }) {

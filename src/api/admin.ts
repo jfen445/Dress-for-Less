@@ -1,4 +1,5 @@
 import api from "./client";
+import { CouponType } from "../../common/enums/CouponType";
 
 export async function getAllBookings() {
   return api.get(`/api/admin/bookings`);
@@ -91,6 +92,7 @@ export async function getCoupons() {
 export async function createCoupon(data: {
   userId: string;
   discountAmount: number;
+  discountType: CouponType;
   startDate: string;
   durationDays: number;
 }) {

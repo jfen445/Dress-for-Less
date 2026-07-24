@@ -2,6 +2,7 @@ import { PortableTextBlock } from "sanity";
 import { BookingStatus } from "../enums/BookingStatus";
 import { DeliveryType } from "../enums/DeliveryType";
 import { TryOnStatus } from "../enums/TryOnStatus";
+import { CouponType } from "../enums/CouponType";
 
 export type ProfileType = {
   _id: string;
@@ -227,6 +228,7 @@ export type Coupon = {
   _id?: string;
   userId: string;
   discountAmount: number;
+  discountType: CouponType;
   startDate: string;
   expiryDate: string;
   isRedeemed: boolean;

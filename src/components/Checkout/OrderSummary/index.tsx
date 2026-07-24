@@ -10,6 +10,7 @@ import { useUserContext } from "@/context/UserContext";
 import { CartItemType, CartType, Coupon } from "../../../../common/types";
 import { getCart } from "@/api/cart";
 import { getUserCoupons } from "@/api/coupon";
+import { calculateCouponDiscount } from "../../../../lib/utils/couponRules";
 import { getDress } from "../../../../sanity/sanity.query";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
@@ -93,9 +94,10 @@ const OrderSummary = () => {
   }, [userInfo, setAvailableCoupons]);
 
   const couponDiscount = (): number => {
-    return availableCoupons
-      .filter((c) => selectedCouponIds.includes(c._id ?? ""))
-      .reduce((sum, c) => sum + c.discountAmount, 0);
+    const selected = availableCoupons.filter((c) =>
+      selectedCouponIds.includes(c._id ?? ""),
+    );
+    return calculateCouponDiscount(selected, parseFloat(sumPrices()));
   };
 
   const formatDate = (date: string) => {
@@ -170,6 +172,13 @@ const OrderSummary = () => {
               <dd>${sumPrices()}</dd>
             </div>
 
+            {couponDiscount() > 0 && (
+              <div className="flex items-center justify-between">
+                <dt className="text-gray-600">Coupon discount</dt>
+                <dd>-${couponDiscount().toFixed(2)}</dd>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <dt className="text-gray-600">Shipping</dt>
               <dd>${baseShippingCost()}</dd>
@@ -179,13 +188,6 @@ const OrderSummary = () => {
               <div className="flex items-center justify-between">
                 <dt className="text-gray-600">Rural delivery surcharge</dt>
                 <dd>${RURAL_SURCHARGE.toFixed(2)}</dd>
-              </div>
-            )}
-
-            {couponDiscount() > 0 && (
-              <div className="flex items-center justify-between">
-                <dt className="text-gray-600">Coupon discount</dt>
-                <dd>-${couponDiscount().toFixed(2)}</dd>
               </div>
             )}
 
@@ -224,6 +226,13 @@ const OrderSummary = () => {
                   <dd>${sumPrices()}</dd>
                 </div>
 
+                {couponDiscount() > 0 && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-gray-600">Coupon discount</dt>
+                    <dd>-${couponDiscount().toFixed(2)}</dd>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-600">Shipping</dt>
                   <dd>${baseShippingCost()}</dd>
@@ -233,13 +242,6 @@ const OrderSummary = () => {
                   <div className="flex items-center justify-between">
                     <dt className="text-gray-600">Rural delivery surcharge</dt>
                     <dd>${RURAL_SURCHARGE.toFixed(2)}</dd>
-                  </div>
-                )}
-
-                {couponDiscount() > 0 && (
-                  <div className="flex items-center justify-between">
-                    <dt className="text-gray-600">Coupon discount</dt>
-                    <dd>-${couponDiscount().toFixed(2)}</dd>
                   </div>
                 )}
               </dl>

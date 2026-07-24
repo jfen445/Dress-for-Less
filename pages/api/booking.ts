@@ -14,7 +14,10 @@ import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import { auckland } from "../../lib/utils/timezone";
-import { isCouponActive } from "../../lib/utils/couponRules";
+import {
+  isCouponActive,
+  calculateCouponDiscount,
+} from "../../lib/utils/couponRules";
 import { createUser, findUser } from "../../lib/db/user-dao";
 import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
@@ -90,6 +93,8 @@ export default async function handler(
 
     var errorResponse: String[] = [];
 
+    const itemsSubtotal = items.reduce((sum, item) => sum + item.price, 0);
+
     let discountAmount = 0;
 
     if (couponIds.length > 0) {
@@ -123,7 +128,7 @@ export default async function handler(
           .json({ message: "One or more coupons are invalid or already used" });
       }
 
-      discountAmount = coupons.reduce((sum, c) => sum + c.discountAmount, 0);
+      discountAmount = calculateCouponDiscount(coupons, itemsSubtotal);
     }
 
     // Re-confirm rural status with NZ Post (by DPID) rather than trusting the
@@ -156,7 +161,7 @@ export default async function handler(
 
     if (isFreeCouponCheckout) {
       const sumPrices =
-        items.reduce((sum, item) => sum + item.price, 0) +
+        itemsSubtotal +
         calculateShippingFee(hasDeliveryItem(items), isRuralDelivery);
       if (discountAmount < sumPrices) {
         return res
@@ -422,6 +427,9 @@ export default async function handler(
       }
 
       // TODO: doesn't re-add SHIPPING_FEE (or a rural surcharge) — pre-existing gap.
+      // existingBooking.discountAmount is the dollar figure already resolved
+      // (flat or percentage-of-subtotal) at original checkout time — coupons
+      // aren't re-fetched/re-evaluated here, so discountType is irrelevant.
       const totalPrice =
         bookingItems.reduce((sum, item) => sum + item.price, 0) -
         (existingBooking.discountAmount ?? 0);

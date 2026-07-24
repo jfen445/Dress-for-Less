@@ -1,6 +1,7 @@
 import { auckland } from "../utils/timezone";
 import { TryOnBookingSchema } from "./schema";
 import { createCoupon } from "./coupon-dao";
+import { CouponType } from "../../common/enums/CouponType";
 import {
   TRY_ON_COUPON_AMOUNT,
   TRY_ON_COUPON_VALID_DAYS,
@@ -61,6 +62,7 @@ export async function grantTryOnCoupon(userId: string, date: string) {
   return createCoupon({
     userId,
     discountAmount: TRY_ON_COUPON_AMOUNT,
+    discountType: CouponType.Flat,
     startDate: startDate.toISOString(),
     expiryDate: expiryDate.toISOString(),
   });

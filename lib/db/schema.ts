@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { CouponType } from "../../common/enums/CouponType";
 
 const Schema = mongoose.Schema;
 
@@ -146,6 +147,12 @@ const couponSchema = new Schema(
   {
     userId: { type: mongoose.Schema.ObjectId, required: true },
     discountAmount: { type: Number, required: true },
+    discountType: {
+      type: String,
+      enum: Object.values(CouponType),
+      required: true,
+      default: CouponType.Flat,
+    },
     startDate: { type: String, required: true },
     expiryDate: { type: String, required: true },
     isRedeemed: { type: Boolean, required: true, default: false },

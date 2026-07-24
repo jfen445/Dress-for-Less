@@ -8,6 +8,7 @@ import {
 } from "@/api/admin";
 import { getCouponStatus } from "../../../../lib/utils/couponRules";
 import { Coupon, UserType } from "../../../../common/types";
+import { CouponType } from "../../../../common/enums/CouponType";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -23,6 +24,9 @@ const AdminCoupons = () => {
   });
 
   const [userId, setUserId] = React.useState("");
+  const [discountType, setDiscountType] = React.useState<CouponType>(
+    CouponType.Flat,
+  );
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
   const [durationDays, setDurationDays] = React.useState("");
@@ -64,6 +68,15 @@ const AdminCoupons = () => {
       return;
     }
 
+    if (discountType === CouponType.Percentage && amount > 100) {
+      setToast({
+        message: "A percentage discount cannot exceed 100",
+        variant: ToastVariant.WARNING,
+        show: true,
+      });
+      return;
+    }
+
     const days = Number(durationDays);
     if (!Number.isInteger(days) || days <= 0) {
       setToast({
@@ -75,8 +88,15 @@ const AdminCoupons = () => {
     }
 
     setIsSubmitting(true);
-    createCoupon({ userId, discountAmount: amount, startDate, durationDays: days })
+    createCoupon({
+      userId,
+      discountAmount: amount,
+      discountType,
+      startDate,
+      durationDays: days,
+    })
       .then(() => {
+        setDiscountType(CouponType.Flat);
         setDiscountAmount("");
         setStartDate("");
         setDurationDays("");
@@ -128,14 +148,14 @@ const AdminCoupons = () => {
               Coupons
             </h1>
             <p className="mt-2 text-sm text-gray-700">
-              Assign a flat-dollar discount coupon to a customer.
+              Assign a discount coupon to a customer.
             </p>
           </div>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 items-end"
+          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end"
         >
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -158,12 +178,28 @@ const AdminCoupons = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Discount amount ($)
+              Discount type
+            </label>
+            <select
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as CouponType)}
+              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+              required
+            >
+              <option value={CouponType.Flat}>Flat ($)</option>
+              <option value={CouponType.Percentage}>Percentage (%)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Discount amount ({discountType === CouponType.Percentage ? "%" : "$"})
             </label>
             <input
               type="number"
-              min="0.01"
-              step="0.01"
+              min={discountType === CouponType.Percentage ? "1" : "0.01"}
+              max={discountType === CouponType.Percentage ? "100" : undefined}
+              step={discountType === CouponType.Percentage ? "1" : "0.01"}
               value={discountAmount}
               onChange={(e) => setDiscountAmount(e.target.value)}
               className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
@@ -261,7 +297,9 @@ const AdminCoupons = () => {
                             {getUserLabel(c.userId)}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            ${c.discountAmount.toFixed(2)}
+                            {c.discountType === CouponType.Percentage
+                              ? `${c.discountAmount}%`
+                              : `$${c.discountAmount.toFixed(2)}`}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             {dayjs(c.startDate).format("MMM D, YYYY h:mma")}

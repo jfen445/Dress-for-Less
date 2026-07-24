@@ -16,6 +16,7 @@ import AddressForm from "./AddressForm";
 import BillingForm from "./BillingForm";
 import TermsModal from "../TermsModal";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
+import { CouponType } from "../../../../common/enums/CouponType";
 import {
   hasDeliveryItem,
   isDeliveryAllowedForDate,
@@ -223,11 +224,11 @@ const CheckoutForm = () => {
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 
+  // Only one coupon can be applied at a time — selecting a new one replaces
+  // whatever was previously selected instead of adding to it.
   const toggleCoupon = (couponId: string) => {
     setSelectedCouponIds((prev) =>
-      prev.includes(couponId)
-        ? prev.filter((id) => id !== couponId)
-        : [...prev, couponId],
+      prev.includes(couponId) ? [] : [couponId],
     );
   };
 
@@ -294,7 +295,10 @@ const CheckoutForm = () => {
                         htmlFor={`coupon-${coupon._id}`}
                         className="ml-3 block text-sm font-medium leading-6 text-gray-900"
                       >
-                        ${coupon.discountAmount.toFixed(2)} off &mdash; expires{" "}
+                        {coupon.discountType === CouponType.Percentage
+                          ? `${coupon.discountAmount}% off`
+                          : `$${coupon.discountAmount.toFixed(2)} off`}{" "}
+                        &mdash; expires{" "}
                         {dayjs(coupon.expiryDate).format("MMM D, YYYY h:mma")}
                       </label>
                     </li>
