@@ -18,21 +18,22 @@ export default async function handler(
   }
 
   if (req.method == "POST") {
-    const price = req.query.price as string;
-    if (parseInt(price) < 50) {
-      return res.status(404).json("Price is too low");
+    const amount = parseInt(req.query.price as string, 10);
+    if (isNaN(amount) || amount < 50) {
+      return res.status(400).json({ message: "Invalid amount" });
     }
     try {
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: parseInt(price),
+        amount,
         currency: "NZD",
       });
-      res
-        .status(200)
-        .json({ clientSecret: paymentIntent.client_secret, price: price });
+      res.status(200).json({
+        clientSecret: paymentIntent.client_secret,
+        price: String(amount),
+      });
     } catch (err) {
-      console.log("error", err);
-      res.status(404).json(err);
+      console.error("payment intent error", err);
+      res.status(500).json({ message: "Unable to create payment intent" });
     }
   }
 

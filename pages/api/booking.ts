@@ -93,7 +93,29 @@ export default async function handler(
 
     var errorResponse: String[] = [];
 
-    const itemsSubtotal = items.reduce((sum, item) => sum + item.price, 0);
+    // Resolve the authoritative price for each dress from Sanity. The client
+    // sends item.price, but it must never be trusted for money: otherwise a
+    // shopper could tamper with the payload (and the matching PaymentIntent)
+    // to rent any dress for the Stripe minimum. Every downstream figure —
+    // subtotal, coupon coverage, persisted price, and the final total that is
+    // reconciled against the Stripe charge — is derived from this map.
+    const dressPriceById = new Map<string, number>();
+    for (const item of items) {
+      if (!dressPriceById.has(item.dressId)) {
+        const dress = await getDress(item.dressId);
+        if (!dress) {
+          return res.status(404).json({ message: "Dress not found" });
+        }
+        dressPriceById.set(item.dressId, parseInt(dress.price));
+      }
+    }
+    const priceForItem = (item: (typeof items)[number]) =>
+      dressPriceById.get(item.dressId)!;
+
+    const itemsSubtotal = items.reduce(
+      (sum, item) => sum + priceForItem(item),
+      0,
+    );
 
     let discountAmount = 0;
     let coupons: any[] = [];
@@ -231,7 +253,7 @@ export default async function handler(
         ruralDeliveryNumber: item.address?.ruralDeliveryNumber,
       },
       size: item.size,
-      price: item.price,
+      price: priceForItem(item),
       instructions: item.instructions ?? "",
     }));
 
@@ -250,13 +272,17 @@ export default async function handler(
       stripePayment.amount !== Math.round(totalPrice * 100)
     ) {
       console.error(
-        "Stripe charge amount does not match server-verified booking total — proceeding with the verified total, flagging for manual reconciliation",
+        "Stripe charge amount does not match server-verified booking total — rejecting booking",
         {
           paymentIntent,
           stripeAmountCents: stripePayment.amount,
           verifiedTotalCents: Math.round(totalPrice * 100),
         },
       );
+      return res.status(400).json({
+        message:
+          "Payment amount does not match the order total. No booking was created — please contact us if you were charged.",
+      });
     }
 
     const existingBooking = await BookingSchema.findOne(
