@@ -5,7 +5,7 @@ import Calendar from "@/components/ProductPage/Calendar";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { getAllAdminUsers, createAdminBooking } from "@/api/admin";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
-import { UserType, Address, Sizes } from "../../../../common/types";
+import { UserType, Address, Sizes, DressType } from "../../../../common/types";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 
 const DELIVERY_FEES: Record<DeliveryType, number> = {
@@ -25,6 +25,34 @@ const emptyAddress = (): Address => ({
   city: "",
   country: "New Zealand",
   postCode: "",
+});
+
+const getAvailableSizes = (dress?: DressType): string[] =>
+  SIZES.filter((s) => {
+    if (!dress) return false;
+    const stock = parseInt(
+      (dress[s.toLowerCase() as keyof DressType] as string) ?? "0",
+    );
+    return stock > 0;
+  });
+
+const getSizes = (dress?: DressType): Sizes =>
+  dress
+    ? { xs: dress.xs, s: dress.s, m: dress.m, l: dress.l, xl: dress.xl }
+    : {};
+
+type BookingLineItem = {
+  id: string;
+  dressId: string;
+  size: string;
+  dateBooked: string;
+};
+
+const emptyLineItem = (id: string): BookingLineItem => ({
+  id,
+  dressId: "",
+  size: "",
+  dateBooked: "",
 });
 
 const inputCls =
@@ -107,13 +135,15 @@ const CreateBookingModal = ({
   const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
     "existing",
   );
-  const [dressId, setDressId] = React.useState("");
-  const [size, setSize] = React.useState("");
+  const itemIdCounter = React.useRef(0);
+  const makeItemId = () => `item-${itemIdCounter.current++}`;
+  const [items, setItems] = React.useState<BookingLineItem[]>([
+    emptyLineItem(makeItemId()),
+  ]);
   const [userId, setUserId] = React.useState("");
   const [newUserEmail, setNewUserEmail] = React.useState("");
   const [newUserFirstName, setNewUserFirstName] = React.useState("");
   const [newUserLastName, setNewUserLastName] = React.useState("");
-  const [dateBooked, setDateBooked] = React.useState("");
   const [deliveryType, setDeliveryType] =
     React.useState<DeliveryType>(defaultDeliveryType);
   const [address, setAddress] = React.useState<Address>(emptyAddress());
@@ -136,59 +166,78 @@ const CreateBookingModal = ({
     setDeliveryType(defaultDeliveryType);
   }, [isOpen, defaultDeliveryType]);
 
+  // Default the first (still-untouched) line item to the first dress once the
+  // catalogue loads, matching the old single-dress behaviour.
   React.useEffect(() => {
-    if (sortedDresses.length > 0 && !dressId) {
-      setDressId(sortedDresses[0]._id);
-    }
-  }, [sortedDresses, dressId]);
+    if (sortedDresses.length === 0) return;
+    setItems((prev) => {
+      if (prev.length !== 1 || prev[0].dressId) return prev;
+      const availableSizes = getAvailableSizes(sortedDresses[0]);
+      return [
+        { ...prev[0], dressId: sortedDresses[0]._id, size: availableSizes[0] ?? "" },
+      ];
+    });
+  }, [sortedDresses]);
 
-  const selectedDress = sortedDresses.find((d) => d._id === dressId);
-
-  const availableSizes = SIZES.filter((s) => {
-    if (!selectedDress) return false;
-    const stock = parseInt(
-      (selectedDress[
-        s.toLowerCase() as keyof typeof selectedDress
-      ] as string) ?? "0",
-    );
-    return stock > 0;
-  });
-
-  React.useEffect(() => {
-    if (availableSizes.length > 0 && !availableSizes.includes(size as any)) {
-      setSize(availableSizes[0]);
-    }
-  }, [dressId, availableSizes, size]);
+  const dressPrice = (dressId: string) => {
+    const dress = sortedDresses.find((d) => d._id === dressId);
+    return dress ? parseInt(dress.price) : 0;
+  };
 
   const needsAddress = deliveryType !== DeliveryType.Pickup;
-  const dressPrice = selectedDress ? parseInt(selectedDress.price) : 0;
+  const dressesTotal = items.reduce(
+    (sum, item) => sum + dressPrice(item.dressId),
+    0,
+  );
   const deliveryFee = DELIVERY_FEES[deliveryType];
-  const totalDisplay = (dressPrice + deliveryFee).toFixed(2);
-
-  const sizes: Sizes = selectedDress
-    ? {
-        xs: selectedDress.xs,
-        s: selectedDress.s,
-        m: selectedDress.m,
-        l: selectedDress.l,
-        xl: selectedDress.xl,
-      }
-    : {};
+  const totalDisplay = (dressesTotal + deliveryFee).toFixed(2);
 
   const resetForm = () => {
     setCustomerMode("existing");
-    setDressId(sortedDresses[0]?._id ?? "");
-    setSize("");
+    setItems([emptyLineItem(makeItemId())]);
     setUserId("");
     setNewUserEmail("");
     setNewUserFirstName("");
     setNewUserLastName("");
-    setDateBooked("");
     setDeliveryType(defaultDeliveryType);
     setAddress(emptyAddress());
     setBillingAddress(emptyAddress());
     setInstructions("");
     setSameAsShipping(true);
+  };
+
+  const updateItem = (id: string, patch: Partial<BookingLineItem>) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    );
+  };
+
+  const handleDressChange = (id: string, dressId: string) => {
+    const dress = sortedDresses.find((d) => d._id === dressId);
+    const availableSizes = getAvailableSizes(dress);
+    updateItem(id, { dressId, size: availableSizes[0] ?? "", dateBooked: "" });
+  };
+
+  const handleSizeChange = (id: string, size: string) => {
+    updateItem(id, { size, dateBooked: "" });
+  };
+
+  const addItem = () => {
+    const dress = sortedDresses[0];
+    const availableSizes = getAvailableSizes(dress);
+    setItems((prev) => [
+      ...prev,
+      {
+        id: makeItemId(),
+        dressId: dress?._id ?? "",
+        size: availableSizes[0] ?? "",
+        dateBooked: "",
+      },
+    ]);
+  };
+
+  const removeItem = (id: string) => {
+    setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.id !== id) : prev));
   };
 
   const handleAddressChange = (field: keyof Address, value: string) => {
@@ -207,9 +256,12 @@ const CreateBookingModal = ({
       customerMode === "existing"
         ? !userId
         : !newUserEmail || !newUserFirstName || !newUserLastName;
-    if (!dressId || customerInvalid || !dateBooked || !size) {
+    const itemsInvalid = items.some(
+      (item) => !item.dressId || !item.size || !item.dateBooked,
+    );
+    if (itemsInvalid || customerInvalid) {
       setToast({
-        message: "Please fill in all required fields including a date",
+        message: "Please fill in all required fields including a date for each dress",
         variant: ToastVariant.WARNING,
         show: true,
       });
@@ -218,7 +270,11 @@ const CreateBookingModal = ({
     setIsSubmitting(true);
     try {
       await createAdminBooking({
-        dressId,
+        items: items.map(({ dressId, size, dateBooked }) => ({
+          dressId,
+          size,
+          dateBooked,
+        })),
         ...(customerMode === "existing"
           ? { userId }
           : {
@@ -228,8 +284,6 @@ const CreateBookingModal = ({
                 lastName: newUserLastName,
               },
             }),
-        dateBooked,
-        size,
         deliveryType,
         address: needsAddress ? address : undefined,
         billingAddress:
@@ -258,151 +312,200 @@ const CreateBookingModal = ({
           onSubmit={handleSubmit}
           className="space-y-6 max-h-[75vh] overflow-y-auto pr-1"
         >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Dress */}
-            <div>
-              <label className={labelCls}>Dress</label>
-              <select
-                value={dressId}
-                onChange={(e) => {
-                  setDressId(e.target.value);
-                  setDateBooked("");
-                }}
-                className={inputCls}
-                required
-              >
-                {sortedDresses.map((d) => (
-                  <option key={d._id} value={d._id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="space-y-4">
+            {items.map((item, idx) => {
+              const dress = sortedDresses.find((d) => d._id === item.dressId);
+              const availableSizes = getAvailableSizes(dress);
+              const sizes = getSizes(dress);
 
-            {/* Size */}
-            <div>
-              <label className={labelCls}>Size</label>
-              <select
-                value={size}
-                onChange={(e) => {
-                  setSize(e.target.value);
-                  setDateBooked("");
-                }}
-                className={inputCls}
-                required
-              >
-                {availableSizes.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Customer toggle */}
-            <div className="sm:col-span-2">
-              <label className={labelCls}>Customer</label>
-              <div className="flex gap-4 mb-3">
-                {(["existing", "new"] as const).map((mode) => (
-                  <label
-                    key={mode}
-                    className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="customerMode"
-                      value={mode}
-                      checked={customerMode === mode}
-                      onChange={() => {
-                        setCustomerMode(mode);
-                        setUserId("");
-                        setNewUserEmail("");
-                        setNewUserFirstName("");
-                        setNewUserLastName("");
-                      }}
-                    />
-                    {mode === "existing" ? "Existing customer" : "New customer"}
-                  </label>
-                ))}
-              </div>
-
-              {customerMode === "existing" ? (
-                <select
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  className={inputCls}
-                  required
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-md border border-gray-200 p-4 space-y-4"
                 >
-                  <option value="">Select a customer…</option>
-                  {users.map((u) => (
-                    <option key={u._id ?? u.email} value={u._id ?? ""}>
-                      {u.name} - {u.email}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label className={labelCls}>Email</label>
-                    <input
-                      type="email"
-                      value={newUserEmail}
-                      onChange={(e) => setNewUserEmail(e.target.value)}
-                      required
-                      className={inputCls}
-                      placeholder="customer@example.com"
-                    />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-800">
+                      Dress {idx + 1}
+                    </span>
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  <div>
-                    <label className={labelCls}>First name</label>
-                    <input
-                      type="text"
-                      value={newUserFirstName}
-                      onChange={(e) => setNewUserFirstName(e.target.value)}
-                      required
-                      className={inputCls}
-                    />
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className={labelCls}>Dress</label>
+                      <select
+                        value={item.dressId}
+                        onChange={(e) =>
+                          handleDressChange(item.id, e.target.value)
+                        }
+                        className={inputCls}
+                        required
+                      >
+                        <option value="">Select a dress…</option>
+                        {sortedDresses.map((d) => (
+                          <option key={d._id} value={d._id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Size</label>
+                      <select
+                        value={item.size}
+                        onChange={(e) =>
+                          handleSizeChange(item.id, e.target.value)
+                        }
+                        className={inputCls}
+                        required
+                        disabled={!item.dressId}
+                      >
+                        <option value="">Select a size…</option>
+                        {availableSizes.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className={labelCls}>Last name</label>
-                    <input
-                      type="text"
-                      value={newUserLastName}
-                      onChange={(e) => setNewUserLastName(e.target.value)}
-                      required
-                      className={inputCls}
-                    />
-                  </div>
+
+                  {item.dressId && item.size && (
+                    <div>
+                      <label className={`${labelCls} mb-0`}>Rental date</label>
+                      <Calendar
+                        setSelectedDate={(date) =>
+                          updateItem(item.id, {
+                            dateBooked:
+                              typeof date === "function"
+                                ? (date as (prev: string) => string)(
+                                    item.dateBooked,
+                                  )
+                                : date,
+                          })
+                        }
+                        sizes={sizes}
+                        selectedSize={item.size}
+                        dressId={item.dressId}
+                        isAdmin={true}
+                        deliveryType={deliveryType}
+                      />
+                      {item.dateBooked && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Selected:{" "}
+                          {new Date(item.dateBooked).toLocaleDateString(
+                            "en-NZ",
+                            {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            },
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })}
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={addItem}
+              className="text-sm text-primary-pink hover:underline px-0 py-0"
+            >
+              + Add another dress
+            </Button>
           </div>
 
-          {/* Calendar */}
-          {dressId && size && (
-            <div>
-              <label className={`${labelCls} mb-0`}>Rental Date</label>
-              <Calendar
-                setSelectedDate={setDateBooked}
-                sizes={sizes}
-                selectedSize={size}
-                dressId={dressId}
-                isAdmin={true}
-                deliveryType={deliveryType}
-              />
-              {dateBooked && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Selected:{" "}
-                  {new Date(dateBooked).toLocaleDateString("en-NZ", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
-              )}
+          {/* Customer */}
+          <div>
+            <label className={labelCls}>Customer</label>
+            <div className="flex gap-4 mb-3">
+              {(["existing", "new"] as const).map((mode) => (
+                <label
+                  key={mode}
+                  className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="customerMode"
+                    value={mode}
+                    checked={customerMode === mode}
+                    onChange={() => {
+                      setCustomerMode(mode);
+                      setUserId("");
+                      setNewUserEmail("");
+                      setNewUserFirstName("");
+                      setNewUserLastName("");
+                    }}
+                  />
+                  {mode === "existing" ? "Existing customer" : "New customer"}
+                </label>
+              ))}
             </div>
-          )}
+
+            {customerMode === "existing" ? (
+              <select
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                className={inputCls}
+                required
+              >
+                <option value="">Select a customer…</option>
+                {users.map((u) => (
+                  <option key={u._id ?? u.email} value={u._id ?? ""}>
+                    {u.name} - {u.email}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>Email</label>
+                  <input
+                    type="email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    required
+                    className={inputCls}
+                    placeholder="customer@example.com"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>First name</label>
+                  <input
+                    type="text"
+                    value={newUserFirstName}
+                    onChange={(e) => setNewUserFirstName(e.target.value)}
+                    required
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Last name</label>
+                  <input
+                    type="text"
+                    value={newUserLastName}
+                    onChange={(e) => setNewUserLastName(e.target.value)}
+                    required
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Delivery type */}
           <div>
@@ -478,10 +581,16 @@ const CreateBookingModal = ({
 
           {/* Price summary */}
           <div className="rounded-md bg-gray-50 p-4 text-sm space-y-1">
-            <div className="flex justify-between text-gray-600">
-              <span>Dress rental</span>
-              <span>${dressPrice.toFixed(2)}</span>
-            </div>
+            {items.map((item) => {
+              const dress = sortedDresses.find((d) => d._id === item.dressId);
+              if (!dress) return null;
+              return (
+                <div key={item.id} className="flex justify-between text-gray-600">
+                  <span>{dress.name}</span>
+                  <span>${dressPrice(item.dressId).toFixed(2)}</span>
+                </div>
+              );
+            })}
             <div className="flex justify-between text-gray-600">
               <span>Delivery</span>
               <span>${deliveryFee.toFixed(2)}</span>

@@ -1,6 +1,6 @@
 import React from "react";
 
-interface InputProps extends React.HTMLAttributes<HTMLInputElement> {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   type: string;
   name: string;
   id: string;

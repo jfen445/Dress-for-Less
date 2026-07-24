@@ -300,8 +300,8 @@ export default async function handler(
     const bookingId = req.query.bookingId as string;
     const bookingObj = req.body.bookingObj;
 
-    if (bookingObj?.dressId) {
-      // Full booking edit (from EditBookingModal) — admin bookings always have exactly one item.
+    if (Array.isArray(bookingObj?.items)) {
+      // Full booking edit (from EditBookingModal) — a booking can hold multiple dresses.
       const existingBooking = await BookingSchema.findById(bookingId);
       if (!existingBooking)
         return res
@@ -309,11 +309,9 @@ export default async function handler(
           .send("The booking with the given ID was not found.");
 
       const {
-        dressId,
+        items: itemsPayload,
         userId: bodyUserId,
         newUser,
-        dateBooked,
-        size,
         deliveryType,
         address,
         billingAddress,
@@ -321,13 +319,36 @@ export default async function handler(
         instructions,
       } = bookingObj;
 
-      if (!dressId || !dateBooked || !size || !deliveryType) {
+      if (itemsPayload.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "At least one dress is required" });
+      }
+      if (!deliveryType) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      if (
+        itemsPayload.some(
+          (item: any) => !item?.dressId || !item?.dateBooked || !item?.size,
+        )
+      ) {
         return res.status(400).json({ message: "Missing required fields" });
       }
       if (!bodyUserId && !newUser) {
         return res.status(400).json({
           message: "A customer or new customer details are required",
         });
+      }
+
+      const seen = new Set<string>();
+      for (const item of itemsPayload) {
+        const key = `${item.dressId}|${item.size}|${item.dateBooked}`;
+        if (seen.has(key)) {
+          return res.status(400).json({
+            message: "The same dress, size and date was selected more than once",
+          });
+        }
+        seen.add(key);
       }
 
       let userId = bodyUserId;
@@ -345,49 +366,72 @@ export default async function handler(
             : result._id.toString();
       }
 
-      const dress = await getDress(dressId);
-      if (!dress) return res.status(404).json({ message: "Dress not found" });
-
-      const blocked = await checkBlockOut(dressId, size, dateBooked);
-      if (blocked)
-        return res.status(409).json({
-          message: "This date is blocked out for the selected size",
-        });
-
-      const duplicates = await checkDuplicateBooking(
-        dressId,
-        size,
-        dateBooked,
-        bookingId,
+      const existingItemsById = new Map<string, any>(
+        existingBooking.items.map((item: any) => [item._id.toString(), item]),
       );
-      if (duplicates.length > 0) {
-        return res
-          .status(409)
-          .json({ message: "This date is already fully booked" });
+
+      const bookingItems = [];
+      for (const item of itemsPayload) {
+        const dress = await getDress(item.dressId);
+        if (!dress)
+          return res.status(404).json({ message: "Dress not found" });
+
+        const blocked = await checkBlockOut(
+          item.dressId,
+          item.size,
+          item.dateBooked,
+        );
+        if (blocked)
+          return res.status(409).json({
+            message: "This date is blocked out for the selected size",
+          });
+
+        const duplicates = await checkDuplicateBooking(
+          item.dressId,
+          item.size,
+          item.dateBooked,
+          bookingId,
+        );
+        if (duplicates.length > 0) {
+          return res
+            .status(409)
+            .json({ message: "This date is already fully booked" });
+        }
+
+        const price = parseInt(dress.price);
+        const { blockedFrom, blockedUntil } = calculateBookingWindow(
+          item.dateBooked,
+          deliveryType,
+        );
+        const existingItem = item.itemId
+          ? existingItemsById.get(item.itemId)
+          : undefined;
+
+        bookingItems.push({
+          _id: existingItem?._id,
+          dressId: item.dressId,
+          dateBooked: item.dateBooked,
+          blockedFrom,
+          blockedUntil,
+          deliveryType,
+          address: address ?? {},
+          size: item.size,
+          price,
+          instructions: instructions ?? existingItem?.instructions ?? "",
+        });
       }
 
-      const price = parseInt(dress.price);
-      const { blockedFrom, blockedUntil } = calculateBookingWindow(dateBooked, deliveryType);
-      const existingItem = existingBooking.items[0];
+      // TODO: doesn't re-add SHIPPING_FEE (or a rural surcharge) — pre-existing gap.
+      const totalPrice =
+        bookingItems.reduce((sum, item) => sum + item.price, 0) -
+        (existingBooking.discountAmount ?? 0);
 
       const updatedBooking = await BookingSchema.findByIdAndUpdate(
         bookingId,
         {
           userId,
-          "items.0": {
-            _id: existingItem?._id,
-            dressId,
-            dateBooked,
-            blockedFrom,
-            blockedUntil,
-            deliveryType,
-            address: address ?? {},
-            size,
-            price,
-            instructions: instructions ?? existingItem?.instructions ?? "",
-          },
-          // TODO: doesn't re-add SHIPPING_FEE (or a rural surcharge) — pre-existing gap.
-          totalPrice: price - (existingBooking.discountAmount ?? 0),
+          items: bookingItems,
+          totalPrice,
           billingAddress: billingAddress ?? {},
           status: status ?? existingBooking.status,
         },
