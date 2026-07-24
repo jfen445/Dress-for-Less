@@ -27,9 +27,20 @@ const CreateAccountComponent = () => {
       lastname: { value: string };
       email: { value: string };
       password: { value: string };
+      confirmPassword: { value: string };
       mobileNumber: { value: string };
       instagramHandle: { value: string };
     };
+
+    if (formElements.password.value !== formElements.confirmPassword.value) {
+      setToast({
+        ...toast,
+        show: true,
+        message: "Passwords do not match",
+        variant: ToastVariant.ERROR,
+      });
+      return;
+    }
 
     const user: UserType = {
       email: formElements.email.value,
@@ -81,7 +92,7 @@ const CreateAccountComponent = () => {
           </h2>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="bg-white grid grid-cols-1 gap-x-8 gap-y-10 border-b border-gray-900/10 pb-12 md:grid-cols-2 w-1/2 mx-auto">
+          <div className="bg-white grid grid-cols-1 gap-x-8 gap-y-10 border-b border-gray-900/10 pb-12 px-4 md:grid-cols-2 md:w-1/2 md:mx-auto md:px-0">
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 md:col-span-2">
               <div className="sm:col-span-3">
                 <label
@@ -131,6 +142,24 @@ const CreateAccountComponent = () => {
                     type="password"
                     name="password"
                     id="password"
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-4">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  Confirm password
+                </label>
+                <div className="mt-2">
+                  <Input
+                    type="password"
+                    name="confirmPassword"
+                    id="confirmPassword"
                     autoComplete="new-password"
                     required
                   />
