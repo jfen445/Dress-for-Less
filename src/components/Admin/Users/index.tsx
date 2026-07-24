@@ -45,6 +45,11 @@ const AdminUsers = () => {
         isOpen={userModalOpen}
         setOpen={setUserModalOpen}
         user={selectedUser}
+        onSaved={(updatedUser) => {
+          setUsers((prev) =>
+            prev?.map((u) => (u.email === updatedUser.email ? updatedUser : u)),
+          );
+        }}
       ></UserModal>
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">

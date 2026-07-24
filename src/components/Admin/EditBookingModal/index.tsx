@@ -100,6 +100,11 @@ const EditBookingModal = ({
     setStatus(booking.status);
   }, [booking, isOpen]);
 
+  const sortedDresses = React.useMemo(
+    () => [...(allDresses ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    [allDresses],
+  );
+
   const selectedDress = allDresses?.find((d) => d._id === dressId);
 
   const availableSizes = SIZES.filter((s) => {
@@ -260,7 +265,7 @@ const EditBookingModal = ({
               className={inputCls}
               required
             >
-              {allDresses?.map((d) => (
+              {sortedDresses.map((d) => (
                 <option key={d._id} value={d._id}>
                   {d.name}
                 </option>
