@@ -5,7 +5,8 @@ const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
   email: { type: String, required: true },
-  password: { type: String, required: false },
+  // Never returned by default queries; must be explicitly `.select("+password")`.
+  password: { type: String, required: false, select: false },
   name: { type: String, required: false },
   mobileNumber: { type: String, required: false },
   instagramHandle: { type: String, required: false },

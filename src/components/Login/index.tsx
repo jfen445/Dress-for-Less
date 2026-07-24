@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Button from "../Button";
 import EmailSignInForm from "./EmailSignInForm";
 import GoogleSignInButton from "./GoogleSignInButton";
+import PasswordSignInForm from "./PasswordSignInForm";
 
 const LoginComponent = () => {
   const { data: session } = useSession();
@@ -46,6 +47,19 @@ const LoginComponent = () => {
             </>
           ) : (
             <div className="sm:rounded-5xl mt-2 flex-auto bg-white shadow-2xl shadow-gray-900/10 py-8 px-4">
+              <PasswordSignInForm />
+              <p className="mt-4 text-center text-sm text-gray-600">
+                No account?{" "}
+                <Link
+                  href="/create"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Create one
+                </Link>
+              </p>
+              <div className="mx-auto my-10 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400">
+                or
+              </div>
               <EmailSignInForm />
               <div className="mx-auto my-10 flex w-full items-center justify-evenly before:mr-4 before:block before:h-px before:flex-grow before:bg-stone-400 after:ml-4 after:block after:h-px after:flex-grow after:bg-stone-400">
                 or

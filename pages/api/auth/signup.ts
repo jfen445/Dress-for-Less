@@ -1,44 +1,62 @@
 import { dbConnect } from "../../../lib/db/db";
 import { NextApiRequest, NextApiResponse } from "next";
-import { createUser, findUser } from "../../../lib/db/user-dao";
-import { IUser } from "../../../common/interfaces/user";
-import bcrypt from "bcrypt";
-import { NextResponse } from "next/server";
+import { createUserWithPassword, findUser } from "../../../lib/db/user-dao";
+import bcrypt from "bcryptjs";
+import {
+  PASSWORD_SALT_ROUNDS,
+  MIN_PASSWORD_LENGTH,
+} from "../../../common/constants/auth";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  const con = await dbConnect();
-  console.log("hit db connect", new Date().getSeconds(), con);
-  // return new NextResponse("connected and disconnected");
-
-  if (req.method == "POST") {
-    const saltRounds = 10;
-
-    const users = await findUser(req.body.user.email);
-
-    if (users.length !== 0) {
-      res.status(409).json({
-        message: "An acount with this email has already been created",
-      });
-    }
-
-    bcrypt.hash(req.body.user.password, saltRounds, async function (err, hash) {
-      // Store hash in your password DB.
-      let user: IUser = {
-        email: req.body.user.email,
-        name: req.body.user.name,
-        password: hash,
-        mobileNumber: req.body.user.mobileNumber,
-        instagramHandle: req.body.user.instagramHandle,
-      };
-
-      // await createUser(user);
-    });
-
-    res.status(200).json({ message: "Account created" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
   }
 
-  //   return NextResponse.json({ messsage: "Hello World" });
+  const {
+    email,
+    name,
+    password,
+    mobileNumber,
+    instagramHandle,
+  } = req.body?.user ?? {};
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ message: "A valid email is required" });
+  }
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: "Name is required" });
+  }
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({
+      message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+    });
+  }
+
+  await dbConnect();
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existing = await findUser(normalizedEmail);
+  if (existing.length > 0) {
+    return res
+      .status(409)
+      .json({ message: "An account with this email already exists" });
+  }
+
+  const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+
+  await createUserWithPassword({
+    email: normalizedEmail,
+    name: name.trim(),
+    mobileNumber: mobileNumber ?? "",
+    instagramHandle: instagramHandle ?? "",
+    passwordHash,
+  });
+
+  return res.status(201).json({ message: "Account created" });
 }

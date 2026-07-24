@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { UserType } from "../../common/types";
-import { logUserIn, signUp } from "@/api/user";
+import { signUp } from "@/api/user";
 import { AxiosResponse } from "axios";
 
 interface AuthCtx {
@@ -27,10 +27,6 @@ const UserAuthContextProvider = ({ children }: React.PropsWithChildren) => {
   const signup = (user: UserType) => {
     return signUp(user);
   };
-
-  // const login = (email: string, password: string) => {
-  //   return logUserIn(email, password);
-  // };
 
   return (
     <userAuthContext.Provider

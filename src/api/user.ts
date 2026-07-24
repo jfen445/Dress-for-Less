@@ -5,10 +5,6 @@ export async function signUp(user: UserType) {
   return api.post(`/api/auth/signup`, user);
 }
 
-export async function logUserIn(email: string, password: string) {
-  return api.post(`/api/auth/login`, { email, password });
-}
-
 export async function getUser(email: string) {
   return api.get(`/api/user?email=${email}`);
 }

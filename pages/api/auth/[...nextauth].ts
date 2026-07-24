@@ -3,12 +3,24 @@ import GoogleProvider from "next-auth/providers/google";
 import EmailProvider, {
   SendVerificationRequestParams,
 } from "next-auth/providers/email";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/db/db";
 import { Resend } from "resend";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
 import { UserType } from "../../../common/types";
-import { createUser } from "../../../lib/db/user-dao";
+import { createUser, findUserWithPassword } from "../../../lib/db/user-dao";
+import bcrypt from "bcryptjs";
+import { PASSWORD_SALT_ROUNDS } from "../../../common/constants/auth";
+
+// A constant, valid bcrypt hash used to keep `authorize` response time uniform
+// when the email doesn't exist (or has no password): we always run a compare so
+// timing can't reveal whether an account is registered. Generated at the same
+// cost as real hashes so the timings match.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  "unmatchable-placeholder-password",
+  PASSWORD_SALT_ROUNDS,
+);
 
 declare module "next-auth" {
   interface Session {
@@ -65,6 +77,34 @@ export const authOptions: NextAuthOptions = {
       from: process.env.EMAIL_FROM,
       maxAge: 15 * 60, // 15 minutes
       sendVerificationRequest: sendVerificationRequest,
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email?.trim().toLowerCase();
+        const password = credentials?.password;
+        if (!email || !password) return null;
+
+        const user = await findUserWithPassword(email);
+
+        // Always compare against *some* hash so a missing user/password takes
+        // the same time as a wrong password (no email enumeration via timing).
+        const hash = user?.password ?? DUMMY_PASSWORD_HASH;
+        const passwordMatches = await bcrypt.compare(password, hash);
+
+        if (!user || !user.password || !passwordMatches) return null;
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name ?? "",
+          image: user.photo ?? null,
+        };
+      },
     }),
   ],
   pages: {

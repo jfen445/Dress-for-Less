@@ -27,10 +27,42 @@ export async function createUser(user: UserType) {
   return newUser;
 }
 
+// Credential signup: insert a new user with a pre-hashed password. Kept
+// separate from `createUser` (used by OAuth sign-in), which intentionally
+// ignores passwords.
+export async function createUserWithPassword(user: {
+  email: string;
+  name: string;
+  mobileNumber: string;
+  instagramHandle: string;
+  passwordHash: string;
+}) {
+  const client = await clientPromise;
+  const db = client.db();
+  const collection = db.collection(UserSchema.collection.name);
+
+  return collection.insertOne({
+    email: user.email,
+    name: user.name,
+    mobileNumber: user.mobileNumber,
+    instagramHandle: user.instagramHandle,
+    password: user.passwordHash,
+    role: "user",
+  });
+}
+
 export async function findUser(email: String) {
   return UserSchema.find(
     { email },
     "__id name email mobileNumber instagramHandle photo role",
+  );
+}
+
+// Login only: explicitly pulls in the (normally hidden) password hash so the
+// credential provider can verify it. Never expose the result to clients.
+export async function findUserWithPassword(email: string) {
+  return UserSchema.findOne({ email }).select(
+    "+password email name photo role",
   );
 }
 
