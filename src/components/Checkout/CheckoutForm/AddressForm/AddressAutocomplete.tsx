@@ -21,12 +21,8 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   onInputChange,
   onSelect,
 }) => {
-  const [suggestions, setSuggestions] = React.useState<AddressSuggestion[]>(
-    [],
-  );
-  const [statusMessage, setStatusMessage] = React.useState<string | null>(
-    null,
-  );
+  const [suggestions, setSuggestions] = React.useState<AddressSuggestion[]>([]);
+  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout>>();
 
   React.useEffect(() => {
@@ -50,7 +46,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         setSuggestions(data.addresses);
         setStatusMessage(
           data.addresses.length === 0
-            ? "No matching address found — you can continue typing it manually."
+            ? "No matching address found - you can continue typing it manually."
             : null,
         );
       } catch {
@@ -70,9 +66,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
   const handleComboboxChange = (selectedText: string | null) => {
     if (!selectedText) return;
-    const suggestion = suggestions.find(
-      (s) => s.fullAddress === selectedText,
-    );
+    const suggestion = suggestions.find((s) => s.fullAddress === selectedText);
     setSuggestions([]);
     setStatusMessage(null);
     if (suggestion) {

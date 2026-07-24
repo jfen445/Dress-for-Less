@@ -193,7 +193,7 @@ const AdminCoupons = () => {
                 }}
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              Global coupon — available to every customer
+              Global coupon - available to every customer
             </label>
           </div>
 
@@ -251,7 +251,8 @@ const AdminCoupons = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Discount amount ({discountType === CouponType.Percentage ? "%" : "$"})
+              Discount amount (
+              {discountType === CouponType.Percentage ? "%" : "$"})
             </label>
             <input
               type="number"
