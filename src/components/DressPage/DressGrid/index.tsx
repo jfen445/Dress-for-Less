@@ -11,10 +11,16 @@ const PAGE_SIZE = 30;
 const DressGrid = () => {
   const { filteredDressList, isLoading } = useDressContext();
   const [currentPage, setCurrentPage] = React.useState(1);
+  const gridTopRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setCurrentPage(1);
   }, [filteredDressList]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    gridTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const totalPages = React.useMemo(
     () => Math.max(1, Math.ceil((filteredDressList?.length ?? 0) / PAGE_SIZE)),
@@ -38,6 +44,7 @@ const DressGrid = () => {
         </div>
       ) : (
         <>
+          <div ref={gridTopRef} />
           <section className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
             {paginatedDressList?.map((dress: DressType) => (
               <a
@@ -65,7 +72,7 @@ const DressGrid = () => {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </>
       )}
