@@ -1,0 +1,16 @@
+name: Daily Try-On Reminder
+
+on:
+  schedule:
+    # 1pm NZST daily (UTC+12). Runs at 2pm during NZDT (UTC+13) — one hour drift is acceptable.
+    - cron: "0 1 * * *"
+  workflow_dispatch: # allow manual trigger for testing
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send try-on reminder emails
+        run: |
+          curl -f --location-trusted -X POST https://${{ secrets.APP_URL }}/api/cron/send-tryon-reminders \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

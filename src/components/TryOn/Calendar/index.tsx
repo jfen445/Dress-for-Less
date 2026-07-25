@@ -6,6 +6,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
+import { isTryOnBookingAllowedForDate } from "../../../../lib/utils/tryOnRules";
 import { getAvailableTryOnDates } from "@/api/tryOnBooking";
 
 interface ITryOnCalendar {
@@ -39,6 +40,10 @@ const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
     }
 
     if (!availableDates.includes(date.format("YYYY-MM-DD"))) {
+      return true;
+    }
+
+    if (!isTryOnBookingAllowedForDate(date.format("YYYY-MM-DD"))) {
       return true;
     }
 
