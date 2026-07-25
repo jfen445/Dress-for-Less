@@ -13,6 +13,7 @@ import { AdminTabs } from "../../common/enums/AdminTabs";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 import { useSession } from "next-auth/react";
 import Spinner from "@/components/Spinner";
+import Seo from "@/components/Seo";
 
 const AdminPage = () => {
   const { userInfo } = useUserContext();
@@ -24,6 +25,12 @@ const AdminPage = () => {
   if (status === "loading" || (status === "authenticated" && !userInfo)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
+        <Seo
+          title="Admin | Dress for Less"
+          description="Dress for Less admin dashboard."
+          path="/admin"
+          noindex
+        />
         <Spinner />
       </div>
     );
@@ -31,6 +38,12 @@ const AdminPage = () => {
 
   return (
     <>
+      <Seo
+        title="Admin | Dress for Less"
+        description="Dress for Less admin dashboard."
+        path="/admin"
+        noindex
+      />
       {userInfo?.role == "admin" ? (
         <div className="bg-white">
           <div className="min-h-full">

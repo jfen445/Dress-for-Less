@@ -3,6 +3,7 @@ import { GetStaticProps } from "next";
 import DressGrid from "@/components/DressPage/DressGrid";
 import Filters from "@/components/DressPage/Filters";
 import DressContextProvider from "@/context/DressContext";
+import Seo from "@/components/Seo";
 import { getAllDressesFromSanity } from "../../sanity/sanity.query";
 import { DressType } from "../../common/types";
 
@@ -13,6 +14,11 @@ interface DressPageProps {
 const DressPage = ({ dresses }: DressPageProps) => {
   return (
     <>
+      <Seo
+        title="Shop Dresses | Dress for Less"
+        description="Browse our full range of designer dresses available to hire — filter by size, style, and occasion. Delivered or ready for pickup across New Zealand."
+        path="/dresses"
+      />
       <div className="bg-white">
         <main>
           <DressContextProvider initialDresses={dresses}>

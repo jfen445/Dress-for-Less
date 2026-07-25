@@ -1,5 +1,6 @@
 import { AppProps } from "next/app";
 import React from "react";
+import { useRouter } from "next/router";
 import "../lib/utils/timezone";
 import "../styles/global.css";
 import MobileNav from "@/components/MobileNav";
@@ -8,6 +9,7 @@ import Footer from "@/components/Footer";
 import { SessionProvider } from "next-auth/react";
 import UserContextProvider from "@/context/UserContext";
 import Head from "next/head";
+import Seo from "@/components/Seo";
 import NavigationContextProvider from "@/context/NavigationContext";
 import GlobalContextProvider from "@/context/GlobalContext";
 import ComingSoon from "@/components/ComingSoon";
@@ -15,6 +17,7 @@ import { CartProvider } from "@/context/CartContext";
 
 export default function App({ Component, pageProps }: AppProps) {
   const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON;
+  const router = useRouter();
 
   return (
     <SessionProvider session={pageProps.session}>
@@ -26,9 +29,13 @@ export default function App({ Component, pageProps }: AppProps) {
           <CartProvider>
             <div className="min-h-screen bg-white">
               <Head>
-                <title>Dress for Less</title>
                 <link rel="icon" href="/favicon.ico" />
               </Head>
+              <Seo
+                title="Dress for Less | Designer Dress Rentals NZ"
+                description="Hire designer dresses for weddings, races, and events across New Zealand. Affordable, sustainable dress rental from Dress for Less."
+                path={router.asPath}
+              />
               {isComingSoon === "true" ? (
                 <ComingSoon />
               ) : (

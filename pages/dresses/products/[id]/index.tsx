@@ -1,7 +1,9 @@
 import { GetStaticPaths, GetStaticProps } from "next";
 import Product from "@/components/ProductPage";
+import Seo from "@/components/Seo";
 import { getDress } from "../../../../sanity/sanity.query";
 import { DressType } from "../../../../common/types";
+import { truncate } from "../../../../lib/utils/seo";
 
 interface ProductPageProps {
   dress: DressType;
@@ -10,6 +12,12 @@ interface ProductPageProps {
 const ProductPage = ({ dress }: ProductPageProps) => {
   return (
     <div>
+      <Seo
+        title={`${dress.name} by ${dress.brand} | Dress for Less`}
+        description={truncate(dress.description, 155)}
+        path={`/dresses/products/${dress._id}`}
+        ogImage={dress.images?.[0]}
+      />
       <Product dress={dress} />
     </div>
   );
