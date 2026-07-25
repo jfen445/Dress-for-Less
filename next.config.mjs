@@ -25,6 +25,15 @@ const nextConfig = {
     "@atlaskit/pragmatic-drag-and-drop",
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+        pathname: "/images/**",
+      },
+    ],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

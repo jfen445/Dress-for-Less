@@ -1,6 +1,8 @@
+import Image from "next/image";
 import { Tab } from "@headlessui/react";
 import { ImageType } from "../../../../common/types";
 import CoverFlow from "@/components/Swiper";
+import { getSanityImageDimensions } from "../../../../lib/utils/image";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -32,9 +34,11 @@ const ImageSelector = ({ images, classname }: IImageSelector) => {
                     <>
                       {/* <span className="sr-only">{image.name}</span> */}
                       <span className="absolute inset-0 overflow-hidden rounded-md">
-                        <img
+                        <Image
                           src={image.src}
-                          alt=""
+                          alt={image.alt}
+                          fill
+                          sizes="96px"
                           className="h-full w-full object-cover object-center"
                         />
                       </span>
@@ -53,15 +57,22 @@ const ImageSelector = ({ images, classname }: IImageSelector) => {
           </div>
 
           <Tab.Panels className="aspect-h-1 aspect-w-1 w-full mx-auto">
-            {images.map((image) => (
-              <Tab.Panel key={image.alt}>
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="h-96 mx-auto object-cover object-center sm:rounded-lg"
-                />
-              </Tab.Panel>
-            ))}
+            {images.map((image) => {
+              const { width, height } = getSanityImageDimensions(image.src);
+
+              return (
+                <Tab.Panel key={image.alt}>
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    width={width}
+                    height={height}
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="h-96 w-auto mx-auto sm:rounded-lg"
+                  />
+                </Tab.Panel>
+              );
+            })}
           </Tab.Panels>
         </Tab.Group>
       </div>
