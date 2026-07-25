@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin
+Disallow: /studio
+Disallow: /checkout
+Disallow: /cart
+Disallow: /account
+Disallow: /order-history
+Disallow: /api
+
+Sitemap: https://www.dressforlessnz.com/sitemap.xml

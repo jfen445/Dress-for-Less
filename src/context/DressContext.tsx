@@ -12,10 +12,17 @@ const dressContext = React.createContext<DressContextProps>(
   {} as DressContextProps
 );
 
-const DressContextProvider = ({ children }: React.PropsWithChildren) => {
+interface DressContextProviderProps extends React.PropsWithChildren {
+  initialDresses?: DressType[];
+}
+
+const DressContextProvider = ({
+  children,
+  initialDresses,
+}: DressContextProviderProps) => {
   const [dressList, setDressList] = React.useState<DressType[]>([]);
   const [filteredDressList, setFilteredDressList] = React.useState<DressType[]>(
-    []
+    initialDresses ?? []
   );
   const [isLoading, setIsLoading] = React.useState<Boolean>(false);
 

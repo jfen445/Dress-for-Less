@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Spinner from "@/components/Spinner";
+import Seo from "@/components/Seo";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 
 enum Selected {
@@ -164,6 +165,12 @@ const Orders = () => {
 
   return (
     <>
+      <Seo
+        title="Order History | Dress for Less"
+        description="View your past and upcoming Dress for Less orders."
+        path="/order-history"
+        noindex
+      />
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <Spinner />

@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 
 import { EffectCoverflow, Pagination } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -14,6 +15,7 @@ import "swiper/css/autoplay";
 import "swiper/css/effect-fade";
 import "swiper/css/grid";
 import { ImageType } from "../../../common/types";
+import { getSanityImageDimensions } from "../../../lib/utils/image";
 
 interface ICoverFlow {
   images: ImageType[];
@@ -31,12 +33,17 @@ const CoverFlow = ({ images, classname }: ICoverFlow) => {
           className={`coverflow ${classname}`}
         >
           {images.map((image, index) => {
+            const { width, height } = getSanityImageDimensions(image.src);
+
             return (
               <SwiperSlide key={index}>
-                <img
+                <Image
                   src={image.src}
-                  alt=""
-                  className="h-[60vh] mx-auto object-cover object-center rounded-lg my-10"
+                  alt={image.alt}
+                  width={width}
+                  height={height}
+                  sizes="(min-width: 640px) 320px, 100vw"
+                  className="h-[60vh] w-auto mx-auto object-cover object-center rounded-lg my-10"
                 />
               </SwiperSlide>
             );

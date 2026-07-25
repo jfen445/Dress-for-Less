@@ -1,4 +1,5 @@
 import Checkout from "@/components/Checkout";
+import Seo from "@/components/Seo";
 import Stripe from "stripe";
 
 const CheckoutPage = () => {
@@ -10,6 +11,12 @@ const CheckoutPage = () => {
 
   return (
     <>
+      <Seo
+        title="Checkout | Dress for Less"
+        description="Complete your dress rental booking."
+        path="/checkout"
+        noindex
+      />
       <Checkout />
       {/* <SubscribeComponent
         priceId="price_1PmWpZP04u4yuCC3K2pTkluh"

@@ -6,8 +6,12 @@ import { DressType } from "../../../../common/types";
 
 const HeroSection = () => {
   const { allDresses, getHomeScreenDresses } = useGlobalContext();
+  // Deterministic (unshuffled) on the first render so server and client agree —
+  // getHomeScreenDresses() shuffles with Math.random(), which would otherwise
+  // pick a different order server-side vs client-side and trigger a hydration
+  // mismatch. The effect below applies the actual random shuffle post-mount.
   const [dresses, setDresses] = React.useState<DressType[]>(
-    getHomeScreenDresses(),
+    allDresses.slice(0, 7),
   );
 
   React.useEffect(() => {
