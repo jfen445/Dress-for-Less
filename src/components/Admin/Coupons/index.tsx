@@ -9,6 +9,7 @@ import {
 import { getCouponStatus } from "../../../../lib/utils/couponRules";
 import { Coupon, UserType } from "../../../../common/types";
 import { CouponType } from "../../../../common/enums/CouponType";
+import { CouponStatus } from "../../../../common/enums/CouponStatus";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -26,6 +27,7 @@ const AdminCoupons = () => {
 
   const [userId, setUserId] = React.useState("");
   const [isGlobal, setIsGlobal] = React.useState(false);
+  const [code, setCode] = React.useState("");
   const [maxRedemptions, setMaxRedemptions] = React.useState("");
   const [discountType, setDiscountType] = React.useState<CouponType>(
     CouponType.Flat,
@@ -97,6 +99,14 @@ const AdminCoupons = () => {
         });
         return;
       }
+      if (!code.trim()) {
+        setToast({
+          message: "A coupon code is required for a global coupon",
+          variant: ToastVariant.WARNING,
+          show: true,
+        });
+        return;
+      }
     }
 
     const days = Number(durationDays);
@@ -112,6 +122,7 @@ const AdminCoupons = () => {
     setIsSubmitting(true);
     createCoupon({
       userId: isGlobal ? undefined : userId,
+      code: isGlobal ? code.trim().toUpperCase() : undefined,
       discountAmount: amount,
       discountType,
       isGlobal,
@@ -122,6 +133,7 @@ const AdminCoupons = () => {
     })
       .then(() => {
         setIsGlobal(false);
+        setCode("");
         setMaxRedemptions("");
         setDiscountType(CouponType.Flat);
         setDiscountAmount("");
@@ -130,9 +142,9 @@ const AdminCoupons = () => {
         setReason("");
         fetchCoupons();
       })
-      .catch(() =>
+      .catch((err) =>
         setToast({
-          message: "Failed to add coupon",
+          message: err?.response?.data?.message ?? "Failed to add coupon",
           variant: ToastVariant.WARNING,
           show: true,
         }),
@@ -166,15 +178,15 @@ const AdminCoupons = () => {
 
   const getCustomerLabel = (c: Coupon) =>
     c.isGlobal
-      ? `Global - ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
+      ? `Global (${c.code ?? "—"}) - ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
       : getUserLabel(c.userId);
 
-  const statusClass = (status: string) =>
-    status === "Active"
+  const statusClass = (status: CouponStatus) =>
+    status === CouponStatus.Active
       ? "text-green-700 bg-green-50"
-      : status === "Expired"
+      : status === CouponStatus.Expired
         ? "text-gray-500 bg-gray-100"
-        : status === "Scheduled"
+        : status === CouponStatus.Scheduled
           ? "text-amber-700 bg-amber-50"
           : "text-blue-700 bg-blue-50";
 
@@ -231,6 +243,22 @@ const AdminCoupons = () => {
               ))}
             </select>
           </div>
+
+          {isGlobal && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Coupon code
+              </label>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="e.g. SPRING20"
+                className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 uppercase"
+                required
+              />
+            </div>
+          )}
 
           {isGlobal && (
             <div>

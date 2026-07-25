@@ -104,6 +104,7 @@ export async function getCoupons() {
 
 export async function createCoupon(data: {
   userId?: string;
+  code?: string;
   discountAmount: number;
   discountType: CouponType;
   isGlobal?: boolean;

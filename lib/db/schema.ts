@@ -156,6 +156,16 @@ const couponSchema = new Schema(
         return !this.isGlobal;
       },
     },
+    // Redemption code required to unlock a global coupon; personal coupons
+    // are assigned directly to a userId and don't need one.
+    code: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      required: function (this: any) {
+        return this.isGlobal;
+      },
+    },
     discountAmount: { type: Number, required: true },
     discountType: {
       type: String,
@@ -184,6 +194,8 @@ const couponSchema = new Schema(
   },
   { timestamps: true },
 );
+
+couponSchema.index({ code: 1 }, { unique: true, sparse: true });
 
 const CouponSchema =
   mongoose.models.Coupons ?? mongoose.model("Coupons", couponSchema);

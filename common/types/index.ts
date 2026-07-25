@@ -228,6 +228,7 @@ export type TryOnBooking = {
 export type Coupon = {
   _id?: string;
   userId?: string;
+  code?: string;
   discountAmount: number;
   discountType: CouponType;
   isGlobal: boolean;

@@ -88,8 +88,22 @@ const OrderSummary = () => {
   React.useEffect(() => {
     if (!userInfo?._id) return;
 
+    // Merge rather than overwrite: session refetches on window focus give
+    // `userInfo` a new object identity and re-run this effect, but a global
+    // coupon unlocked via code isn't returned by getUserCoupons() (it's
+    // client-only state) — a plain overwrite would silently drop it.
     getUserCoupons()
-      .then((data) => setAvailableCoupons(data.data as Coupon[]))
+      .then((data) => {
+        const personalCoupons = data.data as Coupon[];
+        setAvailableCoupons((prev) => {
+          const unlockedGlobals = prev.filter(
+            (c) =>
+              c.isGlobal &&
+              !personalCoupons.some((p) => p._id === c._id),
+          );
+          return [...personalCoupons, ...unlockedGlobals];
+        });
+      })
       .catch((err) => console.error(err));
   }, [userInfo, setAvailableCoupons]);
 

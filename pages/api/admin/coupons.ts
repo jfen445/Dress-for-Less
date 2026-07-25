@@ -50,6 +50,7 @@ export default async function handler(
   if (req.method === "POST") {
     const {
       userId,
+      code,
       discountAmount,
       discountType,
       isGlobal,
@@ -78,11 +79,19 @@ export default async function handler(
     }
 
     let redemptionLimit: number | undefined;
+    let normalizedCode: string | undefined;
     if (isGlobal) {
       redemptionLimit = Number(maxRedemptions);
       if (!Number.isInteger(redemptionLimit) || redemptionLimit <= 0) {
         return res.status(400).json({
           message: "maxRedemptions must be a positive whole number for a global coupon",
+        });
+      }
+      normalizedCode =
+        typeof code === "string" ? code.trim().toUpperCase() : "";
+      if (!normalizedCode) {
+        return res.status(400).json({
+          message: "code is required for a global coupon",
         });
       }
     } else if (!userId) {
@@ -119,16 +128,27 @@ export default async function handler(
     const normalizedStart = start.startOf("day");
     const expiryDate = normalizedStart.add(days, "day").endOf("day").toISOString();
 
-    const created = await createCoupon({
-      userId: isGlobal ? undefined : userId,
-      discountAmount: amount,
-      discountType,
-      isGlobal: !!isGlobal,
-      maxRedemptions: redemptionLimit,
-      startDate: normalizedStart.toISOString(),
-      expiryDate,
-      reason: reason || undefined,
-    });
+    let created;
+    try {
+      created = await createCoupon({
+        userId: isGlobal ? undefined : userId,
+        code: isGlobal ? normalizedCode : undefined,
+        discountAmount: amount,
+        discountType,
+        isGlobal: !!isGlobal,
+        maxRedemptions: redemptionLimit,
+        startDate: normalizedStart.toISOString(),
+        expiryDate,
+        reason: reason || undefined,
+      });
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        return res
+          .status(400)
+          .json({ message: "This coupon code is already in use" });
+      }
+      throw err;
+    }
 
     // Global coupons have no single recipient at creation time (customers
     // redeem them later), so the store credit email only fires for a

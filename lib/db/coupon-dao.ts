@@ -8,6 +8,7 @@ export async function getAllCoupons() {
 
 export async function createCoupon(data: {
   userId?: string;
+  code?: string;
   discountAmount: number;
   discountType: CouponType;
   isGlobal?: boolean;
@@ -23,11 +24,18 @@ export async function deleteCoupon(id: string) {
   return CouponSchema.findByIdAndDelete(id);
 }
 
+// Personal coupons only — global coupons are no longer surfaced
+// automatically, they require a code (see getCouponByCode).
 export async function getActiveCouponsByUser(userId: string) {
-  const candidates = await CouponSchema.find({
-    $or: [{ isGlobal: true }, { userId }],
-  });
+  const candidates = await CouponSchema.find({ userId });
   return candidates.filter((c) => isCouponUsableByUser(c, userId));
+}
+
+export async function getCouponByCode(code: string) {
+  return CouponSchema.findOne({
+    isGlobal: true,
+    code: code.trim().toUpperCase(),
+  });
 }
 
 export async function getCouponsByIds(ids: string[]) {
