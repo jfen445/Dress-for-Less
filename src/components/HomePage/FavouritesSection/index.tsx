@@ -5,8 +5,12 @@ import { DressType } from "../../../../common/types";
 
 const FavouritesSection = () => {
   const { allDresses, getFavouriteDresses } = useGlobalContext();
+  // Deterministic (unshuffled) on the first render so server and client agree —
+  // getFavouriteDresses() shuffles with Math.random(), which would otherwise
+  // pick a different order server-side vs client-side and trigger a hydration
+  // mismatch. The effect below applies the actual random shuffle post-mount.
   const [dresses, setDresses] = React.useState<DressType[]>(
-    getFavouriteDresses(),
+    allDresses.slice(0, 3),
   );
 
   React.useEffect(() => {

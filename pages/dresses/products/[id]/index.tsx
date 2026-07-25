@@ -1,23 +1,34 @@
 import { GetStaticPaths, GetStaticProps } from "next";
+import Head from "next/head";
 import Product from "@/components/ProductPage";
 import Seo from "@/components/Seo";
 import { getDress } from "../../../../sanity/sanity.query";
 import { DressType } from "../../../../common/types";
-import { truncate } from "../../../../lib/utils/seo";
+import { absoluteUrl, buildProductJsonLd, truncate } from "../../../../lib/utils/seo";
 
 interface ProductPageProps {
   dress: DressType;
 }
 
 const ProductPage = ({ dress }: ProductPageProps) => {
+  const path = `/dresses/products/${dress._id}`;
+  const jsonLd = buildProductJsonLd(dress, absoluteUrl(path));
+
   return (
     <div>
       <Seo
         title={`${dress.name} by ${dress.brand} | Dress for Less`}
         description={truncate(dress.description, 155)}
-        path={`/dresses/products/${dress._id}`}
+        path={path}
         ogImage={dress.images?.[0]}
       />
+      <Head>
+        <script
+          key="product-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </Head>
       <Product dress={dress} />
     </div>
   );

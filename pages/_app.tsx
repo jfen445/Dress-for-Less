@@ -32,7 +32,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 <link rel="icon" href="/favicon.ico" />
               </Head>
               <Seo
-                title="Dress for Less | Designer Dress Rentals NZ"
+                title="Dress for Less"
                 description="Hire designer dresses for weddings, races, and events across New Zealand. Affordable, sustainable dress rental from Dress for Less."
                 path={router.asPath}
               />
