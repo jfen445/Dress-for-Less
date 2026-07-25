@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { Resend } from "resend";
 import { auckland } from "../../../lib/utils/timezone";
 import { dbConnect } from "../../../lib/db/db";
 import {
@@ -8,9 +9,12 @@ import {
 } from "../../../lib/db/coupon-dao";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
-import { findUser } from "../../../lib/db/user-dao";
+import { findUser, findUserById } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
 import { CouponType } from "../../../common/enums/CouponType";
+import StoreCreditEmail, {
+  getStoreCreditSubject,
+} from "@/components/Emails/StoreCredit";
 
 async function requireAdmin(
   req: NextApiRequest,
@@ -52,6 +56,7 @@ export default async function handler(
       maxRedemptions,
       startDate,
       durationDays,
+      reason,
     } = req.body;
 
     if (
@@ -122,7 +127,36 @@ export default async function handler(
       maxRedemptions: redemptionLimit,
       startDate: normalizedStart.toISOString(),
       expiryDate,
+      reason: reason || undefined,
     });
+
+    // Global coupons have no single recipient at creation time (customers
+    // redeem them later), so the store credit email only fires for a
+    // personal, fixed-amount coupon issued to a specific user.
+    if (!isGlobal && discountType === CouponType.Flat) {
+      try {
+        const recipient = await findUserById(userId);
+        if (recipient?.email) {
+          const resend = new Resend(process.env.RESEND_API_KEY as string);
+          await resend.emails.send({
+            from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
+            to: [recipient.email],
+            subject: getStoreCreditSubject(),
+            react: StoreCreditEmail({
+              name: recipient.name ?? "",
+              email: recipient.email,
+              creditAmount: amount,
+              reason: reason || "Store credit",
+              expiryDate,
+            }),
+          });
+        }
+      } catch {
+        // Coupon creation already succeeded; a failed notification email
+        // shouldn't roll that back or fail the request.
+      }
+    }
+
     return res.status(201).json(created);
   }
 

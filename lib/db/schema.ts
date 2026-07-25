@@ -180,6 +180,7 @@ const couponSchema = new Schema(
     startDate: { type: String, required: true },
     expiryDate: { type: String, required: true },
     isRedeemed: { type: Boolean, required: true, default: false },
+    reason: { type: String, required: false },
   },
   { timestamps: true },
 );

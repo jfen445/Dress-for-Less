@@ -33,6 +33,7 @@ const AdminCoupons = () => {
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
   const [durationDays, setDurationDays] = React.useState("");
+  const [reason, setReason] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [couponToDelete, setCouponToDelete] = React.useState<Coupon | null>(
     null,
@@ -117,6 +118,7 @@ const AdminCoupons = () => {
       maxRedemptions: redemptionLimit,
       startDate,
       durationDays: days,
+      reason: reason || undefined,
     })
       .then(() => {
         setIsGlobal(false);
@@ -125,6 +127,7 @@ const AdminCoupons = () => {
         setDiscountAmount("");
         setStartDate("");
         setDurationDays("");
+        setReason("");
         fetchCoupons();
       })
       .catch(() =>
@@ -163,7 +166,7 @@ const AdminCoupons = () => {
 
   const getCustomerLabel = (c: Coupon) =>
     c.isGlobal
-      ? `Global — ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
+      ? `Global - ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
       : getUserLabel(c.userId);
 
   const statusClass = (status: string) =>
@@ -306,6 +309,22 @@ const AdminCoupons = () => {
             />
           </div>
 
+          <div className="sm:col-span-2 lg:col-span-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason{" "}
+              <span className="font-normal text-gray-400">
+                (included in the customer&apos;s credit email)
+              </span>
+            </label>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Apology for delayed delivery"
+              className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+            />
+          </div>
+
           <div>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Adding…" : "Add coupon"}
@@ -342,6 +361,12 @@ const AdminCoupons = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Reason
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         Starts
                       </th>
                       <th
@@ -371,6 +396,9 @@ const AdminCoupons = () => {
                             {c.discountType === CouponType.Percentage
                               ? `${c.discountAmount}%`
                               : `$${c.discountAmount.toFixed(2)}`}
+                          </td>
+                          <td className="px-3 py-4 text-sm text-gray-500 max-w-[16rem] truncate">
+                            {c.reason || "-"}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             {dayjs(c.startDate).format("MMM D, YYYY h:mma")}

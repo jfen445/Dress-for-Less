@@ -110,6 +110,7 @@ export async function createCoupon(data: {
   maxRedemptions?: number;
   startDate: string;
   durationDays: number;
+  reason?: string;
 }) {
   return api.post(`/api/admin/coupons`, data);
 }

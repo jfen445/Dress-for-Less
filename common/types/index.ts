@@ -236,6 +236,7 @@ export type Coupon = {
   startDate: string;
   expiryDate: string;
   isRedeemed: boolean;
+  reason?: string;
   createdAt?: string;
 };
 

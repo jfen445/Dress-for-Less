@@ -14,6 +14,7 @@ export async function createCoupon(data: {
   maxRedemptions?: number;
   startDate: string;
   expiryDate: string;
+  reason?: string;
 }) {
   return CouponSchema.create(data);
 }
