@@ -4,7 +4,7 @@ import DressGrid from "@/components/DressPage/DressGrid";
 import Filters from "@/components/DressPage/Filters";
 import DressContextProvider from "@/context/DressContext";
 import Seo from "@/components/Seo";
-import { getAllDressesFromSanity } from "../../sanity/sanity.query";
+import { getDressesForListing } from "../../sanity/sanity.query";
 import { DressType } from "../../common/types";
 
 interface DressPageProps {
@@ -44,7 +44,11 @@ const DressPage = ({ dresses }: DressPageProps) => {
 export default DressPage;
 
 export const getStaticProps: GetStaticProps<DressPageProps> = async () => {
-  const dresses = (await getAllDressesFromSanity()) as DressType[];
+  // Trimmed listing projection (not the full getAllDressesFromSanity), since
+  // Filters/DressGrid only ever read name/brand/price/first image/tags/sizes —
+  // the full catalogue's description/notes/all-images bloat this page's data
+  // payload for no display benefit here.
+  const dresses = (await getDressesForListing()) as DressType[];
 
   return {
     props: { dresses },

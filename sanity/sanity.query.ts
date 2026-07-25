@@ -78,3 +78,29 @@ export async function getAllDressIds() {
     }`
   );
 }
+
+// Lighter projection for grid/listing views (dress list, home page picks),
+// which only ever render name/brand/price/first image/tags/sizes — the full
+// getAllDressesFromSanity() projection (description, notes, all images, etc.)
+// bloats the getStaticProps payload shipped to every visitor for no benefit
+// on these pages. `limit` caps how many docs to fetch (unset = all).
+export async function getDressesForListing(limit?: number) {
+  const range = limit ? `[0...${limit}]` : "";
+
+  return client.fetch(
+    groq`*[_type == "dress" && defined(images) && defined(price)]${range}{
+      _id,
+      name,
+      brand,
+      price,
+      "images": [images[0].asset->url],
+      xs,
+      s,
+      m,
+      l,
+      xl,
+      tags,
+      _updatedAt
+    }`
+  );
+}
