@@ -5,6 +5,14 @@ import OrderSummary from "./OrderSummary";
 import { CartItemType, Coupon } from "../../../common/types";
 import CheckoutForm from "./CheckoutForm";
 
+export type ValidatedAddress = {
+  addressText: string;
+  nzPostAddressId: string;
+  nzPostDpid: string;
+  isRuralDelivery: boolean;
+  ruralDeliveryNumber?: string;
+};
+
 interface ProductCtx {
   products: CartItemType[];
   setProducts: React.Dispatch<React.SetStateAction<CartItemType[]>>;
@@ -16,6 +24,10 @@ interface ProductCtx {
   setDiscountAmount: React.Dispatch<React.SetStateAction<number>>;
   availableCoupons: Coupon[];
   setAvailableCoupons: React.Dispatch<React.SetStateAction<Coupon[]>>;
+  validatedAddress: ValidatedAddress | null;
+  setValidatedAddress: React.Dispatch<
+    React.SetStateAction<ValidatedAddress | null>
+  >;
 }
 
 export const ProductContext = React.createContext<ProductCtx>({} as ProductCtx);
@@ -30,6 +42,8 @@ const Checkout = () => {
   const [availableCoupons, setAvailableCoupons] = React.useState<Coupon[]>(
     [],
   );
+  const [validatedAddress, setValidatedAddress] =
+    React.useState<ValidatedAddress | null>(null);
 
   return (
     <ProductContext.Provider
@@ -44,6 +58,8 @@ const Checkout = () => {
         setDiscountAmount,
         availableCoupons,
         setAvailableCoupons,
+        validatedAddress,
+        setValidatedAddress,
       }}
     >
       <div className="bg-white">

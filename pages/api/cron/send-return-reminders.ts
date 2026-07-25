@@ -20,14 +20,25 @@ export default async function handler(
   if (!token || token !== process.env.CRON_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
 
-  await dbConnect();
-
   const now = auckland.now();
-  const lastSunday = now.subtract(1, "day");
-  const lastMonday = now.subtract(7, "day");
+  const dayOfWeek = now.day(); // 0 = Sunday, 1 = Monday, ... 6 = Saturday
 
-  const startDate = lastMonday.format("YYYY-MM-DD");
-  const endDate = lastSunday.format("YYYY-MM-DD");
+  // Mon-Thu bookings get their reminder the next day; Fri/Sat/Sun bookings
+  // all wait until Monday. So only Mon-Fri cron runs have bookings to chase.
+  let startDate: string;
+  let endDate: string;
+
+  if (dayOfWeek === 1) {
+    startDate = now.subtract(3, "day").format("YYYY-MM-DD");
+    endDate = now.subtract(1, "day").format("YYYY-MM-DD");
+  } else if (dayOfWeek >= 2 && dayOfWeek <= 5) {
+    startDate = now.subtract(1, "day").format("YYYY-MM-DD");
+    endDate = startDate;
+  } else {
+    return res.status(200).json({ message: "No bookings to remind" });
+  }
+
+  await dbConnect();
 
   const bookings = await getBookingsByDateRange(startDate, endDate);
 

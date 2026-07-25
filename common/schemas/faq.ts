@@ -29,6 +29,13 @@ const faq = {
       },
       validation: (Rule: any) => Rule.required(),
     },
+    {
+      name: "order",
+      title: "Order",
+      type: "number",
+      description:
+        "Controls the order this question appears in on the FAQ page (lower numbers first).",
+    },
   ],
 };
 

@@ -16,7 +16,10 @@ import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useUserContext } from "@/context/UserContext";
 import { getClientSecret } from "@/api/payment";
-import { TRY_ON_FEE, formatTryOnTimeSlot } from "../../../common/constants/tryOn";
+import {
+  TRY_ON_FEE,
+  formatTryOnTimeSlot,
+} from "../../../common/constants/tryOn";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
@@ -98,8 +101,8 @@ const TryOn = () => {
           Your try-on is booked!
         </h1>
         <p className="mt-4 text-sm text-gray-600">
-          We&apos;ve sent a confirmation email with your session details and
-          our terms and conditions. We can&apos;t wait to see you on{" "}
+          We&apos;ve sent a confirmation email with your session details and our
+          terms and conditions. We can&apos;t wait to see you on{" "}
           {dayjs(selectedDate).format("dddd, MMMM D")} at{" "}
           {formatTryOnTimeSlot(selectedSlot)}.
         </p>
@@ -126,8 +129,8 @@ const TryOn = () => {
             </DialogTitle>
             <div className="mt-2">
               <p className="text-sm text-gray-500">
-                To book a try-on, you must update your profile with your
-                mobile number and Instagram handle.
+                To book a try-on, you must update your profile with your mobile
+                number and Instagram handle.
               </p>
             </div>
           </div>
@@ -149,8 +152,8 @@ const TryOn = () => {
         Book a Try-On Session
       </h1>
       <p className="mt-2 text-sm text-gray-600">
-        Pick a date and time to come try on dresses in person. A ${TRY_ON_FEE}
-        {" "}fee applies per session.
+        Pick a date and time to come try on dresses in person. A ${TRY_ON_FEE}{" "}
+        fee applies per session.
       </p>
 
       {!isPaymentStep ? (
@@ -214,12 +217,10 @@ const TryOn = () => {
         </>
       ) : (
         <div className="mt-8">
-          <h2 className="text-lg font-medium text-gray-900">
-            Payment details
-          </h2>
+          <h2 className="text-lg font-medium text-gray-900">Payment details</h2>
           <p className="mt-2 text-sm text-gray-600">
             {dayjs(selectedDate).format("dddd, MMMM D, YYYY")} at{" "}
-            {formatTryOnTimeSlot(selectedSlot)} &mdash; ${TRY_ON_FEE}
+            {formatTryOnTimeSlot(selectedSlot)} - ${TRY_ON_FEE}
           </p>
           <div className="mt-6">
             {clientSecret && userInfo && (

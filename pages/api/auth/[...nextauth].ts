@@ -3,12 +3,28 @@ import GoogleProvider from "next-auth/providers/google";
 import EmailProvider, {
   SendVerificationRequestParams,
 } from "next-auth/providers/email";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import clientPromise from "../../../lib/db/db";
+import clientPromise, { dbConnect } from "../../../lib/db/db";
 import { Resend } from "resend";
 import MagicLinkEmail from "@/components/Emails/MagicLinkEmail";
 import { UserType } from "../../../common/types";
-import { createUser } from "../../../lib/db/user-dao";
+import {
+  createUser,
+  findUserWithPassword,
+  findUserAuthState,
+} from "../../../lib/db/user-dao";
+import bcrypt from "bcryptjs";
+import { PASSWORD_SALT_ROUNDS } from "../../../common/constants/auth";
+
+// A constant, valid bcrypt hash used to keep `authorize` response time uniform
+// when the email doesn't exist (or has no password): we always run a compare so
+// timing can't reveal whether an account is registered. Generated at the same
+// cost as real hashes so the timings match.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  "unmatchable-placeholder-password",
+  PASSWORD_SALT_ROUNDS,
+);
 
 declare module "next-auth" {
   interface Session {
@@ -16,6 +32,14 @@ declare module "next-auth" {
       mobile: number;
       instagramHandle: string;
     } & DefaultSession["user"];
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    // Epoch ms of the user's password at the time this token was issued. Used
+    // to invalidate the token if the password later changes.
+    pca?: number;
   }
 }
 
@@ -66,6 +90,34 @@ export const authOptions: NextAuthOptions = {
       maxAge: 15 * 60, // 15 minutes
       sendVerificationRequest: sendVerificationRequest,
     }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email?.trim().toLowerCase();
+        const password = credentials?.password;
+        if (!email || !password) return null;
+
+        const user = await findUserWithPassword(email);
+
+        // Always compare against *some* hash so a missing user/password takes
+        // the same time as a wrong password (no email enumeration via timing).
+        const hash = user?.password ?? DUMMY_PASSWORD_HASH;
+        const passwordMatches = await bcrypt.compare(password, hash);
+
+        if (!user || !user.password || !passwordMatches) return null;
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name ?? "",
+          image: user.photo ?? null,
+        };
+      },
+    }),
   ],
   pages: {
     signIn: "/login",
@@ -77,6 +129,29 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       if (url.startsWith(baseUrl)) return url;
       return baseUrl + "/account";
+    },
+    async jwt({ token, user }) {
+      // On sign-in, stamp the token with the account's current password-change
+      // time (uniform across Google / email / credentials providers).
+      if (user?.email) {
+        await dbConnect();
+        const state = await findUserAuthState(user.email);
+        token.pca = Number(state?.passwordChangedAt ?? 0);
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // If the password changed after this token was issued, the token predates
+      // a reset — treat the session as signed out so old JWTs stop working.
+      if (token?.email) {
+        await dbConnect();
+        const state = await findUserAuthState(token.email);
+        const currentPca = Number(state?.passwordChangedAt ?? 0);
+        if (currentPca > Number(token.pca ?? 0)) {
+          return null as unknown as typeof session;
+        }
+      }
+      return session;
     },
     // // Called when user signs in - update your custom MongoDB collection
     async signIn({ user, profile }) {

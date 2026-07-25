@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { Resend } from "resend";
 import { auckland } from "../../../lib/utils/timezone";
 import { dbConnect } from "../../../lib/db/db";
 import {
@@ -8,8 +9,12 @@ import {
 } from "../../../lib/db/coupon-dao";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
-import { findUser } from "../../../lib/db/user-dao";
+import { findUser, findUserById } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
+import { CouponType } from "../../../common/enums/CouponType";
+import StoreCreditEmail, {
+  getStoreCreditSubject,
+} from "@/components/Emails/StoreCredit";
 
 async function requireAdmin(
   req: NextApiRequest,
@@ -43,19 +48,56 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { userId, discountAmount, startDate, durationDays } = req.body;
+    const {
+      userId,
+      code,
+      discountAmount,
+      discountType,
+      isGlobal,
+      maxRedemptions,
+      startDate,
+      durationDays,
+      reason,
+    } = req.body;
 
     if (
-      !userId ||
       discountAmount === undefined ||
       discountAmount === null ||
+      !discountType ||
       !startDate ||
       durationDays === undefined ||
       durationDays === null
     ) {
       return res.status(400).json({
-        message: "userId, discountAmount, startDate, and durationDays are required",
+        message:
+          "discountAmount, discountType, startDate, and durationDays are required",
       });
+    }
+
+    if (!Object.values(CouponType).includes(discountType)) {
+      return res.status(400).json({ message: "discountType is invalid" });
+    }
+
+    let redemptionLimit: number | undefined;
+    let normalizedCode: string | undefined;
+    if (isGlobal) {
+      redemptionLimit = Number(maxRedemptions);
+      if (!Number.isInteger(redemptionLimit) || redemptionLimit <= 0) {
+        return res.status(400).json({
+          message: "maxRedemptions must be a positive whole number for a global coupon",
+        });
+      }
+      normalizedCode =
+        typeof code === "string" ? code.trim().toUpperCase() : "";
+      if (!normalizedCode) {
+        return res.status(400).json({
+          message: "code is required for a global coupon",
+        });
+      }
+    } else if (!userId) {
+      return res
+        .status(400)
+        .json({ message: "userId is required for a non-global coupon" });
     }
 
     const amount = Number(discountAmount);
@@ -63,6 +105,12 @@ export default async function handler(
       return res
         .status(400)
         .json({ message: "discountAmount must be a positive number" });
+    }
+
+    if (discountType === CouponType.Percentage && amount > 100) {
+      return res
+        .status(400)
+        .json({ message: "A percentage discount cannot exceed 100" });
     }
 
     const start = auckland.toZone(startDate);
@@ -80,12 +128,55 @@ export default async function handler(
     const normalizedStart = start.startOf("day");
     const expiryDate = normalizedStart.add(days, "day").endOf("day").toISOString();
 
-    const created = await createCoupon({
-      userId,
-      discountAmount: amount,
-      startDate: normalizedStart.toISOString(),
-      expiryDate,
-    });
+    let created;
+    try {
+      created = await createCoupon({
+        userId: isGlobal ? undefined : userId,
+        code: isGlobal ? normalizedCode : undefined,
+        discountAmount: amount,
+        discountType,
+        isGlobal: !!isGlobal,
+        maxRedemptions: redemptionLimit,
+        startDate: normalizedStart.toISOString(),
+        expiryDate,
+        reason: reason || undefined,
+      });
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        return res
+          .status(400)
+          .json({ message: "This coupon code is already in use" });
+      }
+      throw err;
+    }
+
+    // Global coupons have no single recipient at creation time (customers
+    // redeem them later), so the store credit email only fires for a
+    // personal, fixed-amount coupon issued to a specific user.
+    if (!isGlobal && discountType === CouponType.Flat) {
+      try {
+        const recipient = await findUserById(userId);
+        if (recipient?.email) {
+          const resend = new Resend(process.env.RESEND_API_KEY as string);
+          await resend.emails.send({
+            from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
+            to: [recipient.email],
+            subject: getStoreCreditSubject(),
+            react: StoreCreditEmail({
+              name: recipient.name ?? "",
+              email: recipient.email,
+              creditAmount: amount,
+              reason: reason || "Store credit",
+              expiryDate,
+            }),
+          });
+        }
+      } catch {
+        // Coupon creation already succeeded; a failed notification email
+        // shouldn't roll that back or fail the request.
+      }
+    }
+
     return res.status(201).json(created);
   }
 

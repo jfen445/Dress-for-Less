@@ -2,6 +2,7 @@ import { PortableTextBlock } from "sanity";
 import { BookingStatus } from "../enums/BookingStatus";
 import { DeliveryType } from "../enums/DeliveryType";
 import { TryOnStatus } from "../enums/TryOnStatus";
+import { CouponType } from "../enums/CouponType";
 
 export type ProfileType = {
   _id: string;
@@ -98,6 +99,11 @@ export type Address = {
   postCode: string;
   company?: string;
   apartment?: string;
+  // NZ Post ParcelAddress validation — shipping address only, undefined/false = unvalidated or manual entry
+  nzPostAddressId?: string;
+  nzPostDpid?: string;
+  isRuralDelivery?: boolean;
+  ruralDeliveryNumber?: string;
 };
 
 export type BookingItem = {
@@ -111,6 +117,7 @@ export type BookingItem = {
   size: String;
   price: number;
   instructions?: string;
+  notes?: string;
   dress?: DressType;
 };
 
@@ -178,6 +185,7 @@ export type Faq = {
   question: string;
   answer: string;
   section?: string;
+  order?: number;
 };
 
 export type OrderHistory = {
@@ -219,11 +227,17 @@ export type TryOnBooking = {
 
 export type Coupon = {
   _id?: string;
-  userId: string;
+  userId?: string;
+  code?: string;
   discountAmount: number;
+  discountType: CouponType;
+  isGlobal: boolean;
+  maxRedemptions?: number;
+  redeemedByUserIds?: string[];
   startDate: string;
   expiryDate: string;
   isRedeemed: boolean;
+  reason?: string;
   createdAt?: string;
 };
 

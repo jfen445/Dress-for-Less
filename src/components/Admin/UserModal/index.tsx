@@ -3,15 +3,53 @@ import React from "react";
 import { UserType } from "../../../../common/types";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import { updateUserAccount } from "@/api/user";
 
 interface IUserModal {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   user: UserType | null;
   children?: React.ReactNode;
+  onSaved?: (user: UserType) => void;
 }
 
-const UserModal = ({ isOpen, setOpen, user, children }: IUserModal) => {
+const UserModal = ({ isOpen, setOpen, user, children, onSaved }: IUserModal) => {
+  const [name, setName] = React.useState("");
+  const [mobileNumber, setMobileNumber] = React.useState("");
+  const [instagramHandle, setInstagramHandle] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setName(user?.name ?? "");
+    setMobileNumber(user?.mobileNumber ?? "");
+    setInstagramHandle(user?.instagramHandle ?? "");
+    setError("");
+  }, [user, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const updatedUser: UserType = {
+        ...user,
+        name,
+        mobileNumber,
+        instagramHandle,
+      };
+      await updateUserAccount(updatedUser);
+      onSaved?.(updatedUser);
+      setOpen(false);
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to save user");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const makeLetterAvatar = (
     letter: string,
     size = 100,
@@ -31,7 +69,7 @@ const UserModal = ({ isOpen, setOpen, user, children }: IUserModal) => {
     <>
       <Modal isOpen={isOpen} setOpen={setOpen}>
         <div className="bg-white mx-auto grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-16 sm:px-6 md:grid-cols-3 lg:px-8">
-          <form className="md:col-span-2">
+          <form className="md:col-span-2" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:max-w-xl sm:grid-cols-6">
               <div className="col-span-full flex items-center gap-x-8">
                 <img
@@ -53,13 +91,12 @@ const UserModal = ({ isOpen, setOpen, user, children }: IUserModal) => {
                 </label>
                 <div className="mt-2">
                   <Input
-                    value={user?.name}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     id="firstname"
                     name="firstname"
                     type="text"
-                    className="bg-gray-200"
-                    readonly
-                    disabled
+                    className=""
                   />
                 </div>
               </div>
@@ -94,7 +131,8 @@ const UserModal = ({ isOpen, setOpen, user, children }: IUserModal) => {
                 <div className="mt-2">
                   <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
                     <Input
-                      value={user?.mobileNumber}
+                      value={mobileNumber}
+                      onChange={(e) => setMobileNumber(e.target.value)}
                       id="mobile"
                       name="mobile"
                       type="number"
@@ -114,7 +152,8 @@ const UserModal = ({ isOpen, setOpen, user, children }: IUserModal) => {
                 <div className="mt-2">
                   <div className="flex rounded-md bg-white/5 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500">
                     <Input
-                      value={user?.instagramHandle}
+                      value={instagramHandle}
+                      onChange={(e) => setInstagramHandle(e.target.value)}
                       id="instagramHandle"
                       name="instagramHandle"
                       type="text"
@@ -125,12 +164,17 @@ const UserModal = ({ isOpen, setOpen, user, children }: IUserModal) => {
               </div>
             </div>
 
+            {error && (
+              <p className="mt-4 text-sm text-red-600">{error}</p>
+            )}
+
             <div className="mt-8 flex">
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold shadow-sm enable:hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >
-                Save
+                {isSubmitting ? "Saving…" : "Save"}
               </Button>
             </div>
           </form>

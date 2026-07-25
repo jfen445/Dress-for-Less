@@ -6,7 +6,7 @@ import {
   addToCart,
   getCart,
   getCartItem,
-  removeItemFromCart,
+  removeItemFromCartForUser,
 } from "../../lib/db/cart-dao";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
@@ -24,11 +24,19 @@ export default async function handler(
 
   await dbConnect();
 
+  // Resolve the caller once; every cart operation is scoped to this user so a
+  // client can't read, add to, or delete another user's cart by passing a
+  // different userId / cartItemId.
+  const [sessionUser] = await findUser(session.user.email ?? "");
+  if (!sessionUser) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const sessionUserId = String(sessionUser._id);
+
   if (req.method == "GET") {
     const userId = req.query.userId as string;
 
-    const [sessionUser] = await findUser(session.user.email ?? "");
-    if (!sessionUser || String(sessionUser._id) !== userId) {
+    if (sessionUserId !== userId) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
@@ -47,6 +55,10 @@ export default async function handler(
       return res.status(404).json({
         message: "Invalid cart item",
       });
+    }
+
+    if (String(cart.userId) !== sessionUserId) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
     const cartItem = await getCartItem(
@@ -82,11 +94,13 @@ export default async function handler(
       });
     }
 
-    await removeItemFromCart(cartItemId);
+    const removed = await removeItemFromCartForUser(cartItemId, sessionUserId);
+    if (!removed) {
+      return res.status(404).json({ message: "Cart item not found" });
+    }
 
-    res.status(202).json({ message: "Item removed from cart" });
+    return res.status(202).json({ message: "Item removed from cart" });
   }
 
   res.end();
-  //   return NextResponse.json({ messsage: "Hello World" });
 }

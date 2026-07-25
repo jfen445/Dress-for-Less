@@ -8,9 +8,12 @@ import {
 } from "@/api/admin";
 import { getCouponStatus } from "../../../../lib/utils/couponRules";
 import { Coupon, UserType } from "../../../../common/types";
+import { CouponType } from "../../../../common/enums/CouponType";
+import { CouponStatus } from "../../../../common/enums/CouponStatus";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
+import Modal from "@/components/Modal";
 
 const AdminCoupons = () => {
   const [coupons, setCoupons] = React.useState<Coupon[]>([]);
@@ -23,10 +26,21 @@ const AdminCoupons = () => {
   });
 
   const [userId, setUserId] = React.useState("");
+  const [isGlobal, setIsGlobal] = React.useState(false);
+  const [code, setCode] = React.useState("");
+  const [maxRedemptions, setMaxRedemptions] = React.useState("");
+  const [discountType, setDiscountType] = React.useState<CouponType>(
+    CouponType.Flat,
+  );
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
   const [durationDays, setDurationDays] = React.useState("");
+  const [reason, setReason] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [couponToDelete, setCouponToDelete] = React.useState<Coupon | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchCoupons = () => {
     setIsLoading(true);
@@ -52,7 +66,8 @@ const AdminCoupons = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!userId || !discountAmount || !startDate || !durationDays) return;
+    if (!isGlobal && !userId) return;
+    if (!discountAmount || !startDate || !durationDays) return;
 
     const amount = Number(discountAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -62,6 +77,36 @@ const AdminCoupons = () => {
         show: true,
       });
       return;
+    }
+
+    if (discountType === CouponType.Percentage && amount > 100) {
+      setToast({
+        message: "A percentage discount cannot exceed 100",
+        variant: ToastVariant.WARNING,
+        show: true,
+      });
+      return;
+    }
+
+    let redemptionLimit: number | undefined;
+    if (isGlobal) {
+      redemptionLimit = Number(maxRedemptions);
+      if (!Number.isInteger(redemptionLimit) || redemptionLimit <= 0) {
+        setToast({
+          message: "Max redemptions must be a positive whole number",
+          variant: ToastVariant.WARNING,
+          show: true,
+        });
+        return;
+      }
+      if (!code.trim()) {
+        setToast({
+          message: "A coupon code is required for a global coupon",
+          variant: ToastVariant.WARNING,
+          show: true,
+        });
+        return;
+      }
     }
 
     const days = Number(durationDays);
@@ -75,16 +120,31 @@ const AdminCoupons = () => {
     }
 
     setIsSubmitting(true);
-    createCoupon({ userId, discountAmount: amount, startDate, durationDays: days })
+    createCoupon({
+      userId: isGlobal ? undefined : userId,
+      code: isGlobal ? code.trim().toUpperCase() : undefined,
+      discountAmount: amount,
+      discountType,
+      isGlobal,
+      maxRedemptions: redemptionLimit,
+      startDate,
+      durationDays: days,
+      reason: reason || undefined,
+    })
       .then(() => {
+        setIsGlobal(false);
+        setCode("");
+        setMaxRedemptions("");
+        setDiscountType(CouponType.Flat);
         setDiscountAmount("");
         setStartDate("");
         setDurationDays("");
+        setReason("");
         fetchCoupons();
       })
-      .catch(() =>
+      .catch((err) =>
         setToast({
-          message: "Failed to add coupon",
+          message: err?.response?.data?.message ?? "Failed to add coupon",
           variant: ToastVariant.WARNING,
           show: true,
         }),
@@ -92,29 +152,41 @@ const AdminCoupons = () => {
       .finally(() => setIsSubmitting(false));
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeleteConfirm = () => {
+    const id = couponToDelete?._id;
+    if (!id) return;
+    setIsDeleting(true);
     deleteCoupon(id)
-      .then(() => setCoupons((prev) => prev.filter((c) => c._id !== id)))
+      .then(() => {
+        setCoupons((prev) => prev.filter((c) => c._id !== id));
+        setCouponToDelete(null);
+      })
       .catch(() =>
         setToast({
           message: "Failed to remove coupon",
           variant: ToastVariant.WARNING,
           show: true,
         }),
-      );
+      )
+      .finally(() => setIsDeleting(false));
   };
 
-  const getUserLabel = (id: string) => {
+  const getUserLabel = (id?: string) => {
     const u = users.find((u) => u._id === id);
     return u ? `${u.name} - ${u.email}` : id;
   };
 
-  const statusClass = (status: string) =>
-    status === "Active"
+  const getCustomerLabel = (c: Coupon) =>
+    c.isGlobal
+      ? `Global (${c.code ?? "—"}) - ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
+      : getUserLabel(c.userId);
+
+  const statusClass = (status: CouponStatus) =>
+    status === CouponStatus.Active
       ? "text-green-700 bg-green-50"
-      : status === "Expired"
+      : status === CouponStatus.Expired
         ? "text-gray-500 bg-gray-100"
-        : status === "Scheduled"
+        : status === CouponStatus.Scheduled
           ? "text-amber-700 bg-amber-50"
           : "text-blue-700 bg-blue-50";
 
@@ -128,15 +200,30 @@ const AdminCoupons = () => {
               Coupons
             </h1>
             <p className="mt-2 text-sm text-gray-700">
-              Assign a flat-dollar discount coupon to a customer.
+              Assign a discount coupon to a customer.
             </p>
           </div>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 items-end"
+          className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 items-end"
         >
+          <div className="sm:col-span-2 lg:col-span-6">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={isGlobal}
+                onChange={(e) => {
+                  setIsGlobal(e.target.checked);
+                  if (e.target.checked) setUserId("");
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Global coupon - available to every customer
+            </label>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Customer
@@ -144,8 +231,9 @@ const AdminCoupons = () => {
             <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
-              required
+              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 disabled:bg-gray-100 disabled:text-gray-400"
+              required={!isGlobal}
+              disabled={isGlobal}
             >
               <option value="">Select a customer…</option>
               {users.map((u) => (
@@ -156,14 +244,64 @@ const AdminCoupons = () => {
             </select>
           </div>
 
+          {isGlobal && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Coupon code
+              </label>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="e.g. SPRING20"
+                className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 uppercase"
+                required
+              />
+            </div>
+          )}
+
+          {isGlobal && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Max redemptions
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={maxRedemptions}
+                onChange={(e) => setMaxRedemptions(e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+                required
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Discount amount ($)
+              Discount type
+            </label>
+            <select
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as CouponType)}
+              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+              required
+            >
+              <option value={CouponType.Flat}>Flat ($)</option>
+              <option value={CouponType.Percentage}>Percentage (%)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Discount amount (
+              {discountType === CouponType.Percentage ? "%" : "$"})
             </label>
             <input
               type="number"
-              min="0.01"
-              step="0.01"
+              min={discountType === CouponType.Percentage ? "1" : "0.01"}
+              max={discountType === CouponType.Percentage ? "100" : undefined}
+              step={discountType === CouponType.Percentage ? "1" : "0.01"}
               value={discountAmount}
               onChange={(e) => setDiscountAmount(e.target.value)}
               className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
@@ -196,6 +334,22 @@ const AdminCoupons = () => {
               onChange={(e) => setDurationDays(e.target.value)}
               className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
               required
+            />
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason{" "}
+              <span className="font-normal text-gray-400">
+                (included in the customer&apos;s credit email)
+              </span>
+            </label>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Apology for delayed delivery"
+              className="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
             />
           </div>
 
@@ -235,6 +389,12 @@ const AdminCoupons = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Reason
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         Starts
                       </th>
                       <th
@@ -258,10 +418,15 @@ const AdminCoupons = () => {
                       return (
                         <tr key={c._id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                            {getUserLabel(c.userId)}
+                            {getCustomerLabel(c)}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            ${c.discountAmount.toFixed(2)}
+                            {c.discountType === CouponType.Percentage
+                              ? `${c.discountAmount}%`
+                              : `$${c.discountAmount.toFixed(2)}`}
+                          </td>
+                          <td className="px-3 py-4 text-sm text-gray-500 max-w-[16rem] truncate">
+                            {c.reason || "-"}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             {dayjs(c.startDate).format("MMM D, YYYY h:mma")}
@@ -279,7 +444,7 @@ const AdminCoupons = () => {
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
                             <Button
                               variant="ghost"
-                              onClick={() => handleDelete(c._id!)}
+                              onClick={() => setCouponToDelete(c)}
                               className="text-red-500 hover:text-red-700 text-xs font-medium"
                             >
                               Remove
@@ -295,6 +460,44 @@ const AdminCoupons = () => {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={!!couponToDelete}
+        setOpen={(open) => {
+          if (!open) setCouponToDelete(null);
+        }}
+      >
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Delete coupon
+        </h2>
+        <p className="text-sm text-gray-700">
+          Are you sure you want to delete the{" "}
+          <span className="font-medium">
+            {couponToDelete ? getCustomerLabel(couponToDelete) : ""}
+          </span>{" "}
+          coupon? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3 pt-6">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setCouponToDelete(null)}
+            disabled={isDeleting}
+            className="rounded-md px-4 py-2 text-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500"
+          >
+            {isDeleting ? "Deleting…" : "Delete"}
+          </Button>
+        </div>
+      </Modal>
     </>
   );
 };

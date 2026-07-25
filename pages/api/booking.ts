@@ -14,7 +14,10 @@ import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import { auckland } from "../../lib/utils/timezone";
-import { isCouponActive } from "../../lib/utils/couponRules";
+import {
+  isCouponUsableByUser,
+  calculateCouponDiscount,
+} from "../../lib/utils/couponRules";
 import { createUser, findUser } from "../../lib/db/user-dao";
 import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
@@ -22,8 +25,12 @@ import { getDress } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
 import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
-import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
+import {
+  calculateShippingFee,
+  hasDeliveryItem,
+} from "../../lib/utils/deliveryRules";
 import { getNextOrderNumber } from "../../lib/utils/orderNumber";
+import { resolveRuralDeliveryStatus } from "../../lib/nzpost/client";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
 
@@ -86,7 +93,33 @@ export default async function handler(
 
     var errorResponse: String[] = [];
 
+    // Resolve the authoritative price for each dress from Sanity. The client
+    // sends item.price, but it must never be trusted for money: otherwise a
+    // shopper could tamper with the payload (and the matching PaymentIntent)
+    // to rent any dress for the Stripe minimum. Every downstream figure —
+    // subtotal, coupon coverage, persisted price, and the final total that is
+    // reconciled against the Stripe charge — is derived from this map.
+    const dressPriceById = new Map<string, number>();
+    for (const item of items) {
+      if (!dressPriceById.has(item.dressId)) {
+        const dress = await getDress(item.dressId);
+        if (!dress) {
+          return res.status(404).json({ message: "Dress not found" });
+        }
+        dressPriceById.set(item.dressId, parseInt(dress.price));
+      }
+    }
+    const priceForItem = (item: (typeof items)[number]) =>
+      dressPriceById.get(item.dressId)!;
+
+    const itemsSubtotal = items.reduce(
+      (sum, item) => sum + priceForItem(item),
+      0,
+    );
+
     let discountAmount = 0;
+    let coupons: any[] = [];
+    let redeemingUserId: string | undefined;
 
     if (couponIds.length > 0) {
       if (!session.user?.email) {
@@ -98,8 +131,9 @@ export default async function handler(
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      redeemingUserId = user._id.toString();
 
-      const coupons = await getCouponsByIds(couponIds);
+      coupons = await getCouponsByIds(couponIds);
 
       if (coupons.length !== couponIds.length) {
         return res
@@ -109,8 +143,7 @@ export default async function handler(
 
       const now = auckland.now().toISOString();
       const invalidCoupon = coupons.find(
-        (c) =>
-          c.userId.toString() !== user._id.toString() || !isCouponActive(c, now),
+        (c) => !isCouponUsableByUser(c, redeemingUserId!, now),
       );
 
       if (invalidCoupon) {
@@ -119,17 +152,41 @@ export default async function handler(
           .json({ message: "One or more coupons are invalid or already used" });
       }
 
-      discountAmount = coupons.reduce((sum, c) => sum + c.discountAmount, 0);
+      discountAmount = calculateCouponDiscount(coupons, itemsSubtotal);
+    }
+
+    // Re-confirm rural status with NZ Post (by DPID) rather than trusting the
+    // client-supplied flag, since this is a real-money line item. Computed
+    // once, before the free-coupon branch, so both fee calculations below
+    // (coupon coverage check and the persisted totalPrice) agree.
+    const shippingItemAddress = items.find(
+      (item) => item.address?.nzPostDpid,
+    )?.address;
+    const { isRural: isRuralDelivery, verified: ruralVerified } =
+      hasDeliveryItem(items)
+        ? await resolveRuralDeliveryStatus(
+            shippingItemAddress?.nzPostDpid,
+            shippingItemAddress?.isRuralDelivery ?? false,
+          )
+        : { isRural: false, verified: true };
+
+    if (!ruralVerified) {
+      console.warn(
+        "NZ Post rural re-verification unavailable; falling back to client-supplied flag",
+        { paymentIntent, dpid: shippingItemAddress?.nzPostDpid },
+      );
     }
 
     const isFreeCouponCheckout = paymentIntent.startsWith(
       FREE_COUPON_CHECKOUT_PREFIX,
     );
 
+    let stripePayment: Stripe.PaymentIntent | undefined;
+
     if (isFreeCouponCheckout) {
       const sumPrices =
-        items.reduce((sum, item) => sum + item.price, 0) +
-        (hasDeliveryItem(items) ? SHIPPING_FEE : 0);
+        itemsSubtotal +
+        calculateShippingFee(hasDeliveryItem(items), isRuralDelivery);
       if (discountAmount < sumPrices) {
         return res
           .status(400)
@@ -143,6 +200,8 @@ export default async function handler(
           message: "Payment not confirmed. Please try again.",
         });
       }
+
+      stripePayment = payment;
     }
 
     for (const item of items) {
@@ -184,18 +243,47 @@ export default async function handler(
         city: item.address?.city ?? "",
         country: item.address?.country ?? "",
         postCode: item.address?.postCode ?? "",
+        nzPostAddressId: item.address?.nzPostAddressId,
+        nzPostDpid: item.address?.nzPostDpid,
+        // Overwritten with the server-verified value for the item(s) sharing
+        // the checkout's shipping address, rather than trusting the client.
+        isRuralDelivery: item.address?.nzPostDpid
+          ? isRuralDelivery
+          : false,
+        ruralDeliveryNumber: item.address?.ruralDeliveryNumber,
       },
       size: item.size,
-      price: item.price,
+      price: priceForItem(item),
       instructions: item.instructions ?? "",
     }));
 
-    const shippingFee = hasDeliveryItem(bookingItems) ? SHIPPING_FEE : 0;
+    const shippingFee = calculateShippingFee(
+      hasDeliveryItem(bookingItems),
+      isRuralDelivery,
+    );
 
     const totalPrice =
       bookingItems.reduce((sum, item) => sum + item.price, 0) +
       shippingFee -
       discountAmount;
+
+    if (
+      stripePayment &&
+      stripePayment.amount !== Math.round(totalPrice * 100)
+    ) {
+      console.error(
+        "Stripe charge amount does not match server-verified booking total — rejecting booking",
+        {
+          paymentIntent,
+          stripeAmountCents: stripePayment.amount,
+          verifiedTotalCents: Math.round(totalPrice * 100),
+        },
+      );
+      return res.status(400).json({
+        message:
+          "Payment amount does not match the order total. No booking was created — please contact us if you were charged.",
+      });
+    }
 
     const existingBooking = await BookingSchema.findOne(
       { paymentIntent },
@@ -234,7 +322,7 @@ export default async function handler(
     await BookingSchema.updateOne(filter, booking, options);
 
     if (couponIds.length > 0) {
-      await redeemCoupons(couponIds);
+      await redeemCoupons(coupons, redeemingUserId!);
     }
 
     res.status(200).json({ message: "Booking successful", booking });
@@ -245,8 +333,8 @@ export default async function handler(
     const bookingId = req.query.bookingId as string;
     const bookingObj = req.body.bookingObj;
 
-    if (bookingObj?.dressId) {
-      // Full booking edit (from EditBookingModal) — admin bookings always have exactly one item.
+    if (Array.isArray(bookingObj?.items)) {
+      // Full booking edit (from EditBookingModal) — a booking can hold multiple dresses.
       const existingBooking = await BookingSchema.findById(bookingId);
       if (!existingBooking)
         return res
@@ -254,11 +342,9 @@ export default async function handler(
           .send("The booking with the given ID was not found.");
 
       const {
-        dressId,
+        items: itemsPayload,
         userId: bodyUserId,
         newUser,
-        dateBooked,
-        size,
         deliveryType,
         address,
         billingAddress,
@@ -266,13 +352,36 @@ export default async function handler(
         instructions,
       } = bookingObj;
 
-      if (!dressId || !dateBooked || !size || !deliveryType) {
+      if (itemsPayload.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "At least one dress is required" });
+      }
+      if (!deliveryType) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      if (
+        itemsPayload.some(
+          (item: any) => !item?.dressId || !item?.dateBooked || !item?.size,
+        )
+      ) {
         return res.status(400).json({ message: "Missing required fields" });
       }
       if (!bodyUserId && !newUser) {
         return res.status(400).json({
           message: "A customer or new customer details are required",
         });
+      }
+
+      const seen = new Set<string>();
+      for (const item of itemsPayload) {
+        const key = `${item.dressId}|${item.size}|${item.dateBooked}`;
+        if (seen.has(key)) {
+          return res.status(400).json({
+            message: "The same dress, size and date was selected more than once",
+          });
+        }
+        seen.add(key);
       }
 
       let userId = bodyUserId;
@@ -290,48 +399,76 @@ export default async function handler(
             : result._id.toString();
       }
 
-      const dress = await getDress(dressId);
-      if (!dress) return res.status(404).json({ message: "Dress not found" });
-
-      const blocked = await checkBlockOut(dressId, size, dateBooked);
-      if (blocked)
-        return res.status(409).json({
-          message: "This date is blocked out for the selected size",
-        });
-
-      const duplicates = await checkDuplicateBooking(
-        dressId,
-        size,
-        dateBooked,
-        bookingId,
+      const existingItemsById = new Map<string, any>(
+        existingBooking.items.map((item: any) => [item._id.toString(), item]),
       );
-      if (duplicates.length > 0) {
-        return res
-          .status(409)
-          .json({ message: "This date is already fully booked" });
+
+      const bookingItems = [];
+      for (const item of itemsPayload) {
+        const dress = await getDress(item.dressId);
+        if (!dress)
+          return res.status(404).json({ message: "Dress not found" });
+
+        const blocked = await checkBlockOut(
+          item.dressId,
+          item.size,
+          item.dateBooked,
+        );
+        if (blocked)
+          return res.status(409).json({
+            message: "This date is blocked out for the selected size",
+          });
+
+        const duplicates = await checkDuplicateBooking(
+          item.dressId,
+          item.size,
+          item.dateBooked,
+          bookingId,
+        );
+        if (duplicates.length > 0) {
+          return res
+            .status(409)
+            .json({ message: "This date is already fully booked" });
+        }
+
+        const price = parseInt(dress.price);
+        const { blockedFrom, blockedUntil } = calculateBookingWindow(
+          item.dateBooked,
+          deliveryType,
+        );
+        const existingItem = item.itemId
+          ? existingItemsById.get(item.itemId)
+          : undefined;
+
+        bookingItems.push({
+          _id: existingItem?._id,
+          dressId: item.dressId,
+          dateBooked: item.dateBooked,
+          blockedFrom,
+          blockedUntil,
+          deliveryType,
+          address: address ?? {},
+          size: item.size,
+          price,
+          instructions: instructions ?? existingItem?.instructions ?? "",
+          notes: item.notes ?? existingItem?.notes ?? "",
+        });
       }
 
-      const price = parseInt(dress.price);
-      const { blockedFrom, blockedUntil } = calculateBookingWindow(dateBooked, deliveryType);
-      const existingItem = existingBooking.items[0];
+      // TODO: doesn't re-add SHIPPING_FEE (or a rural surcharge) — pre-existing gap.
+      // existingBooking.discountAmount is the dollar figure already resolved
+      // (flat or percentage-of-subtotal) at original checkout time — coupons
+      // aren't re-fetched/re-evaluated here, so discountType is irrelevant.
+      const totalPrice =
+        bookingItems.reduce((sum, item) => sum + item.price, 0) -
+        (existingBooking.discountAmount ?? 0);
 
       const updatedBooking = await BookingSchema.findByIdAndUpdate(
         bookingId,
         {
           userId,
-          "items.0": {
-            _id: existingItem?._id,
-            dressId,
-            dateBooked,
-            blockedFrom,
-            blockedUntil,
-            deliveryType,
-            address: address ?? {},
-            size,
-            price,
-            instructions: instructions ?? existingItem?.instructions ?? "",
-          },
-          totalPrice: price - (existingBooking.discountAmount ?? 0),
+          items: bookingItems,
+          totalPrice,
           billingAddress: billingAddress ?? {},
           status: status ?? existingBooking.status,
         },

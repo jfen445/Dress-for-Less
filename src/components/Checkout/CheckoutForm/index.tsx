@@ -9,18 +9,21 @@ import PaymentForm from "../PaymentForm";
 import FreeCheckoutConfirmation from "../FreeCheckoutConfirmation";
 import Button from "@/components/Button";
 import React from "react";
-import dayjs from "dayjs";
 import { ProductContext } from "..";
 import { getClientSecret } from "@/api/payment";
+import { redeemCouponCode } from "@/api/coupon";
 import AddressForm from "./AddressForm";
 import BillingForm from "./BillingForm";
+import TermsModal from "../TermsModal";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
+import { CouponType } from "../../../../common/enums/CouponType";
 import {
   hasDeliveryItem,
   isDeliveryAllowedForDate,
   isDateWithinCurrentWeekend,
 } from "../../../../lib/utils/deliveryRules";
 import { auckland } from "../../../../lib/utils/timezone";
+import { formatCouponExpiry } from "../../../../lib/utils/couponRules";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
 
@@ -30,12 +33,17 @@ const CheckoutForm = () => {
     products,
     totalPrice,
     availableCoupons,
+    setAvailableCoupons,
     selectedCouponIds,
     setSelectedCouponIds,
+    validatedAddress,
   } = React.useContext(ProductContext);
   const [clientSecret, setClientSecret] = React.useState<string>();
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>();
+  const [couponCode, setCouponCode] = React.useState("");
+  const [isApplyingCode, setIsApplyingCode] = React.useState(false);
+  const [couponCodeError, setCouponCodeError] = React.useState<string>();
 
   const [isSubmitted, setIsSubmitted] = React.useState(false);
   const [payment, setPayment] = React.useState(false);
@@ -51,6 +59,7 @@ const CheckoutForm = () => {
     React.useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
   const [termsError, setTermsError] = React.useState<boolean>(false);
+  const [termsModalOpen, setTermsModalOpen] = React.useState<boolean>(false);
   const [deliveryError, setDeliveryError] = React.useState<string>();
 
   const email =
@@ -130,6 +139,10 @@ const CheckoutForm = () => {
       }
     }
 
+    const isAddressStillValid =
+      validatedAddress !== null &&
+      validatedAddress.addressText === formElements.address.value;
+
     const address: Address | null = !isDelivery
       ? null
       : {
@@ -140,10 +153,24 @@ const CheckoutForm = () => {
           city: formElements.city.value,
           country: formElements.region.value,
           postCode: formElements.postCode.value,
+          nzPostAddressId: isAddressStillValid
+            ? validatedAddress!.nzPostAddressId
+            : undefined,
+          nzPostDpid: isAddressStillValid
+            ? validatedAddress!.nzPostDpid
+            : undefined,
+          isRuralDelivery: isAddressStillValid
+            ? validatedAddress!.isRuralDelivery
+            : false,
+          ruralDeliveryNumber: isAddressStillValid
+            ? validatedAddress!.ruralDeliveryNumber
+            : undefined,
         };
 
+    const needsOwnBillingAddress = !sameAsShipping || !isDelivery;
+
     if (
-      !sameAsShipping &&
+      needsOwnBillingAddress &&
       (!formElements.billingAddress.value ||
         !formElements.billingSuburb.value ||
         !formElements.billingCity.value ||
@@ -158,7 +185,7 @@ const CheckoutForm = () => {
 
     if (isError) return;
 
-    const billingAddress: Address | null = !sameAsShipping
+    const billingAddress: Address | null = needsOwnBillingAddress
       ? {
           company: formElements.billingCompany.value,
           address: formElements.billingAddress.value,
@@ -202,12 +229,32 @@ const CheckoutForm = () => {
     return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
   };
 
+  // Only one coupon can be applied at a time — selecting a new one replaces
+  // whatever was previously selected instead of adding to it.
   const toggleCoupon = (couponId: string) => {
-    setSelectedCouponIds((prev) =>
-      prev.includes(couponId)
-        ? prev.filter((id) => id !== couponId)
-        : [...prev, couponId],
-    );
+    setSelectedCouponIds((prev) => (prev.includes(couponId) ? [] : [couponId]));
+  };
+
+  const applyCouponCode = () => {
+    if (!couponCode.trim() || isApplyingCode) return;
+
+    setIsApplyingCode(true);
+    setCouponCodeError(undefined);
+    redeemCouponCode(couponCode)
+      .then((res) => {
+        const coupon = res.data;
+        setAvailableCoupons((prev) =>
+          prev.some((c) => c._id === coupon._id) ? prev : [...prev, coupon],
+        );
+        setSelectedCouponIds([coupon._id]);
+        setCouponCode("");
+      })
+      .catch((err) =>
+        setCouponCodeError(
+          err?.response?.data?.message ?? "Failed to apply coupon code",
+        ),
+      )
+      .finally(() => setIsApplyingCode(false));
   };
 
   return (
@@ -251,14 +298,15 @@ const CheckoutForm = () => {
               </div>
             )}
 
-            {availableCoupons.length > 0 && (
-              <section aria-labelledby="coupons-heading" className="mt-10">
-                <h2
-                  id="coupons-heading"
-                  className="text-lg font-medium text-gray-900"
-                >
-                  Coupons
-                </h2>
+            <section aria-labelledby="coupons-heading" className="mt-10">
+              <h2
+                id="coupons-heading"
+                className="text-lg font-medium text-gray-900"
+              >
+                Coupons
+              </h2>
+
+              {availableCoupons.length > 0 && (
                 <ul role="list" className="mt-6 space-y-4">
                   {availableCoupons.map((coupon) => (
                     <li key={coupon._id} className="flex items-center">
@@ -273,14 +321,51 @@ const CheckoutForm = () => {
                         htmlFor={`coupon-${coupon._id}`}
                         className="ml-3 block text-sm font-medium leading-6 text-gray-900"
                       >
-                        ${coupon.discountAmount.toFixed(2)} off &mdash; expires{" "}
-                        {dayjs(coupon.expiryDate).format("MMM D, YYYY h:mma")}
+                        {coupon.isGlobal && coupon.code && `${coupon.code} - `}
+                        {coupon.discountType === CouponType.Percentage
+                          ? `${coupon.discountAmount}% off`
+                          : `$${coupon.discountAmount.toFixed(2)} off`}
+                        {!coupon.isGlobal && (
+                          <> - {formatCouponExpiry(coupon.expiryDate)}</>
+                        )}
                       </label>
                     </li>
                   ))}
                 </ul>
-              </section>
-            )}
+              )}
+
+              <div className="mt-6">
+                <label
+                  htmlFor="coupon-code"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Have a coupon code?
+                </label>
+                <div className="mt-1 flex gap-2">
+                  <Input
+                    type="text"
+                    id="coupon-code"
+                    name="coupon-code"
+                    placeholder="e.g. SPRING20"
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value);
+                      setCouponCodeError(undefined);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    disabled={isApplyingCode || !couponCode.trim()}
+                    onClick={applyCouponCode}
+                  >
+                    {isApplyingCode ? "Applying…" : "Apply"}
+                  </Button>
+                </div>
+                {couponCodeError && (
+                  <p className="mt-2 text-sm text-red-600">{couponCodeError}</p>
+                )}
+              </div>
+            </section>
 
             {isBookingValid() && (
               <>
@@ -347,7 +432,13 @@ const CheckoutForm = () => {
                   <div className="mt-6 flex items-center">
                     <input
                       checked={termsAccepted}
-                      onChange={() => setTermsAccepted(!termsAccepted)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setTermsModalOpen(true);
+                        } else {
+                          setTermsAccepted(false);
+                        }
+                      }}
                       id="terms-and-conditions"
                       name="terms-and-conditions"
                       type="checkbox"
@@ -430,6 +521,11 @@ const CheckoutForm = () => {
           </div>
         </section>
       )}
+      <TermsModal
+        isOpen={termsModalOpen}
+        setOpen={setTermsModalOpen}
+        onConfirm={() => setTermsAccepted(true)}
+      />
     </>
   );
 };

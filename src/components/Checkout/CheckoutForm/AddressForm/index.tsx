@@ -1,6 +1,63 @@
+import React from "react";
 import Input from "@/components/Input";
+import { ProductContext } from "../..";
+import AddressAutocomplete from "./AddressAutocomplete";
+import { AddressSuggestion, getAddressDetail } from "@/api/address";
 
 const AddressForm = () => {
+  const { setValidatedAddress } = React.useContext(ProductContext);
+
+  const [addressText, setAddressText] = React.useState("");
+  const [suburb, setSuburb] = React.useState("");
+  const [city, setCity] = React.useState("");
+  const [postCode, setPostCode] = React.useState("");
+  const [isRuralDelivery, setIsRuralDelivery] = React.useState(false);
+  const [resolveError, setResolveError] = React.useState<string | null>(null);
+
+  const handleAddressTextChange = (text: string) => {
+    setAddressText(text);
+    setIsRuralDelivery(false);
+    setResolveError(null);
+    setValidatedAddress(null);
+  };
+
+  const handleSelectSuggestion = async (suggestion: AddressSuggestion) => {
+    setResolveError(null);
+
+    try {
+      const { data } = await getAddressDetail(suggestion.addressId);
+      const detail = data.address;
+
+      // Suburb/city/postcode already have their own fields — only the
+      // street line (number + street + type) belongs in the address input.
+      const streetLine =
+        [detail.streetNumber, detail.street, detail.streetType]
+          .filter(Boolean)
+          .join(" ") || suggestion.fullAddress;
+
+      setAddressText(streetLine);
+      if (detail.suburb) setSuburb(detail.suburb);
+      if (detail.city) setCity(detail.city);
+      if (detail.postcode) setPostCode(detail.postcode);
+      setIsRuralDelivery(detail.isRuralDelivery);
+
+      setValidatedAddress({
+        addressText: streetLine,
+        nzPostAddressId: suggestion.addressId,
+        nzPostDpid: detail.dpid,
+        isRuralDelivery: detail.isRuralDelivery,
+        ruralDeliveryNumber: detail.ruralDeliveryNumber,
+      });
+    } catch (err) {
+      console.error("Failed to resolve NZ Post address detail", err);
+      setIsRuralDelivery(false);
+      setValidatedAddress(null);
+      setResolveError(
+        "Could not confirm this address's delivery details. You can continue with the address as entered.",
+      );
+    }
+  };
+
   return (
     <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
       <div className="sm:col-span-3">
@@ -29,15 +86,20 @@ const AddressForm = () => {
           Address
         </label>
         <div className="mt-1">
-          <Input
-            id="address"
-            name="address"
-            type="text"
-            autoComplete="street-address"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            required
+          <AddressAutocomplete
+            value={addressText}
+            onInputChange={handleAddressTextChange}
+            onSelect={handleSelectSuggestion}
           />
         </div>
+        {isRuralDelivery && (
+          <p className="mt-1 text-xs font-medium text-amber-700">
+            Rural delivery — $5 surcharge applies.
+          </p>
+        )}
+        {resolveError && (
+          <p className="mt-1 text-xs text-gray-500">{resolveError}</p>
+        )}
       </div>
 
       <div className="sm:col-span-3">
@@ -74,6 +136,10 @@ const AddressForm = () => {
             autoComplete="address-level2"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             required
+            value={suburb}
+            onChange={(e) =>
+              setSuburb((e.target as HTMLInputElement).value)
+            }
           />
         </div>
       </div>
@@ -91,6 +157,8 @@ const AddressForm = () => {
             name="city"
             type="text"
             autoComplete="address-level2"
+            value={city}
+            onChange={(e) => setCity((e.target as HTMLInputElement).value)}
           />
         </div>
       </div>
@@ -128,6 +196,10 @@ const AddressForm = () => {
             type="text"
             autoComplete="postal-code"
             required
+            value={postCode}
+            onChange={(e) =>
+              setPostCode((e.target as HTMLInputElement).value)
+            }
           />
         </div>
       </div>

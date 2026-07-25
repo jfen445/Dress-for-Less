@@ -96,7 +96,7 @@ const FreeCheckoutConfirmation = ({
       <Toast toast={toast} setToast={setToast} />
       <form onSubmit={handleConfirm}>
         <p className="text-sm text-gray-600">
-          Your coupons cover the full cost of this order &mdash; no payment is
+          Your coupons cover the full cost of this order - no payment is
           required.
         </p>
 

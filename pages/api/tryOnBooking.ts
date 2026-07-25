@@ -10,6 +10,7 @@ import {
   grantTryOnCoupon,
 } from "../../lib/db/tryon-booking-dao";
 import { getAvailabilityForDate } from "../../lib/db/tryon-availability-dao";
+import { isTryOnBookingAllowedForDate } from "../../lib/utils/tryOnRules";
 import { findUser } from "../../lib/db/user-dao";
 import { TryOnStatus } from "../../common/enums/TryOnStatus";
 import { TRY_ON_FEE } from "../../common/constants/tryOn";
@@ -55,6 +56,12 @@ export default async function handler(
 
     if (!date || !timeSlot || !name || !paymentIntent) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (!isTryOnBookingAllowedForDate(date)) {
+      return res.status(400).json({
+        message: "Bookings for this date have closed",
+      });
     }
 
     const availability = await getAvailabilityForDate(date);

@@ -5,6 +5,7 @@ import { getBookingsByUser } from "../../lib/db/booking-dao";
 import { getDress } from "../../sanity/sanity.query";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import { findUser } from "../../lib/db/user-dao";
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,6 +20,12 @@ export default async function handler(
 
   if (req.method == "GET") {
     const userId = req.query.userId as string;
+
+    // A user may only read their own order history.
+    const [sessionUser] = await findUser(session.user.email ?? "");
+    if (!sessionUser || String(sessionUser._id) !== userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const bookings = await getBookingsByUser(userId);
 

@@ -1,7 +1,12 @@
 import api from "./client";
+import { CouponType } from "../../common/enums/CouponType";
 
 export async function getAllBookings() {
   return api.get(`/api/admin/bookings`);
+}
+
+export async function getDressBookingStatuses() {
+  return api.get(`/api/admin/dressStatus`);
 }
 
 export async function getAllAdminUsers() {
@@ -27,11 +32,14 @@ export async function deleteBlockOut(id: string) {
 }
 
 export async function createAdminBooking(data: {
-  dressId: string;
+  items: {
+    dressId: string;
+    size: string;
+    dateBooked: string;
+    notes?: string;
+  }[];
   userId?: string;
   newUser?: { email: string; firstName: string; lastName: string };
-  dateBooked: string;
-  size: string;
   deliveryType: string;
   address?: object;
   billingAddress: object;
@@ -42,6 +50,10 @@ export async function createAdminBooking(data: {
 
 export async function sendBookingEmails(bookingIds: string[]) {
   return api.post(`/api/admin/sendBookingEmails`, { bookingIds });
+}
+
+export async function createLabels(bookingIds: string[]) {
+  return api.post(`/api/admin/labels`, { bookingIds });
 }
 
 export async function getAllTryOnBookings() {
@@ -67,6 +79,10 @@ export async function updateTryOnBookingStatus(
   });
 }
 
+export async function sendTryOnReminderEmails(bookingIds: string[]) {
+  return api.post(`/api/admin/sendTryOnReminderEmails`, { bookingIds });
+}
+
 export async function getTryOnAvailability() {
   return api.get(`/api/admin/tryOnAvailability`);
 }
@@ -87,10 +103,15 @@ export async function getCoupons() {
 }
 
 export async function createCoupon(data: {
-  userId: string;
+  userId?: string;
+  code?: string;
   discountAmount: number;
+  discountType: CouponType;
+  isGlobal?: boolean;
+  maxRedemptions?: number;
   startDate: string;
   durationDays: number;
+  reason?: string;
 }) {
   return api.post(`/api/admin/coupons`, data);
 }

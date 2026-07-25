@@ -27,19 +27,20 @@ const CreateAccountComponent = () => {
       lastname: { value: string };
       email: { value: string };
       password: { value: string };
+      confirmPassword: { value: string };
       mobileNumber: { value: string };
       instagramHandle: { value: string };
-      image: { value: string };
     };
 
-    const email = formElements.email.value;
-    const password = formElements.password.value;
-    const name =
-      formElements.firstname.value + " " + formElements.lastname.value;
-    const lastname = formElements.lastname.value;
-    const mobileNumber = formElements.mobileNumber.value;
-    const instagramHandle = formElements.instagramHandle.value;
-    const file = formElements.image.value;
+    if (formElements.password.value !== formElements.confirmPassword.value) {
+      setToast({
+        ...toast,
+        show: true,
+        message: "Passwords do not match",
+        variant: ToastVariant.ERROR,
+      });
+      return;
+    }
 
     const user: UserType = {
       email: formElements.email.value,
@@ -51,28 +52,34 @@ const CreateAccountComponent = () => {
       role: "user",
     };
 
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user }),
-    })
-      .then((res) => {
-        if (res.ok) {
-          router.push("/login");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setToast({
-          ...toast,
-          show: true,
-          message: data.message,
-          variant: ToastVariant.WARNING,
-        });
-      })
-      .catch((err) => {
-        console.log("error", err);
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
       });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        router.push("/login");
+        return;
+      }
+
+      setToast({
+        ...toast,
+        show: true,
+        message: data.message ?? "Could not create account",
+        variant: ToastVariant.ERROR,
+      });
+    } catch (err) {
+      console.error("signup error", err);
+      setToast({
+        ...toast,
+        show: true,
+        message: "Could not create account",
+        variant: ToastVariant.ERROR,
+      });
+    }
   }
 
   return (
@@ -85,7 +92,7 @@ const CreateAccountComponent = () => {
           </h2>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="bg-white grid grid-cols-1 gap-x-8 gap-y-10 border-b border-gray-900/10 pb-12 md:grid-cols-2 w-1/2 mx-auto">
+          <div className="bg-white grid grid-cols-1 gap-x-8 gap-y-10 border-b border-gray-900/10 pb-12 px-4 md:grid-cols-2 md:w-1/2 md:mx-auto md:px-0">
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 md:col-span-2">
               <div className="sm:col-span-3">
                 <label
@@ -131,7 +138,31 @@ const CreateAccountComponent = () => {
                   Password
                 </label>
                 <div className="mt-2">
-                  <Input type="text" name="password" id="password" required />
+                  <Input
+                    type="password"
+                    name="password"
+                    id="password"
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-4">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  Confirm password
+                </label>
+                <div className="mt-2">
+                  <Input
+                    type="password"
+                    name="confirmPassword"
+                    id="confirmPassword"
+                    autoComplete="new-password"
+                    required
+                  />
                 </div>
               </div>
 
@@ -188,21 +219,6 @@ const CreateAccountComponent = () => {
                 </div>
               </div>
 
-              <div className="sm:col-span-6">
-                <label
-                  htmlFor="country"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  ID Verification
-                </label>
-                <text className="text-xs">
-                  Please upload a photo of any valid ID. This is used for
-                  security reasons.
-                </text>
-                <div className="mt-2">
-                  <Input type="file" id="image" name="image" required />
-                </div>
-              </div>
             </div>
             <div className="sm:col-span-3 mx-auto">
               <Button type="submit">Create</Button>

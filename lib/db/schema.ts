@@ -1,10 +1,12 @@
 import mongoose from "mongoose";
+import { CouponType } from "../../common/enums/CouponType";
 
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
   email: { type: String, required: true },
-  password: { type: String, required: false },
+  // Never returned by default queries; must be explicitly `.select("+password")`.
+  password: { type: String, required: false, select: false },
   name: { type: String, required: false },
   mobileNumber: { type: String, required: false },
   instagramHandle: { type: String, required: false },
@@ -15,6 +17,9 @@ const userSchema = new Schema({
     required: true,
     default: "user",
   },
+  // Epoch ms of the last password change. JWTs issued before this are treated
+  // as signed out (see the session callback), so a reset ends existing sessions.
+  passwordChangedAt: { type: Number, required: false },
 });
 
 const UserSchema =
@@ -28,6 +33,10 @@ const addressSchema = new Schema({
   postCode: { type: String, required: false },
   company: { type: String, required: false },
   apartment: { type: String, required: false },
+  nzPostAddressId: { type: String, required: false },
+  nzPostDpid: { type: String, required: false },
+  isRuralDelivery: { type: Boolean, required: false, default: false },
+  ruralDeliveryNumber: { type: String, required: false },
 });
 
 const billingAddressSchema = new Schema({
@@ -50,6 +59,7 @@ const bookingItemSchema = new Schema({
   size: { type: String, required: true },
   price: { type: Number, required: true },
   instructions: { type: String, required: false },
+  notes: { type: String, required: false },
 });
 
 const bookingSchema = new Schema(
@@ -140,14 +150,52 @@ const TryOnAvailabilitySchema =
 
 const couponSchema = new Schema(
   {
-    userId: { type: mongoose.Schema.ObjectId, required: true },
+    userId: {
+      type: mongoose.Schema.ObjectId,
+      required: function (this: any) {
+        return !this.isGlobal;
+      },
+    },
+    // Redemption code required to unlock a global coupon; personal coupons
+    // are assigned directly to a userId and don't need one.
+    code: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      required: function (this: any) {
+        return this.isGlobal;
+      },
+    },
     discountAmount: { type: Number, required: true },
+    discountType: {
+      type: String,
+      enum: Object.values(CouponType),
+      required: true,
+      default: CouponType.Flat,
+    },
+    // Global coupons are available to every customer (each may redeem once,
+    // tracked in redeemedByUserIds) rather than being owned by a single userId.
+    isGlobal: { type: Boolean, required: true, default: false },
+    maxRedemptions: {
+      type: Number,
+      required: function (this: any) {
+        return this.isGlobal;
+      },
+    },
+    redeemedByUserIds: {
+      type: [mongoose.Schema.ObjectId],
+      required: false,
+      default: [],
+    },
     startDate: { type: String, required: true },
     expiryDate: { type: String, required: true },
     isRedeemed: { type: Boolean, required: true, default: false },
+    reason: { type: String, required: false },
   },
   { timestamps: true },
 );
+
+couponSchema.index({ code: 1 }, { unique: true, sparse: true });
 
 const CouponSchema =
   mongoose.models.Coupons ?? mongoose.model("Coupons", couponSchema);
@@ -160,6 +208,23 @@ const counterSchema = new Schema({
 const CounterSchema =
   mongoose.models.Counters ?? mongoose.model("Counters", counterSchema);
 
+const passwordResetTokenSchema = new Schema(
+  {
+    userId: { type: mongoose.Schema.ObjectId, required: true },
+    // SHA-256 hash of the emailed token — never the raw token itself.
+    tokenHash: { type: String, required: true, index: true },
+    expiresAt: { type: Date, required: true },
+  },
+  { timestamps: true },
+);
+
+// TTL index: Mongo auto-deletes each doc once `expiresAt` passes.
+passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+const PasswordResetTokenSchema =
+  mongoose.models.PasswordResetTokens ??
+  mongoose.model("PasswordResetTokens", passwordResetTokenSchema);
+
 export {
   UserSchema,
   BookingSchema,
@@ -169,4 +234,5 @@ export {
   TryOnAvailabilitySchema,
   CouponSchema,
   CounterSchema,
+  PasswordResetTokenSchema,
 };

@@ -1,9 +1,10 @@
-name: Weekly Return Reminder
+name: Daily Return Reminder
 
 on:
   schedule:
-    # 9am Monday NZST (UTC+12). Runs at 10am during NZDT (UTC+13) — one hour drift is acceptable.
-    - cron: "0 21 * * 0"
+    # 9am NZST daily (UTC+12). Runs at 10am during NZDT (UTC+13) — one hour drift is acceptable.
+    # The endpoint itself no-ops on Auckland Sat/Sun, so a daily trigger is simplest.
+    - cron: "0 21 * * *"
   workflow_dispatch: # allow manual trigger for testing
 
 jobs:

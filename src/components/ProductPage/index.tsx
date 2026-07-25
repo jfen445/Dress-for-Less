@@ -299,6 +299,8 @@ const Product = () => {
                   Stretch: {dress?.stretch}
                   <Tooltip
                     position="right"
+                    mobilePosition="bottom"
+                    align="start"
                     content={
                       <div className="space-y-2">
                         <p>
@@ -346,6 +348,7 @@ const Product = () => {
                     Condition: {dress.condition}
                     <Tooltip
                       position="right"
+                      mobilePosition="bottom"
                       content={
                         <div className="space-y-2">
                           <p>

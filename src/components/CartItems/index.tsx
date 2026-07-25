@@ -25,90 +25,36 @@ const CartItems = ({
     router.push(`/dresses/products/${id}`);
   };
 
-  const getWeekNumber = (date: Date): number => {
-    const copiedDate = new Date(date.getTime());
-
-    // Set the day to Thursday of the current week to ensure correct ISO week calculation
-    copiedDate.setUTCDate(
-      copiedDate.getUTCDate() + 4 - (copiedDate.getUTCDay() || 7),
+  const groupedByDate = React.useCallback(() => {
+    const grouped = products.reduce(
+      (acc: Record<string, CartItemType[]>, item) => {
+        const dateKey = auckland.format(item.dateBooked);
+        acc[dateKey] = acc[dateKey] || [];
+        acc[dateKey].push(item);
+        return acc;
+      },
+      {},
     );
 
-    // Start of the year
-    const yearStart = new Date(Date.UTC(copiedDate.getUTCFullYear(), 0, 1));
+    const groups = Object.entries(grouped).map(([date, items]) => ({
+      date,
+      items,
+    }));
 
-    // Calculate the full weeks to the current date
-    const weekNo = Math.ceil(
-      ((copiedDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-    );
-    return weekNo;
-  };
-
-  const groupedByWeek = React.useCallback(() => {
-    function groupByYearWeek(data: CartItemType[]) {
-      return data.reduce(
-        (acc: Record<number, Record<number, CartItemType[]>>, item) => {
-          const d = new Date(item.dateBooked);
-          const year = d.getFullYear();
-          const week = getWeekNumber(d);
-          acc[year] = acc[year] || {};
-          acc[year][week] = acc[year][week] || [];
-          acc[year][week].push(item);
-          return acc;
-        },
-        {},
-      );
-    }
-
-    const grouped = groupByYearWeek(products);
-
-    // flatten to array of { year, week, items } and sort
-    const groups = Object.entries(grouped).flatMap(([year, weeksObj]) =>
-      Object.entries(weeksObj).map(([w, items]) => ({
-        year: Number(year),
-        week: Number(w),
-        items,
-      })),
-    );
-
-    // Sort: newest year first, then by week (adjust asc/desc as desired)
-    groups.sort((a, b) =>
-      a.year !== b.year ? b.year - a.year : a.week - b.week,
-    );
+    groups.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
     return groups;
   }, [products]);
-
-  const getWeekRange = (week: number, year: number) => {
-    // ISO week 1 is the week with January 4th. Find Monday of week 1,
-    // then add (week - 1) * 7 days to get the target week's Monday.
-    const fourthJan = new Date(year, 0, 4);
-    const dayOfWeek = fourthJan.getDay() || 7; // 1 (Mon) .. 7 (Sun)
-
-    const isoWeek1Monday = new Date(fourthJan);
-    isoWeek1Monday.setDate(fourthJan.getDate() - (dayOfWeek - 1));
-
-    const weekMonday = new Date(isoWeek1Monday);
-    weekMonday.setDate(isoWeek1Monday.getDate() + (week - 1) * 7);
-
-    // Display Friday - Sunday of that ISO week
-    const weekStartDate = new Date(weekMonday);
-    weekStartDate.setDate(weekMonday.getDate() + 4); // Friday
-
-    const weekEndDate = new Date(weekMonday);
-    weekEndDate.setDate(weekMonday.getDate() + 6); // Sunday
-
-    return {
-      start: weekStartDate.toDateString(),
-      end: weekEndDate.toDateString(),
-    };
-  };
 
   const formatDate = (date: string) => {
     return dayjs(date).format("dddd, D MMMM YYYY");
   };
 
   const sumPrices = () => {
-    return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
+    return products
+      .filter((product) => selectedProducts.includes(product.cartItemId))
+      .reduce((n, { price }) => n + parseInt(price), 0)
+      .toFixed(2);
   };
 
   const handleCheckboxEvent = (
@@ -140,15 +86,19 @@ const CartItems = ({
         <h2 id="cart-heading" className="sr-only">
           Items in your shopping cart
         </h2>
+        <p className="mb-4 text-sm text-gray-500">
+          Dresses below are grouped by the day they&apos;re booked for. You can
+          only check out one day at a time - select items from a single date to
+          continue.
+        </p>
 
         <ul
           role="list"
           className="divide-y divide-gray-200 border-b border-t border-gray-200"
         >
-          {groupedByWeek().map(({ year, week, items }) => {
-            const range = getWeekRange(week, year);
+          {groupedByDate().map(({ date, items }) => {
             return (
-              <React.Fragment key={`${year}-${week}`}>
+              <React.Fragment key={date}>
                 <div className="bg-pink-100 flex px-2 items-center font-semibold">
                   <input
                     type="checkbox"
@@ -166,7 +116,7 @@ const CartItems = ({
                       )
                     }
                   />
-                  {range.start} to {range.end}
+                  {formatDate(date)}
                 </div>
 
                 {items.map((product) => (

@@ -6,7 +6,6 @@ import {
   Hr,
   Html,
   Img,
-  Link,
   Preview,
   Row,
   Section,
@@ -81,70 +80,76 @@ const BookingInstructionsEmail = ({
             {pickup ? (
               <>
                 <Text style={p}>
-                  Just a quick reminder that your Dress for Less rental will be
-                  ready for pickup tomorrow from 9:00am onwards.
+                  Your Dress for Less rental has been packed and is ready for
+                  collection.
                 </Text>
                 <Text style={p}>
-                  Pickup is from <strong>22 Advance Way, Albany</strong>. Your
-                  dress will be placed at the front door in a garment bag with
-                  your name on it, so you can collect it at a time that suits
-                  you.
+                  Pickup address:
+                  <br />
+                  22 Advance Way
+                  <br />
+                  Albany, Auckland 0632
                 </Text>
                 <Text style={p}>
-                  We recommend picking up your dress as early as possible and
-                  trying it on shortly after collection to ensure everything is
-                  perfect for your event. If there are any issues, please let us
-                  know as soon as possible and we&apos;ll do our best to help.
+                  Your dress will be placed inside the container on the
+                  doorstep and labelled with your name. It will be ready to
+                  collect from 9am.
                 </Text>
                 <Text style={p}>
-                  After your event, please remember to return your dress by the
-                  agreed return date and time outlined in our Terms &amp;
-                  Conditions.
+                  Please make sure you take the bag labelled with your name and
+                  check that you have the correct dress before leaving.
                 </Text>
                 <Text style={p}>
-                  We can&apos;t wait for you to wear your dress and hope you
-                  have an amazing time at your event!
+                  After your event, please return the dress to the same
+                  container by the return date and time stated in your
+                  booking. Please place it securely inside the container
+                  rather than leaving it on the doorstep. We&apos;ll also send
+                  you a return reminder with the full instructions.
+                </Text>
+                <Text style={p}>
+                  Please do not wash or dry-clean the dress, as professional
+                  cleaning is included in your rental.
+                </Text>
+                <Text style={p}>
+                  We hope you love your dress and have the best time at your
+                  event! Please message us if you have any questions or any
+                  trouble locating your order.
                 </Text>
               </>
             ) : (
               <>
                 <Text style={p}>
                   Just a quick update to let you know that your Dress for Less
-                  rental is on its way soon!
+                  rental is being prepared and is due to be posted today or
+                  tomorrow via NZ Post.
                 </Text>
                 <Text style={p}>
-                  Your dress is scheduled to be posted today or tomorrow via NZ
-                  Post. Once your parcel has been scanned into the NZ Post
-                  network, you will automatically receive a tracking email
-                  directly from NZ Post.
+                  Once your parcel has been collected and scanned into the NZ
+                  Post network, you&apos;ll automatically receive a tracking
+                  email directly from NZ Post. Please keep an eye on your inbox
+                  and junk folder, just in case.
                 </Text>
                 <Text style={p}>
-                  Please keep an eye on your inbox (and junk folder just in
-                  case). If you have not received a tracking email by Wednesday
-                  evening, please get in touch with us and we&apos;ll look into
-                  it for you.
+                  If you haven&apos;t received your tracking email by Wednesday
+                  evening, please get in touch with us so we can look into it
+                  for you.
                 </Text>
                 <Text style={p}>
-                  We recommend keeping an eye on the tracking throughout the
-                  week so you know exactly when your parcel will arrive.
+                  We recommend checking your tracking throughout the week so
+                  you know when to expect your parcel.
                 </Text>
                 <Text style={p}>
-                  Once you&apos;ve enjoyed your event, please remember to return
-                  your dress by the agreed return date and time outlined in our
-                  Terms &amp; Conditions. Return instructions can be found on
-                  our{" "}
-                  <Link href={`${baseUrl}/policies`} style={link}>
-                    website
-                  </Link>
-                  .
+                  After your event, please return your dress using the prepaid
+                  return bag provided. It must be lodged at an NZ Post counter
+                  before 1pm on the next working day following your event.
+                  Please do not place it in a street post box, and keep your
+                  lodgement receipt as proof of return. We&apos;ll also send
+                  you a separate return reminder.
                 </Text>
                 <Text style={p}>
-                  If you have any questions before your event, don&apos;t
-                  hesitate to reach out - we&apos;re always happy to help.
-                </Text>
-                <Text style={p}>
-                  We can&apos;t wait for you to receive your dress and hope you
-                  love it as much as we do!
+                  We can&apos;t wait for your dress to arrive and hope you love
+                  it as much as we do! Please reach out if you have any
+                  questions before your event.
                 </Text>
               </>
             )}
@@ -204,7 +209,7 @@ const BookingInstructionsEmail = ({
           <Hr style={hr} />
           <Section style={footerSection}>
             <Text style={footerText}>
-              Dress for Less NZ — dressforlessnz.com
+              Dress for Less NZ - dressforlessnz.com
             </Text>
           </Section>
         </Container>
@@ -276,11 +281,6 @@ const p = {
   fontSize: "15px",
   lineHeight: "1.7",
   color: "#3c4149",
-};
-
-const link = {
-  color: "#fda4af",
-  textDecoration: "underline",
 };
 
 const ps = {

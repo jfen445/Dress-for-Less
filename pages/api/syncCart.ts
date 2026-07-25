@@ -4,6 +4,7 @@ import { CartType } from "../../common/types";
 import { addToCart, getCartItem } from "../../lib/db/cart-dao";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
+import { findUser } from "../../lib/db/user-dao";
 
 export default async function handler(
   req: NextApiRequest,
@@ -39,6 +40,16 @@ export default async function handler(
       return res.status(404).json({
         message: "Invalid cart item",
       });
+    }
+
+    // Only let a user sync items into their own cart, never someone else's.
+    const [sessionUser] = await findUser(session.user.email ?? "");
+    if (!sessionUser) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const sessionUserId = String(sessionUser._id);
+    if (cart.some((item) => String(item.userId) !== sessionUserId)) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
     await Promise.all(

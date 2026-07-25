@@ -1,6 +1,9 @@
 import { Address, Booking, BookingItem, CartItemType } from "../../../common/types";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
-import { hasDeliveryItem, SHIPPING_FEE } from "../../../lib/utils/deliveryRules";
+import {
+  calculateShippingFee,
+  hasDeliveryItem,
+} from "../../../lib/utils/deliveryRules";
 
 export function buildBooking(
   products: CartItemType[],
@@ -24,13 +27,20 @@ export function buildBooking(
       city: address?.city ?? "",
       country: address?.country ?? "",
       postCode: address?.postCode ?? "",
+      nzPostAddressId: address?.nzPostAddressId,
+      nzPostDpid: address?.nzPostDpid,
+      isRuralDelivery: address?.isRuralDelivery ?? false,
+      ruralDeliveryNumber: address?.ruralDeliveryNumber,
     },
     size: item.size,
     price: parseInt(item.price),
     instructions: instructions ?? "",
   }));
 
-  const shippingFee = hasDeliveryItem(items) ? SHIPPING_FEE : 0;
+  const shippingFee = calculateShippingFee(
+    hasDeliveryItem(items),
+    address?.isRuralDelivery ?? false,
+  );
 
   return {
     userId,

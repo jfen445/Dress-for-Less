@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { auckland } from "../../lib/utils/timezone";
+import { isTryOnBookingAllowedForDate } from "../../lib/utils/tryOnRules";
 import { dbConnect } from "../../lib/db/db";
 import { getAllTryOnAvailability } from "../../lib/db/tryon-availability-dao";
 
@@ -14,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const all = await getAllTryOnAvailability();
   const dates = all
     .filter((a) => a.date >= today && a.timeSlots.length > 0)
+    .filter((a) => isTryOnBookingAllowedForDate(a.date))
     .map((a) => a.date);
 
   return res.status(200).json({ dates });

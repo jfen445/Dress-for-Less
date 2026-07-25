@@ -29,6 +29,7 @@ export interface IBookingItem {
   size: String;
   price: number;
   instructions?: string;
+  notes?: string;
 }
 
 export interface IBooking {
@@ -55,4 +56,8 @@ export interface IAddress {
   postCode?: string;
   company?: string;
   apartment?: string;
+  nzPostAddressId?: string;
+  nzPostDpid?: string;
+  isRuralDelivery?: boolean;
+  ruralDeliveryNumber?: string;
 }

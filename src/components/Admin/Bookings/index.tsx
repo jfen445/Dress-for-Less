@@ -1,4 +1,4 @@
-import { getAllBookings } from "@/api/admin";
+import { getAllBookings, createLabels } from "@/api/admin";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
 import { Booking, BookingLineItem, UserType } from "../../../../common/types";
@@ -10,7 +10,9 @@ import DeleteBookingModal from "../DeleteBookingModal";
 import EditBookingModal from "../EditBookingModal";
 import EmailBookingsModal from "../EmailBookingsModal";
 import DownloadBookingsModal from "../DownloadBookingsModal";
+import CreateLabelModal from "../CreateLabelModal";
 import BookingHistoryModal from "../BookingHistoryModal";
+import { auckland } from "../../../../lib/utils/timezone";
 import {
   MagnifyingGlassIcon,
   PencilSquareIcon,
@@ -18,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
@@ -25,6 +28,18 @@ import AdminBookingsCalendar from "@/components/Admin/BookingsCalendar";
 
 type AdminBookingsProps = {
   deliveryType: DeliveryType[];
+};
+
+const getOrdinalSuffix = (day: number): string => {
+  if (day % 10 === 1 && day !== 11) return "st";
+  if (day % 10 === 2 && day !== 12) return "nd";
+  if (day % 10 === 3 && day !== 13) return "rd";
+  return "th";
+};
+
+const formatBookingDate = (date: string): string => {
+  const d = dayjs(date);
+  return `${d.format("dddd")} ${d.date()}${getOrdinalSuffix(d.date())} ${d.format("MMMM")}`;
 };
 
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
@@ -48,6 +63,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState<boolean>(false);
   const [downloadModalOpen, setDownloadModalOpen] =
+    React.useState<boolean>(false);
+  const [createLabelModalOpen, setCreateLabelModalOpen] =
     React.useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
   const [bookingToDelete, setBookingToDelete] = React.useState<Booking | null>(
@@ -301,6 +318,83 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     [filteredThisWeekBookings],
   );
 
+  // "bookings" (from context) is everything after this Sunday, unbounded —
+  // narrow it to just next week's Monday-Sunday window for the label picker.
+  const nextWeekLineItems = React.useMemo(() => {
+    const now = auckland.now();
+    const currentSunday = (
+      now.day() === 0 ? now : now.add(7 - now.day(), "day")
+    ).endOf("day");
+    const nextSunday = currentSunday.add(7, "day");
+
+    let result = bookings.filter((b) => {
+      const date = auckland.toZone(b.items[0]?.dateBooked);
+      return date.isAfter(currentSunday) && date.isBefore(nextSunday);
+    });
+
+    if (deliveryType?.length)
+      result = result.filter((b) =>
+        b.items.some((item) =>
+          deliveryType.includes(item.deliveryType as DeliveryType),
+        ),
+      );
+    if (selectedStatuses.length)
+      result = result.filter((b) =>
+        selectedStatuses.includes(b.status as BookingStatus),
+      );
+
+    return result.flatMap((booking) =>
+      booking.items.map((item) => ({ booking, item })),
+    );
+  }, [bookings, deliveryType, selectedStatuses]);
+
+  const labelLineItems = React.useMemo(
+    () => [...thisWeekLineItems, ...nextWeekLineItems],
+    [thisWeekLineItems, nextWeekLineItems],
+  );
+
+  const handleCreateLabels = async (lineItemsToLabel: BookingLineItem[]) => {
+    const bookingIds = [
+      ...new Set(lineItemsToLabel.map((li) => li.booking._id as string)),
+    ];
+
+    try {
+      const { data } = await createLabels(bookingIds);
+      const results = data.results as {
+        bookingId: string;
+        success: boolean;
+        consignmentId?: string;
+        message?: string;
+      }[];
+      const successCount = results.filter((r) => r.success).length;
+      const failures = results.filter((r) => !r.success);
+
+      if (failures.length === 0) {
+        setToast({
+          message: `${successCount} label${successCount === 1 ? "" : "s"} created successfully`,
+          variant: ToastVariant.SUCCESS,
+          show: true,
+        });
+      } else {
+        setToast({
+          message: `${successCount} of ${results.length} labels created. Failed: ${failures
+            .map((f) => f.message ?? f.bookingId)
+            .join(", ")}`,
+          variant: ToastVariant.WARNING,
+          show: true,
+        });
+      }
+
+      getBookings();
+    } catch (err) {
+      setToast({
+        message: "An error occurred while creating labels",
+        variant: ToastVariant.WARNING,
+        show: true,
+      });
+    }
+  };
+
   const updateCurrentBooking = async (
     bookingId: string,
     bookingStatus: BookingStatus,
@@ -477,36 +571,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     }
   };
 
-  const getStatusColour = (status: BookingStatus) => {
-    let colour = "";
-    switch (status) {
-      case BookingStatus.BeingReturned:
-        colour = "bg-purple-200 text-purple-900 ring-purple-700/30";
-        break;
-      case BookingStatus.Washing:
-        colour = "bg-blue-200 text-blue-900 ring-blue-700/30";
-        break;
-      case BookingStatus.Drying:
-        colour = "bg-lime-200 text-lime-900 ring-lime-700/30";
-        break;
-      case BookingStatus.Packed:
-        colour = "bg-green-300 text-green-950 ring-green-800/40";
-        break;
-      case BookingStatus.Delayed:
-        colour = "bg-red-200 text-red-900 ring-red-700/30";
-        break;
-      case BookingStatus.Reparing:
-        colour = "bg-stone-200 text-stone-900 ring-stone-700/30";
-        break;
-      case BookingStatus.Returned:
-        colour = "bg-teal-200 text-teal-900 ring-teal-700/30";
-        break;
-      case BookingStatus.NA:
-        colour = "bg-gray-200 text-gray-900 ring-gray-700/30";
-        break;
-    }
-    return colour;
-  };
 
   const renderBookingRow = (bookingList: Booking[]) => {
     return (
@@ -522,7 +586,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 className={`cursor-pointer ${getStatusBgColour(currentBooking.status)}`}
                 onClick={() => toggleRow(currentBooking._id)}
               >
-                <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
+                <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                  {currentBooking.orderNumber}
+                </td>
+
+                <td className="px-3 py-5 text-sm">
                   <div className="flex items-center">
                     <img
                       src={primaryItem?.dress?.images[0]}
@@ -564,10 +632,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 </td>
 
                 <td className="px-3 py-5 text-sm text-gray-500">
-                  {currentBooking.orderNumber}
-                </td>
-
-                <td className="px-3 py-5 text-sm text-gray-500">
                   <div>{primaryItem?.size}</div>
                   {additionalItems.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
@@ -588,7 +652,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 </td>
 
                 <td className="px-3 py-5 text-sm text-gray-500">
-                  {dayjs(primaryItem?.dateBooked).format("MMMM D, YYYY")}
+                  {formatBookingDate(primaryItem?.dateBooked)}
                 </td>
 
                 <td className="px-3 py-5 text-sm">
@@ -704,6 +768,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                                 {item.instructions}
                               </p>
                             )}
+
+                            {item.notes && (
+                              <p>
+                                <span className="font-medium">Notes:</span>{" "}
+                                {item.notes}
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -748,6 +819,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <CreateBookingModal
         isOpen={createModalOpen}
         setOpen={setCreateModalOpen}
+        defaultDeliveryType={deliveryType?.[0]}
         onCreated={() => {
           getBookings();
           setToast({
@@ -778,6 +850,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             "bookings.csv",
           )
         }
+      />
+      <CreateLabelModal
+        isOpen={createLabelModalOpen}
+        setOpen={setCreateLabelModalOpen}
+        lineItems={labelLineItems}
+        onCreateLabels={handleCreateLabels}
       />
       <BookingHistoryModal
         isOpen={historyModalOpen}
@@ -970,6 +1048,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
+            {deliveryType?.includes(DeliveryType.Delivery) && (
+              <Button onClick={() => setCreateLabelModalOpen(true)}>
+                Create label
+              </Button>
+            )}
             <Button onClick={() => setDownloadModalOpen(true)}>Download</Button>
           </div>
         </div>
@@ -1016,13 +1099,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         scope="col"
                         className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
                       >
-                        Dress
+                        Order #
                       </th>
                       <th
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
-                        Order #
+                        Dress
                       </th>
                       <th
                         scope="col"

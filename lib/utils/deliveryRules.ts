@@ -4,11 +4,24 @@ import { calculateBookingWindow } from "./bookingWindow";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 
 export const SHIPPING_FEE = 15;
+export const RURAL_SURCHARGE = 5;
 
 export function hasDeliveryItem(
   items: { deliveryType: DeliveryType | string }[],
 ): boolean {
   return items.some((item) => item.deliveryType === DeliveryType.Delivery);
+}
+
+// Callers pass in `isRuralDelivery` explicitly (rather than deriving it here
+// from item/address data) so that the trust boundary is visible at each call
+// site — pages/api/booking.ts in particular must pass a server-verified
+// value, never a client-supplied one read back off item data.
+export function calculateShippingFee(
+  hasDelivery: boolean,
+  isRuralDelivery: boolean,
+): number {
+  if (!hasDelivery) return 0;
+  return SHIPPING_FEE + (isRuralDelivery ? RURAL_SURCHARGE : 0);
 }
 
 export function isDateWithinCurrentWeekend(

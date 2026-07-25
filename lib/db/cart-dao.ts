@@ -36,6 +36,12 @@ export async function removeItemFromCart(cartId: String) {
   return CartSchema.findByIdAndDelete(cartId);
 }
 
+// Scoped delete: only removes the item if it belongs to the given user.
+// Returns null when the item doesn't exist or isn't owned by that user.
+export async function removeItemFromCartForUser(cartId: String, userId: String) {
+  return CartSchema.findOneAndDelete({ _id: cartId, userId });
+}
+
 export async function removeItemFromCartByFields(
   userId: String,
   dressId: String,
