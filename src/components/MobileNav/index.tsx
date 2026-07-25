@@ -2,11 +2,13 @@
 
 import { useNavigationContext } from "@/context/NavigationContext";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { useUserContext } from "@/context/UserContext";
 import { useDressSearch } from "@/hooks/useDressSearch";
 import SearchResultsList from "@/components/Search/SearchResultsList";
 import { Dialog, Tab, Transition } from "@headlessui/react";
 import { XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { Fragment } from "react";
+import { signOut, useSession } from "next-auth/react";
 import Button from "@/components/Button";
 
 const navigation = {
@@ -114,9 +116,10 @@ const navigation = {
     },
   ],
   pages: [
+    { name: "Book a try on", href: "/try-on" },
     { name: "FAQ", href: "/faq" },
-    { name: "Book a Try-On", href: "/try-on" },
-    { name: "Policy", href: "/policies" },
+    { name: "T&Cs", href: "/policies" },
+    { name: "About", href: "/about" },
   ],
 };
 
@@ -127,6 +130,8 @@ function classNames(...classes: string[]) {
 const MobileNav = () => {
   const { mobileNavOpen, setMobileNavOpen } = useNavigationContext();
   const { allDresses } = useGlobalContext();
+  const { userInfo } = useUserContext();
+  const { data: session } = useSession();
   const { searchQuery, setSearchQuery, searchResults } =
     useDressSearch(allDresses);
 
@@ -285,14 +290,55 @@ const MobileNav = () => {
               </div>
 
               <div className="space-y-6 border-t border-gray-200 px-4 py-6">
-                <div className="flow-root">
-                  <a
-                    href={"/login"}
-                    className="-m-2 block p-2 font-medium text-gray-900"
-                  >
-                    Sign in
-                  </a>
-                </div>
+                {!session ? (
+                  <div className="flow-root">
+                    <a
+                      href={"/login"}
+                      className="-m-2 block p-2 font-medium text-gray-900"
+                    >
+                      Sign in
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    {userInfo?.role === "admin" && (
+                      <div className="flow-root">
+                        <a
+                          href={"/admin"}
+                          className="-m-2 block p-2 font-medium text-gray-900"
+                        >
+                          Admin
+                        </a>
+                      </div>
+                    )}
+                    <div className="flow-root">
+                      <a
+                        href={"/account"}
+                        className="-m-2 block p-2 font-medium text-gray-900"
+                      >
+                        Account
+                      </a>
+                    </div>
+                    {userInfo && (
+                      <div className="flow-root">
+                        <a
+                          href={"/order-history"}
+                          className="-m-2 block p-2 font-medium text-gray-900"
+                        >
+                          Order History
+                        </a>
+                      </div>
+                    )}
+                    <div className="flow-root">
+                      <a
+                        onClick={() => signOut()}
+                        className="-m-2 block cursor-pointer p-2 font-medium text-gray-900"
+                      >
+                        Sign out
+                      </a>
+                    </div>
+                  </>
+                )}
               </div>
             </Dialog.Panel>
           </Transition.Child>
