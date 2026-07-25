@@ -79,60 +79,67 @@ const ReturnReminderEmail = ({
             {dropOff ? (
               <>
                 <Text style={p}>
-                  This is a friendly reminder that your dress is due back today.
-                  If you have not already returned it, please ensure it is
-                  dropped off by <strong>8:00pm tonight</strong>.
+                  This is a friendly reminder that your dress is due to be
+                  returned today if you haven&apos;t already done so. Please
+                  place it securely inside the drop-off box on the doorstep by{" "}
+                  <strong>8:00pm tonight</strong>.
                 </Text>
                 <Text style={p}>
                   <strong>Return address:</strong>
                   <br />
-                  22 Advance Way, Albany
+                  22 Advance Way
+                  <br />
+                  Albany, Auckland 0632
                 </Text>
                 <Text style={p}>
-                  Please place your dress securely in the drop-off box located
-                  at the front door. There is no need to knock or wait for
-                  someone to be home.
+                  Please make sure the dress is placed inside the box rather
+                  than left beside it or on the doorstep. There is no need to
+                  wash or dry-clean the dress, as professional cleaning is
+                  included in your rental.
                 </Text>
               </>
             ) : (
               <>
                 <Text style={p}>
-                  This is a friendly reminder that your dress is due back today.
-                  If you have not already returned it, please ensure it is
-                  dropped off at a NZ Post branch by{" "}
-                  <strong>1:00pm today</strong>.
+                  This is a friendly reminder that your dress is due to be
+                  returned today. If you haven&apos;t already done so, please
+                  place it inside the prepaid return bag provided and take it
+                  to an NZ Post branch before <strong>1:00pm today</strong>.
                 </Text>
                 <Text style={p}>
-                  <strong>Important return information:</strong>
+                  <strong>Important return instructions:</strong>
                 </Text>
                 <Text style={{ ...p, marginBottom: 4 }}>
-                  • Your parcel must be handed over the counter to a NZ Post
-                  staff member
+                  • Hand the parcel directly to an NZ Post staff member at the
+                  counter
                 </Text>
                 <Text style={{ ...p, marginBottom: 4 }}>
-                  • Please do not place it in a post box
+                  • Do not place the parcel in a post box
                 </Text>
                 <Text style={p}>
-                  • Be sure to obtain a receipt as proof of postage
+                  • Ask for and keep your receipt as proof of postage
                 </Text>
               </>
             )}
 
             <Text style={p}>
               As outlined in our Terms &amp; Conditions, late fees may apply if
-              your dress is not returned on time.
+              your dress is not{" "}
+              {dropOff
+                ? "returned by the required deadline"
+                : "lodged with NZ Post by the return deadline"}
+              .
             </Text>
 
             <Text style={p}>
-              If you experience any issues returning your{" "}
-              {dropOff ? "dress" : "parcel"}, please let us know as soon as
-              possible so we can assist.
+              {dropOff
+                ? "If you experience any issues returning your dress, please contact us as soon as possible so we can assist."
+                : "If you have lost the return bag or experience any issues returning your parcel, please contact us as soon as possible so we can help."}
             </Text>
 
             <Text style={p}>
-              Thank you for helping us keep our dresses available for future
-              customers. We hope you loved your rental and we&apos;d love to see
-              any photos from your event!
+              Thank you for returning your dress on time and helping us keep it
+              available for the next customer. We hope you loved your rental!
             </Text>
 
             <Text style={p}>

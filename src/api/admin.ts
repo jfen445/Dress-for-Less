@@ -79,6 +79,10 @@ export async function updateTryOnBookingStatus(
   });
 }
 
+export async function sendTryOnReminderEmails(bookingIds: string[]) {
+  return api.post(`/api/admin/sendTryOnReminderEmails`, { bookingIds });
+}
+
 export async function getTryOnAvailability() {
   return api.get(`/api/admin/tryOnAvailability`);
 }

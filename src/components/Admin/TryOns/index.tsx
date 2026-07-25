@@ -5,6 +5,7 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import CreateTryOnBookingModal from "@/components/Admin/CreateTryOnBookingModal";
+import EmailTryOnRemindersModal from "@/components/Admin/EmailTryOnRemindersModal";
 import AdminTryOnAvailability from "@/components/Admin/TryOnAvailability";
 import { TryOnStatus } from "../../../../common/enums/TryOnStatus";
 import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
@@ -45,6 +46,7 @@ const AdminTryOns = () => {
   const [bookings, setBookings] = React.useState<TryOnBookingRow[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [emailModalOpen, setEmailModalOpen] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
     variant: ToastVariant.WARNING,
@@ -181,6 +183,17 @@ const AdminTryOns = () => {
           });
         }}
       />
+      <EmailTryOnRemindersModal
+        isOpen={emailModalOpen}
+        setOpen={setEmailModalOpen}
+        bookings={thisWeekBookings}
+        onSent={(message) =>
+          setToast({ message, variant: ToastVariant.SUCCESS, show: true })
+        }
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
+      />
       <AdminTryOnAvailability />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
@@ -193,6 +206,7 @@ const AdminTryOns = () => {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setEmailModalOpen(true)}>Email</Button>
             <Button onClick={() => setCreateModalOpen(true)}>
               New try-on booking
             </Button>

@@ -48,7 +48,7 @@ const TryOnConfirmationEmail = ({
         <Text style={paragraph}>Hi {name},</Text>
         <Text style={paragraph}>
           Thanks for booking a try-on session with Dress for Less. Here are your
-          session details:
+          appointment details:
         </Text>
         <Section style={detailsBox}>
           <Text style={detailLine}>
@@ -58,28 +58,64 @@ const TryOnConfirmationEmail = ({
             <strong>Time:</strong> {formatTryOnTimeSlot(timeSlot)}
           </Text>
           <Text style={detailLine}>
-            <strong>Try-on fee:</strong> ${price.toFixed(2)} (paid)
+            <strong>Try-on fee:</strong> ${price.toFixed(2)} — paid
+          </Text>
+          <Text style={detailLine}>
+            <strong>Location:</strong> Albany, Auckland
           </Text>
         </Section>
         <Text style={paragraph}>
-          Please arrive on time at our Albany, Auckland location. If you need to
-          reschedule or cancel, contact us as soon as possible.
+          Please arrive on time for your appointment. Full arrival details will
+          be provided before your session.
         </Text>
         <Hr style={hr} />
         <Heading as="h2" style={subHeading}>
-          Try-On Terms & Conditions
+          Try-on information
         </Heading>
         <Text style={smallParagraph}>
-          The $15 try-on fee is non-refundable and does not go towards any
-          rental. Please arrive within 10 minutes of your slot &mdash; if you
-          are more than 15 minutes late without notice, your session may be
-          treated as a no-show and the fee forfeited. Sessions can be
-          rescheduled free of charge if you contact us at least 24 hours in
-          advance. For our full terms, please visit{" "}
+          After attending your appointment, you&apos;ll receive a $10 credit to
+          use towards a Dress for Less rental. The credit will be added to your
+          account and will be valid for 48 hours, giving you time to book one of
+          the dresses you tried on.
+        </Text>
+        <Text style={smallParagraph}>Please note that:</Text>
+        <Text style={{ ...smallParagraph, marginBottom: 4 }}>
+          • The remaining $5 of the try-on fee is non-refundable.
+        </Text>
+        <Text style={{ ...smallParagraph, marginBottom: 4 }}>
+          • The $10 credit can only be used once and cannot be exchanged for
+          cash.
+        </Text>
+        <Text style={{ ...smallParagraph, marginBottom: 4 }}>
+          • The credit will expire 48 hours after it is issued.
+        </Text>
+        <Text style={smallParagraph}>
+          • Dresses are not reserved during or after a try-on and remain
+          available for other customers to book until your rental is confirmed.
+        </Text>
+        <Text style={smallParagraph}>
+          Please arrive within 10 minutes of your scheduled time. If you are
+          more than 15 minutes late without contacting us, your appointment may
+          be treated as a no-show and your try-on fee forfeited.
+        </Text>
+        <Text style={smallParagraph}>
+          Appointments can be rescheduled free of charge when you contact us at
+          least 24 hours in advance. Cancellations and rescheduling requests
+          made with less than 24 hours&apos; notice may result in the try-on fee
+          being forfeited.
+        </Text>
+        <Text style={smallParagraph}>
+          For our full try-on policy, please visit our{" "}
           <Link href={`${baseUrl}/policies`} style={inlineLink}>
-            our terms and conditions page
-          </Link>
-          .
+            Terms &amp; Conditions
+          </Link>{" "}
+          page.
+        </Text>
+        <Text style={paragraph}>We look forward to seeing you!</Text>
+        <Text style={paragraph}>
+          Love,
+          <br />
+          Dress for Less NZ xx
         </Text>
         <Hr style={hr} />
         <Link href={baseUrl + "/account"} style={reportLink}>
