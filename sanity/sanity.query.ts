@@ -43,7 +43,7 @@ export async function getFaq() {
 
 export async function getDress(id: string) {
   return client.fetch(
-    groq`*[_type == "dress" && _id == "${id}"][0]{
+    groq`*[_type == "dress" && _id == $id][0]{
       _id,
       name,
       description,
@@ -64,6 +64,16 @@ export async function getDress(id: string) {
       condition,
       rating,
       notes,
+      _updatedAt
+    }`,
+    { id }
+  );
+}
+
+export async function getAllDressIds() {
+  return client.fetch(
+    groq`*[_type == "dress" && defined(images) && defined(price)]{
+      _id,
       _updatedAt
     }`
   );

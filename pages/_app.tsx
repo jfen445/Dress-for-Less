@@ -18,7 +18,10 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <SessionProvider session={pageProps.session}>
-      <GlobalContextProvider>
+      <GlobalContextProvider
+        initialDresses={pageProps.dresses}
+        initialFaq={pageProps.faq}
+      >
         <UserContextProvider>
           <CartProvider>
             <div className="min-h-screen bg-white">

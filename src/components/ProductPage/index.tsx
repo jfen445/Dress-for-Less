@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
 import { RadioGroup } from "@headlessui/react";
 import {
   CartType,
@@ -18,23 +17,20 @@ import { getUser } from "@/api/user";
 import { useSession } from "next-auth/react";
 import Toast, { ToastType, ToastVariant } from "../Toast";
 import { addToCart } from "@/api/cart";
-import Spinner from "../Spinner";
 import CoverFlow from "../Swiper";
-import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useCartContext } from "@/context/CartContext";
 import Tooltip from "@/components/Tooltip";
 
-const Product = () => {
-  const { getDressWithId } = useGlobalContext();
+interface ProductProps {
+  dress: DressType;
+}
+
+const Product = ({ dress }: ProductProps) => {
   const { data: session } = useSession();
   const { refreshCart } = useCartContext();
   const { getItems, setItems } = useLocalStorage<CartType[]>("localCart");
-  const [dress, setDress] = React.useState<DressType>();
-  const [sizes, setSizes] = React.useState<Sizes>({});
   const [size, setSize] = React.useState<string>("");
-
-  const [images, setImages] = React.useState<ImageType[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<string>("");
   const [deliveryType, setDeliveryType] = React.useState<DeliveryType>(
     DeliveryType.Delivery,
@@ -45,8 +41,38 @@ const Product = () => {
     variant: ToastVariant.SUCCESS,
     show: false,
   });
-  const params = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+
+  const sizes = React.useMemo<Sizes>(() => {
+    const dressSizes = (({ xs, s, m, l, xl }) => ({
+      xs,
+      s,
+      m,
+      l,
+      xl,
+    }))(dress as any);
+
+    return Object.fromEntries(
+      Object.entries(dressSizes).filter(
+        ([_, v]) => v != null && Number(v) > 0,
+      ),
+    );
+  }, [dress]);
+
+  const images = React.useMemo<ImageType[]>(() => {
+    return dress.images.reduce(function (
+      acc: ImageType[], // Set the accumulator type to an array of ImageType
+      cur: string, // Assuming cur is a string, the image source
+    ): ImageType[] {
+      // The return type should be ImageType[]
+      var o: ImageType = {
+        src: cur,
+        alt: dress.name + cur, // Alt text is constructed with the name + image URL
+      };
+      acc.push(o); // Push the new object to the array
+      return acc;
+    }, []);
+  }, [dress]);
 
   const sizeOptions = React.useCallback(() => {
     const obj = Object.keys(sizes).map((item) => item.toUpperCase());
@@ -57,50 +83,6 @@ const Product = () => {
   React.useEffect(() => {
     if (isAddedToCart) setIsAddedToCart(false);
   }, [selectedDate, size, deliveryType, isAddedToCart]);
-
-  React.useEffect(() => {
-    if (params) {
-      const getProductDetails = async () => {
-        const currentDress = getDressWithId(params.id);
-        if (currentDress) {
-          setDress(currentDress);
-          const dressSizes = (({ xs, s, m, l, xl }) => ({
-            xs,
-            s,
-            m,
-            l,
-            xl,
-          }))(currentDress as any);
-
-          let pickedSizes = Object.fromEntries(
-            Object.entries(dressSizes).filter(
-              ([_, v]) => v != null && Number(v) > 0,
-            ),
-          );
-
-          setSizes(pickedSizes);
-
-          var obj: ImageType[] = currentDress.images.reduce(function (
-            acc: ImageType[], // Set the accumulator type to an array of ImageType
-            cur: string, // Assuming cur is a string, the image source
-            i: number, // Index is a number
-          ): ImageType[] {
-            // The return type should be ImageType[]
-            var o: ImageType = {
-              src: cur,
-              alt: currentDress.name + cur, // Alt text is constructed with the name + image URL
-            };
-            acc.push(o); // Push the new object to the array
-            return acc;
-          }, []);
-
-          setImages(obj);
-        }
-      };
-
-      getProductDetails();
-    }
-  }, [getDressWithId, params]);
 
   const addDressToCart = async () => {
     setIsLoading(true);
@@ -113,7 +95,7 @@ const Product = () => {
       })
       .catch((err) => console.error(err));
 
-    if (!params?.id || !user) {
+    if (!user) {
       setToast({
         message: "An error occurred while adding to cart",
         variant: ToastVariant.ERROR,
@@ -123,10 +105,8 @@ const Product = () => {
       return;
     }
 
-    console.log("Dress", dress);
-
     const cartItem: CartType = {
-      dressId: params?.id,
+      dressId: dress._id,
       userId: user?._id,
       dateBooked: selectedDate,
       size: size,
@@ -256,13 +236,8 @@ const Product = () => {
   return (
     <div className="bg-white">
       <Toast toast={toast} setToast={setToast} href={"/cart"} />
-      {!dress ? (
-        <div className="h-screen flex items-center justify-center">
-          <Spinner />
-        </div>
-      ) : (
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
-          {/* Product details */}
+      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
+        {/* Product details */}
           <div className="lg:max-w-lg lg:self-end">
             <div className="mt-4">
               <p className="text-sm text-gray-500">{dress?.brand}</p>
@@ -418,6 +393,7 @@ const Product = () => {
                 sizes={sizes}
                 selectedSize={size}
                 deliveryType={deliveryType}
+                dressId={dress._id}
               />
 
               <div className="mt-10">
@@ -438,8 +414,7 @@ const Product = () => {
           </div>
           <ImageSelector images={images} classname="hidden lg:block" />
         </div>
-      )}
-    </div>
+      </div>
   );
 };
 

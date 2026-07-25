@@ -12,11 +12,22 @@ interface GlobalProps {
   getFavouriteDresses: () => DressType[];
 }
 
+interface GlobalContextProviderProps extends React.PropsWithChildren {
+  initialDresses?: DressType[];
+  initialFaq?: Faq[];
+}
+
 const globalContext = React.createContext<GlobalProps>({} as GlobalProps);
 
-const GlobalContextProvider = ({ children }: React.PropsWithChildren) => {
-  const [allDresses, setAllDresses] = React.useState<DressType[]>([]);
-  const [faq, setFaq] = React.useState<Faq[]>([]);
+const GlobalContextProvider = ({
+  children,
+  initialDresses,
+  initialFaq,
+}: GlobalContextProviderProps) => {
+  const [allDresses, setAllDresses] = React.useState<DressType[]>(
+    initialDresses ?? []
+  );
+  const [faq, setFaq] = React.useState<Faq[]>(initialFaq ?? []);
 
   React.useEffect(() => {
     async function fetchData() {

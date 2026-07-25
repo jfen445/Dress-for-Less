@@ -1,14 +1,21 @@
 import * as React from "react";
+import { GetStaticProps } from "next";
 import DressGrid from "@/components/DressPage/DressGrid";
 import Filters from "@/components/DressPage/Filters";
 import DressContextProvider from "@/context/DressContext";
+import { getAllDressesFromSanity } from "../../sanity/sanity.query";
+import { DressType } from "../../common/types";
 
-const DressPage = () => {
+interface DressPageProps {
+  dresses: DressType[];
+}
+
+const DressPage = ({ dresses }: DressPageProps) => {
   return (
     <>
       <div className="bg-white">
         <main>
-          <DressContextProvider>
+          <DressContextProvider initialDresses={dresses}>
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
               {/* Filters */}
               <Filters />
@@ -29,3 +36,12 @@ const DressPage = () => {
 };
 
 export default DressPage;
+
+export const getStaticProps: GetStaticProps<DressPageProps> = async () => {
+  const dresses = (await getAllDressesFromSanity()) as DressType[];
+
+  return {
+    props: { dresses },
+    revalidate: 1800,
+  };
+};
