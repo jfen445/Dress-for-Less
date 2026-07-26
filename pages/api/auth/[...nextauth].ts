@@ -76,6 +76,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      // Google verifies email ownership, so it's safe to link a Google
+      // sign-in onto an existing account (e.g. one created via magic-link
+      // email) that shares the same email address instead of erroring out
+      // with OAuthAccountNotLinked.
+      allowDangerousEmailAccountLinking: true,
     }),
     EmailProvider({
       server: {
