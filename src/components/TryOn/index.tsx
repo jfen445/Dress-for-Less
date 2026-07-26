@@ -12,6 +12,7 @@ import TryOnPaymentForm from "./PaymentForm";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Modal from "@/components/Modal";
+import TermsModal from "@/components/Checkout/TermsModal";
 import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useUserContext } from "@/context/UserContext";
@@ -31,6 +32,7 @@ const TryOn = () => {
   const [selectedSlot, setSelectedSlot] = React.useState("");
   const [termsAccepted, setTermsAccepted] = React.useState(false);
   const [termsError, setTermsError] = React.useState(false);
+  const [termsModalOpen, setTermsModalOpen] = React.useState(false);
 
   const [clientSecret, setClientSecret] = React.useState<string>();
   const [isPaymentStep, setIsPaymentStep] = React.useState(false);
@@ -148,6 +150,15 @@ const TryOn = () => {
         </div>
       </Modal>
 
+      <TermsModal
+        isOpen={termsModalOpen}
+        setOpen={setTermsModalOpen}
+        onConfirm={() => {
+          setTermsAccepted(true);
+          setTermsError(false);
+        }}
+      />
+
       <h1 className="text-2xl font-bold text-gray-900">
         Book a Try-On Session
       </h1>
@@ -169,7 +180,13 @@ const TryOn = () => {
           <div className="mt-6 flex items-start">
             <input
               checked={termsAccepted}
-              onChange={() => setTermsAccepted(!termsAccepted)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setTermsModalOpen(true);
+                } else {
+                  setTermsAccepted(false);
+                }
+              }}
               id="try-on-terms"
               name="try-on-terms"
               type="checkbox"
