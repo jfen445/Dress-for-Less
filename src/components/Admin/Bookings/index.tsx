@@ -211,7 +211,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         results.push({ userId, name: user.name, email: user.email });
       }
     }
-    return results.slice(0, 8);
+    return results
+      .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
+      .slice(0, 8);
   }, [allBookingsHistory, searchQuery]);
 
   const orderSearchResults = React.useMemo(() => {
