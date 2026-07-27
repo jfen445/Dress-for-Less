@@ -26,6 +26,10 @@ export default async function handler(
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: "NZD",
+        receipt_email: session.user?.email ?? undefined,
+        metadata: {
+          email: session.user?.email ?? "",
+        },
       });
       res.status(200).json({
         clientSecret: paymentIntent.client_secret,

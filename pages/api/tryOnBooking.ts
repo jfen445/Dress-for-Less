@@ -109,6 +109,20 @@ export default async function handler(
 
       await booking.save();
 
+      // Best-effort: so the booking is identifiable on the Stripe dashboard
+      // without cross-referencing the DB. Never block the booking on this.
+      await stripe.paymentIntents
+        .update(paymentIntent, {
+          metadata: {
+            tryOnBookingId: booking._id.toString(),
+            name,
+            email: session.user.email,
+          },
+        })
+        .catch((err) =>
+          console.error("Failed to attach try-on metadata to Stripe payment", err),
+        );
+
       await grantTryOnCoupon(user._id, date);
 
       await sendTryOnConfirmationEmail({
