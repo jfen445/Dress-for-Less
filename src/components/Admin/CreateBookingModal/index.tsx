@@ -190,6 +190,13 @@ const CreateBookingModal = ({
     return dress ? parseInt(dress.price) : 0;
   };
 
+  const availableDeliveryTypes: DeliveryType[] =
+    defaultDeliveryType === DeliveryType.Delivery
+      ? [DeliveryType.Delivery]
+      : defaultDeliveryType === DeliveryType.Pickup
+        ? [DeliveryType.Pickup]
+        : Object.values(DeliveryType);
+
   const needsAddress = deliveryType !== DeliveryType.Pickup;
   const dressesTotal = items.reduce(
     (sum, item) => sum + dressPrice(item.dressId),
@@ -541,7 +548,7 @@ const CreateBookingModal = ({
               className={inputCls}
               required
             >
-              {Object.values(DeliveryType).map((dt) => (
+              {availableDeliveryTypes.map((dt) => (
                 <option key={dt} value={dt}>
                   {dt} - ${DELIVERY_FEES[dt].toFixed(2)}
                 </option>
