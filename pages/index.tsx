@@ -8,7 +8,7 @@ const IndexPage = () => {
   return (
     <main className="bg-white">
       <Seo
-        title="Dress for Less "
+        title="Dress for Less"
         description="Hire designer dresses for weddings, races, and events across New Zealand. Affordable, sustainable dress rental from Dress for Less."
         path="/"
       />

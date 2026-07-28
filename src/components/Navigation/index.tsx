@@ -153,7 +153,7 @@ const NavigationBar = () => {
                   <img
                     className="h-4 w-auto"
                     src={DFLLogo.src}
-                    alt="Your Company"
+                    alt="Dress for Less"
                   />
                 </Link>
                 {navigation.categories.map((category) => {
@@ -340,7 +340,7 @@ const NavigationBar = () => {
               <img
                 className="h-4 w-auto"
                 src={DFLLogo.src}
-                alt="Your Company"
+                alt="Dress for Less"
               />
             </Link>
 
