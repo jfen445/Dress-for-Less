@@ -27,6 +27,13 @@ const LoginPage = () => {
         show: true,
       });
       router.replace("/login");
+    } else if (router.query.passwordReset === "true") {
+      setToast({
+        message: "Password updated successfully! You can now log in.",
+        variant: ToastVariant.SUCCESS,
+        show: true,
+      });
+      router.replace("/login");
     }
   }, [router]);
 
