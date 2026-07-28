@@ -690,7 +690,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   };
 
 
-  const renderBookingRow = (bookingList: Booking[]) => {
+  const renderBookingRow = (bookingList: Booking[], isUpcoming: boolean) => {
     return (
       <>
         {bookingList?.map((currentBooking: any) => {
@@ -780,37 +780,45 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                   />
                 </td>
 
-                <td className="px-3 py-5 text-right text-sm font-medium">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      title="Edit booking"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setBookingToEdit(currentBooking);
-                        setEditModalOpen(true);
-                      }}
-                      className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                    >
-                      <PencilSquareIcon className="h-5 w-5" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      title="Delete booking"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setBookingToDelete(currentBooking);
-                        setDeleteModalOpen(true);
-                      }}
-                      className="rounded-md p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </div>
+                <td
+                  className="px-3 py-5 text-sm text-gray-700"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {isUpcoming ? (
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={currentBooking.status === BookingStatus.Packed}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            updateCurrentBooking(
+                              currentBooking._id,
+                              BookingStatus.Packed,
+                            );
+                          }
+                        }}
+                        className="rounded border-gray-300 text-pink-600"
+                      />
+                      Packed
+                    </label>
+                  ) : (
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={currentBooking.status === BookingStatus.Returned}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            updateCurrentBooking(
+                              currentBooking._id,
+                              BookingStatus.Returned,
+                            );
+                          }
+                        }}
+                        className="rounded border-gray-300 text-pink-600"
+                      />
+                      Returned
+                    </label>
+                  )}
                 </td>
               </tr>
 
@@ -818,6 +826,36 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               {expandedBookingId === currentBooking._id && (
                 <tr>
                   <td colSpan={8} className="bg-gray-50 p-6">
+                    <div className="mb-6 flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        title="Edit booking"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBookingToEdit(currentBooking);
+                          setEditModalOpen(true);
+                        }}
+                        className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                      >
+                        <PencilSquareIcon className="h-5 w-5" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        title="Delete booking"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBookingToDelete(currentBooking);
+                          setDeleteModalOpen(true);
+                        }}
+                        className="rounded-md p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
                     <div className="space-y-6">
                       {currentBooking.items.map((item: any, index: number) => (
                         <div
@@ -1247,9 +1285,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       </th>
                       <th
                         scope="col"
-                        className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
-                        <span className="sr-only">Actions</span>
+                        Packed / Returned
                       </th>
                     </tr>
                   </thead>
@@ -1269,7 +1307,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                           </th>
                         </tr>
                         {!collapsedDayGroups.has(group.id) &&
-                          renderBookingRow(group.bookings)}
+                          renderBookingRow(group.bookings, true)}
                       </Fragment>
                     ))}
                     <Fragment>
@@ -1288,7 +1326,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     </Fragment>
                     {filteredBookings &&
                       showUpcoming &&
-                      renderBookingRow(filteredBookings)}
+                      renderBookingRow(filteredBookings, true)}
                     <Fragment>
                       <tr
                         className="border-t border-gray-200 cursor-pointer"
@@ -1305,7 +1343,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     </Fragment>
                     {displayedPastBookings &&
                       showPrevious &&
-                      renderBookingRow(displayedPastBookings)}
+                      renderBookingRow(displayedPastBookings, false)}
                   </tbody>
                 </table>
               </div>
