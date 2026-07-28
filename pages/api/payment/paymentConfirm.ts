@@ -10,10 +10,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import { dbConnect } from "../../../lib/db/db";
 import { findUser } from "../../../lib/db/user-dao";
+import { formatBookingDate } from "../../../lib/utils/formatBookingDate";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
+const ADMIN_NOTIFICATION_EMAIL = "dressforlessnz@gmail.com";
 
 export default async function handler(
   req: NextApiRequest,
@@ -152,4 +154,23 @@ export async function sendEmailConfirmation(booking: Booking) {
     subject: "Your Dress for Less Booking Confirmation",
     react: OrderReceiptEmail({ orderReceipt }),
   });
+
+  // Best-effort internal notification — a failure here shouldn't affect the
+  // customer's own confirmation email, which has already been sent above.
+  try {
+    const primaryItem = orderReceipt[0];
+    const dressNames = orderReceipt.map((item) => item.dressName).join(", ");
+    const subject = primaryItem
+      ? `${user.name} booked ${dressNames} on ${formatBookingDate(primaryItem.dateBooked)} (${primaryItem.deliveryType})`
+      : "You received an order";
+
+    await resend.emails.send({
+      from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
+      to: [ADMIN_NOTIFICATION_EMAIL],
+      subject,
+      react: OrderReceiptEmail({ orderReceipt }),
+    });
+  } catch (error) {
+    console.error("Failed to send admin order notification", error);
+  }
 }
