@@ -8,7 +8,7 @@ interface GlobalProps {
   allDresses: DressType[];
   faq: Faq[];
   getDressWithId: (id: string) => DressType;
-  getHomeScreenDresses: () => DressType[];
+  getHomeScreenDresses: (count?: number) => DressType[];
   getFavouriteDresses: () => DressType[];
 }
 

@@ -4,6 +4,29 @@ import Marquee from "react-fast-marquee";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
 
+const HERO_IMAGE_COUNT = 7;
+
+// Two different dresses (e.g. colour variants of the same style) can share
+// the same photo — picking naively by index could show that image twice in
+// the grid, so this walks the list keeping only the first dress per image.
+const getDressesWithUniqueImages = (
+  source: DressType[],
+  count: number,
+): DressType[] => {
+  const seenImages = new Set<string>();
+  const result: DressType[] = [];
+
+  for (const dress of source) {
+    const image = dress.images?.[0];
+    if (!image || seenImages.has(image)) continue;
+    seenImages.add(image);
+    result.push(dress);
+    if (result.length === count) break;
+  }
+
+  return result;
+};
+
 const HeroSection = () => {
   const { allDresses, getHomeScreenDresses } = useGlobalContext();
   // Deterministic (unshuffled) on the first render so server and client agree —
@@ -11,11 +34,18 @@ const HeroSection = () => {
   // pick a different order server-side vs client-side and trigger a hydration
   // mismatch. The effect below applies the actual random shuffle post-mount.
   const [dresses, setDresses] = React.useState<DressType[]>(
-    allDresses.slice(0, 7),
+    getDressesWithUniqueImages(allDresses, HERO_IMAGE_COUNT),
   );
 
   React.useEffect(() => {
-    setDresses(getHomeScreenDresses());
+    // Shuffle the full list first, then dedupe — slicing to 7 before
+    // deduping would waste unique images sitting later in the shuffle.
+    setDresses(
+      getDressesWithUniqueImages(
+        getHomeScreenDresses(allDresses.length),
+        HERO_IMAGE_COUNT,
+      ),
+    );
   }, [allDresses, getHomeScreenDresses]);
 
   return (
