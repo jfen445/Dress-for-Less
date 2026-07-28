@@ -4,11 +4,17 @@ import * as React from "react";
 import Link from "next/link";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
+import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { requestPasswordReset } from "@/api/user";
 
 export default function ForgotPassword() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
+  const [toast, setToast] = React.useState<ToastType>({
+    message: "",
+    variant: ToastVariant.SUCCESS,
+    show: false,
+  });
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,10 +32,16 @@ export default function ForgotPassword() {
 
     setIsLoading(false);
     setSubmitted(true);
+    setToast({
+      message: "If an account exists for that email, a reset link has been sent.",
+      variant: ToastVariant.SUCCESS,
+      show: true,
+    });
   }
 
   return (
     <div className="bg-white flex flex-1 flex-col justify-center px-6 lg:px-8">
+      <Toast toast={toast} setToast={setToast} />
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
           Reset your password

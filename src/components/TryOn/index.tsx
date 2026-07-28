@@ -264,6 +264,12 @@ const TryOn = () => {
         <>
           <TryOnCalendar setSelectedDate={setSelectedDate} />
 
+          <SlotPicker
+            date={selectedDate}
+            selectedSlot={selectedSlot}
+            setSelectedSlot={setSelectedSlot}
+          />
+
           <div className="mt-6 space-y-4 rounded-md border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900">
               Before you book
@@ -312,12 +318,6 @@ const TryOn = () => {
               + Read the full Try-On Policy
             </button>
           </div>
-
-          <SlotPicker
-            date={selectedDate}
-            selectedSlot={selectedSlot}
-            setSelectedSlot={setSelectedSlot}
-          />
 
           <div className="mt-6 flex items-start">
             <input

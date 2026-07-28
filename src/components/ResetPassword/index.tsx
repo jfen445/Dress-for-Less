@@ -39,7 +39,7 @@ export default function ResetPassword() {
     try {
       await resetPassword(token, password);
       setDone(true);
-      setTimeout(() => router.replace("/login"), 1500);
+      setTimeout(() => router.replace("/login?passwordReset=true"), 1500);
     } catch (err: any) {
       setError(
         err?.response?.data?.message ??
