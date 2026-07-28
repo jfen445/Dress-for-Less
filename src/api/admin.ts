@@ -56,6 +56,10 @@ export async function createLabels(bookingIds: string[]) {
   return api.post(`/api/admin/labels`, { bookingIds });
 }
 
+export async function markBookingsDownloaded(bookingIds: string[]) {
+  return api.post(`/api/admin/markDownloaded`, { bookingIds });
+}
+
 export async function getAllTryOnBookings() {
   return api.get(`/api/admin/tryOnBookings`);
 }

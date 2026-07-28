@@ -8,7 +8,7 @@ interface DownloadBookingsModalProps {
   isOpen: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   lineItems: BookingLineItem[];
-  onDownload: (lineItems: BookingLineItem[]) => void;
+  onDownload: (lineItems: BookingLineItem[]) => void | Promise<void>;
 }
 
 const rowKey = ({ booking, item }: BookingLineItem) =>
@@ -57,8 +57,8 @@ const DownloadBookingsModal = ({
         Download bookings
       </h2>
       <p className="text-sm text-gray-500 mb-4">
-        Select the dresses from this week&apos;s bookings to include in the
-        CSV export.
+        Select the dresses from this week&apos;s and next week&apos;s
+        bookings to include in the CSV export.
       </p>
 
       <div className="overflow-y-auto max-h-[55vh] border border-gray-200 rounded-md">
@@ -103,6 +103,7 @@ const DownloadBookingsModal = ({
                 const id = rowKey(li);
                 const checked = selectedIds.has(id);
                 const user = booking.user?.[0];
+                const hasBeenDownloaded = Boolean(booking.downloadedAt);
                 return (
                   <tr
                     key={id}
@@ -146,9 +147,19 @@ const DownloadBookingsModal = ({
                     </td>
                     <td className="py-3 px-3 text-gray-600">{item.size}</td>
                     <td className="py-3 px-3">
-                      <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                        {item.deliveryType}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                          {item.deliveryType}
+                        </span>
+                        {hasBeenDownloaded && (
+                          <span
+                            title={`Already downloaded: ${dayjs(booking.downloadedAt).format("MMM D, YYYY h:mm A")}`}
+                            className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
+                          >
+                            Already downloaded
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

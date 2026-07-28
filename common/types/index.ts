@@ -136,6 +136,8 @@ export type Booking = {
   couponIds?: string[];
   discountAmount?: number;
   orderNumber?: string;
+  instructionsSentAt?: string;
+  downloadedAt?: string;
 };
 
 // Pairs a Booking (order) with one of its line items — used by admin views

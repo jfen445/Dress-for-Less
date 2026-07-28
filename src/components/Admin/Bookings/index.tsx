@@ -1,4 +1,8 @@
-import { getAllBookings, createLabels } from "@/api/admin";
+import {
+  getAllBookings,
+  createLabels,
+  markBookingsDownloaded,
+} from "@/api/admin";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
 import { Booking, BookingLineItem, UserType } from "../../../../common/types";
@@ -37,10 +41,47 @@ const getOrdinalSuffix = (day: number): string => {
   return "th";
 };
 
-const formatBookingDate = (date: string): string => {
+const formatBookingDate = (date: dayjs.ConfigType): string => {
   const d = dayjs(date);
   return `${d.format("dddd")} ${d.date()}${getOrdinalSuffix(d.date())} ${d.format("MMMM")}`;
 };
+
+const formatBookingDateRange = (
+  start: dayjs.ConfigType,
+  end: dayjs.ConfigType,
+): string => {
+  const s = dayjs(start);
+  const e = dayjs(end);
+  const startLabel = `${s.format("dddd")} ${s.date()}${getOrdinalSuffix(s.date())}`;
+  const endLabel = `${e.format("dddd")} ${e.date()}${getOrdinalSuffix(e.date())} ${e.format("MMMM")}`;
+  return s.month() !== e.month()
+    ? `${startLabel} ${s.format("MMMM")} – ${endLabel}`
+    : `${startLabel} – ${endLabel}`;
+};
+
+// Monday-first weekday index: 0=Monday...6=Sunday.
+const getMondayFirstDayIndex = (date: dayjs.ConfigType): number =>
+  (auckland.toZone(date).day() + 6) % 7;
+
+type DayGroupDef = { id: string; minIndex: number; maxIndex: number };
+
+const DELIVERY_TAB_DAY_GROUPS: DayGroupDef[] = [
+  { id: "mon", minIndex: 0, maxIndex: 0 },
+  { id: "tue", minIndex: 1, maxIndex: 1 },
+  { id: "wed", minIndex: 2, maxIndex: 2 },
+  { id: "thu", minIndex: 3, maxIndex: 3 },
+  { id: "fri-sun", minIndex: 4, maxIndex: 6 },
+];
+
+const PICKUP_TAB_DAY_GROUPS: DayGroupDef[] = [
+  { id: "mon", minIndex: 0, maxIndex: 0 },
+  { id: "tue", minIndex: 1, maxIndex: 1 },
+  { id: "wed", minIndex: 2, maxIndex: 2 },
+  { id: "thu", minIndex: 3, maxIndex: 3 },
+  { id: "fri", minIndex: 4, maxIndex: 4 },
+  { id: "sat", minIndex: 5, maxIndex: 5 },
+  { id: "sun", minIndex: 6, maxIndex: 6 },
+];
 
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const {
@@ -87,7 +128,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     lineItems: BookingLineItem[];
   } | null>(null);
 
-  const [showThisWeek, setShowThisWeek] = React.useState<boolean>(true);
+  const [collapsedDayGroups, setCollapsedDayGroups] = React.useState<
+    Set<string>
+  >(new Set());
   const [showPrevious, setShowPrevious] = React.useState<boolean>(true);
   const [showUpcoming, setShowUpcoming] = React.useState<boolean>(true);
 
@@ -96,7 +139,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   >(null);
   const [selectedStatuses, setSelectedStatuses] = React.useState<
     BookingStatus[]
-  >(Object.values(BookingStatus));
+  >(Object.values(BookingStatus).filter((s) => s !== BookingStatus.Returned));
 
   const [enlargedImage, setEnlargedImage] = React.useState<{
     src: string;
@@ -132,6 +175,15 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
 
   const toggleRow = (id: string) => {
     setExpandedBookingId(expandedBookingId === id ? null : id);
+  };
+
+  const toggleDayGroup = (id: string) => {
+    setCollapsedDayGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const toggleStatus = (status: BookingStatus) => {
@@ -211,7 +263,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         results.push({ userId, name: user.name, email: user.email });
       }
     }
-    return results.slice(0, 8);
+    return results
+      .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
+      .slice(0, 8);
   }, [allBookingsHistory, searchQuery]);
 
   const orderSearchResults = React.useMemo(() => {
@@ -310,6 +364,57 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     return result;
   }, [pastBookings, deliveryType, selectedStatuses]);
 
+  const dayGroupDefs = deliveryType?.includes(DeliveryType.Delivery)
+    ? DELIVERY_TAB_DAY_GROUPS
+    : PICKUP_TAB_DAY_GROUPS;
+
+  const thisWeekPartition = React.useMemo(() => {
+    const now = auckland.now();
+    const todayIndex = getMondayFirstDayIndex(now);
+    const thisWeekMonday = now.subtract(todayIndex, "day").startOf("day");
+
+    const buckets = dayGroupDefs.map((def) => ({
+      ...def,
+      bookings: [] as Booking[],
+    }));
+    const demoted: Booking[] = [];
+
+    filteredThisWeekBookings.forEach((booking) => {
+      const idx = getMondayFirstDayIndex(booking.items[0]?.dateBooked);
+      if (idx < todayIndex) {
+        demoted.push(booking);
+        return;
+      }
+      buckets
+        .find((b) => idx >= b.minIndex && idx <= b.maxIndex)
+        ?.bookings.push(booking);
+    });
+
+    const dayGroups = buckets
+      .filter((b) => b.bookings.length > 0)
+      .map((b) => ({
+        id: b.id,
+        bookings: b.bookings,
+        label: `${
+          b.minIndex === b.maxIndex
+            ? formatBookingDate(thisWeekMonday.add(b.minIndex, "day"))
+            : formatBookingDateRange(
+                thisWeekMonday.add(b.minIndex, "day"),
+                thisWeekMonday.add(b.maxIndex, "day"),
+              )
+        } (${b.bookings.length})`,
+      }));
+
+    return { dayGroups, demotedToPrevious: demoted };
+  }, [filteredThisWeekBookings, dayGroupDefs]);
+
+  const { dayGroups, demotedToPrevious } = thisWeekPartition;
+
+  const displayedPastBookings = React.useMemo(
+    () => [...demotedToPrevious].reverse().concat(filteredPastBookings),
+    [demotedToPrevious, filteredPastBookings],
+  );
+
   const thisWeekLineItems = React.useMemo(
     () =>
       filteredThisWeekBookings.flatMap((booking) =>
@@ -348,7 +453,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   }, [bookings, deliveryType, selectedStatuses]);
 
-  const labelLineItems = React.useMemo(
+  const twoWeekLineItems = React.useMemo(
     () => [...thisWeekLineItems, ...nextWeekLineItems],
     [thisWeekLineItems, nextWeekLineItems],
   );
@@ -392,6 +497,27 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         variant: ToastVariant.WARNING,
         show: true,
       });
+    }
+  };
+
+  const handleDownloadBookings = async (
+    lineItemsToExport: BookingLineItem[],
+  ) => {
+    downloadCSV(
+      convertToCSV(extractObj(lineItemsToExport) ?? []),
+      "bookings.csv",
+    );
+
+    const bookingIds = [
+      ...new Set(lineItemsToExport.map((li) => li.booking._id as string)),
+    ];
+
+    try {
+      await markBookingsDownloaded(bookingIds);
+      getBookings();
+    } catch {
+      // Best-effort — the CSV has already downloaded, so just skip refreshing
+      // the "already downloaded" indicator rather than surfacing an error.
     }
   };
 
@@ -832,10 +958,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <EmailBookingsModal
         isOpen={emailModalOpen}
         setOpen={setEmailModalOpen}
-        lineItems={thisWeekLineItems}
-        onSent={(message) =>
-          setToast({ message, variant: ToastVariant.SUCCESS, show: true })
-        }
+        lineItems={twoWeekLineItems}
+        onSent={(message) => {
+          getBookings();
+          setToast({ message, variant: ToastVariant.SUCCESS, show: true });
+        }}
         onError={(message) =>
           setToast({ message, variant: ToastVariant.WARNING, show: true })
         }
@@ -843,18 +970,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <DownloadBookingsModal
         isOpen={downloadModalOpen}
         setOpen={setDownloadModalOpen}
-        lineItems={thisWeekLineItems}
-        onDownload={(lineItemsToExport) =>
-          downloadCSV(
-            convertToCSV(extractObj(lineItemsToExport) ?? []),
-            "bookings.csv",
-          )
-        }
+        lineItems={twoWeekLineItems}
+        onDownload={handleDownloadBookings}
       />
       <CreateLabelModal
         isOpen={createLabelModalOpen}
         setOpen={setCreateLabelModalOpen}
-        lineItems={labelLineItems}
+        lineItems={twoWeekLineItems}
         onCreateLabels={handleCreateLabels}
       />
       <BookingHistoryModal
@@ -1140,23 +1262,24 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    <Fragment>
-                      <tr
-                        className="border-t border-gray-200 cursor-pointer"
-                        onClick={() => setShowThisWeek(!showThisWeek)}
-                      >
-                        <th
-                          scope="colgroup"
-                          colSpan={7}
-                          className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                    {dayGroups.map((group) => (
+                      <Fragment key={group.id}>
+                        <tr
+                          className="border-t border-gray-200 cursor-pointer"
+                          onClick={() => toggleDayGroup(group.id)}
                         >
-                          This week bookings
-                        </th>
-                      </tr>
-                    </Fragment>
-                    {filteredThisWeekBookings &&
-                      showThisWeek &&
-                      renderBookingRow(filteredThisWeekBookings)}
+                          <th
+                            scope="colgroup"
+                            colSpan={7}
+                            className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
+                          >
+                            {group.label}
+                          </th>
+                        </tr>
+                        {!collapsedDayGroups.has(group.id) &&
+                          renderBookingRow(group.bookings)}
+                      </Fragment>
+                    ))}
                     <Fragment>
                       <tr
                         className="border-t border-gray-200 cursor-pointer"
@@ -1188,9 +1311,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                         </th>
                       </tr>
                     </Fragment>
-                    {filteredPastBookings &&
+                    {displayedPastBookings &&
                       showPrevious &&
-                      renderBookingRow(filteredPastBookings)}
+                      renderBookingRow(displayedPastBookings)}
                   </tbody>
                 </table>
               </div>

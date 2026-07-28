@@ -134,6 +134,10 @@ const CreateBookingModal = ({
     [allDresses],
   );
   const [users, setUsers] = React.useState<UserType[]>([]);
+  const sortedUsers = React.useMemo(
+    () => [...users].sort((a, b) => a.name.localeCompare(b.name)),
+    [users],
+  );
   const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
     "existing",
   );
@@ -185,6 +189,13 @@ const CreateBookingModal = ({
     const dress = sortedDresses.find((d) => d._id === dressId);
     return dress ? parseInt(dress.price) : 0;
   };
+
+  const availableDeliveryTypes: DeliveryType[] =
+    defaultDeliveryType === DeliveryType.Delivery
+      ? [DeliveryType.Delivery]
+      : defaultDeliveryType === DeliveryType.Pickup
+        ? [DeliveryType.Pickup]
+        : Object.values(DeliveryType);
 
   const needsAddress = deliveryType !== DeliveryType.Pickup;
   const dressesTotal = items.reduce(
@@ -485,7 +496,7 @@ const CreateBookingModal = ({
                 required
               >
                 <option value="">Select a customer…</option>
-                {users.map((u) => (
+                {sortedUsers.map((u) => (
                   <option key={u._id ?? u.email} value={u._id ?? ""}>
                     {u.name} - {u.email}
                   </option>
@@ -537,7 +548,7 @@ const CreateBookingModal = ({
               className={inputCls}
               required
             >
-              {Object.values(DeliveryType).map((dt) => (
+              {availableDeliveryTypes.map((dt) => (
                 <option key={dt} value={dt}>
                   {dt} - ${DELIVERY_FEES[dt].toFixed(2)}
                 </option>

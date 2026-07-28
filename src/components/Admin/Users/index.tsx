@@ -2,6 +2,7 @@ import { getAllUsers } from "@/api/user";
 import React from "react";
 import { UserType } from "../../../../common/types";
 import Button from "@/components/Button";
+import Input from "@/components/Input";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
 
@@ -10,6 +11,7 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
   const [userModalOpen, setUserModalOpen] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [search, setSearch] = React.useState("");
 
   React.useEffect(() => {
     const getUsers = async () => {
@@ -63,6 +65,16 @@ const AdminUsers = () => {
             </p>
           </div>
         </div>
+        <div className="mt-4 max-w-sm">
+          <Input
+            type="text"
+            name="search"
+            id="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or email"
+          />
+        </div>
         {isLoading ? (
           <div className="flex justify-center">
             <Spinner />
@@ -108,7 +120,17 @@ const AdminUsers = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {users?.map((user) => (
+                    {[...(users ?? [])]
+                      .filter((user) => {
+                        const query = search.trim().toLowerCase();
+                        if (!query) return true;
+                        return (
+                          user.name.toLowerCase().includes(query) ||
+                          user.email.toLowerCase().includes(query)
+                        );
+                      })
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((user) => (
                       <tr
                         key={user.email}
                         className="cursor-pointer"

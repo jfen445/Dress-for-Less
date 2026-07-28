@@ -292,6 +292,23 @@ export default async function handler(
     const orderNumber =
       existingBooking?.orderNumber ?? (await getNextOrderNumber());
 
+    // Best-effort: so the order number/customer are visible on the Stripe
+    // dashboard without having to cross-reference the DB. Never block booking
+    // creation on this — the payment has already succeeded.
+    if (!isFreeCouponCheckout) {
+      await stripe.paymentIntents
+        .update(paymentIntent, {
+          metadata: {
+            orderNumber,
+            name: session.user?.name ?? "",
+            email: session.user?.email ?? "",
+          },
+        })
+        .catch((err) =>
+          console.error("Failed to attach order metadata to Stripe payment", err),
+        );
+    }
+
     const booking: IBooking = {
       userId: bookingPayload.userId,
       items: bookingItems,

@@ -82,6 +82,22 @@ export default async function handler(
   const failed = results.filter((r) => r.status === "rejected").length;
   const sent = recipients.length - failed;
 
+  // A booking counts as "emailed" if at least one of its items sent successfully.
+  const sentBookingIds = [
+    ...new Set(
+      results
+        .map((result, i) => ({ result, bookingId: recipients[i].booking._id }))
+        .filter(({ result }) => result.status === "fulfilled")
+        .map(({ bookingId }) => bookingId.toString()),
+    ),
+  ];
+  if (sentBookingIds.length > 0) {
+    await BookingSchema.updateMany(
+      { _id: { $in: sentBookingIds } },
+      { instructionsSentAt: new Date() },
+    );
+  }
+
   if (failed > 0 && sent === 0)
     return res.status(500).json({ message: "Failed to send all emails" });
 

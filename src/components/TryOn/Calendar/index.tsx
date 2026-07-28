@@ -56,6 +56,8 @@ const TryOnCalendar = ({ setSelectedDate }: ITryOnCalendar) => {
         <DateCalendar
           onChange={(e) => selectDate(e)}
           shouldDisableDate={disabledDays}
+          minDate={auckland.now().startOf("day")}
+          maxDate={auckland.now().add(1, "year")}
           timezone={AUCKLAND_TZ}
           slotProps={{
             day: {
