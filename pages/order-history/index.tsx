@@ -1,7 +1,7 @@
 import { getAllBookingsByUserId } from "@/api/booking";
 import { useUserContext } from "@/context/UserContext";
 import React from "react";
-import { OrderHistory } from "../../common/types";
+import { Booking, BookingItem } from "../../common/types";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
@@ -48,14 +48,80 @@ const Tabs = ({
   );
 };
 
+const formatDate = (date: string) => dayjs(date).format("D MMMM YYYY");
+
+const OrderItemRow = ({ item }: { item: BookingItem }) => (
+  <div className="flex space-x-4 py-6 first:pt-0 last:pb-0 sm:space-x-6 lg:space-x-8">
+    <img
+      alt={item.dress?.name ?? ""}
+      src={item.dress?.images?.[0]}
+      className="size-20 flex-none rounded-md object-cover sm:size-40"
+    />
+    <div className="min-w-0 flex-1 pt-1.5 sm:pt-0">
+      <h3 className="text-sm font-medium text-gray-900">
+        <a href={`/dresses/products/${item.dressId}`}>{item.dress?.name}</a>
+      </h3>
+      {item.dress?.brand && (
+        <p className="text-sm text-gray-500">{item.dress.brand}</p>
+      )}
+      <p className="truncate text-sm text-gray-500">
+        <span>Booked for: {formatDate(item.dateBooked)}</span>{" "}
+        <span aria-hidden="true" className="mx-1 text-gray-400">
+          &middot;
+        </span>{" "}
+        <span>Size {item.size}</span>
+      </p>
+      <p className="mt-1 font-medium text-gray-900">${item.price}</p>
+      <p className="mt-1 text-sm text-gray-500">{item.deliveryType}</p>
+      {item.deliveryType !== DeliveryType.Pickup && item.address && (
+        <address className="mt-1 not-italic text-sm text-gray-500">
+          {item.address.apartment
+            ? `${item.address.apartment}/${item.address.address}`
+            : item.address.address}
+          {", "}
+          {[item.address.suburb, item.address.city, item.address.postCode]
+            .filter(Boolean)
+            .join(" ")}
+        </address>
+      )}
+      {item.instructions && (
+        <p className="mt-1 text-sm text-gray-500">
+          Instructions: {item.instructions}
+        </p>
+      )}
+    </div>
+  </div>
+);
+
+const OrderCard = ({ order }: { order: Booking }) => (
+  <div className="py-6">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+      <div>
+        {order.orderNumber && (
+          <p className="pb-2 text-sm font-medium text-secondary-pink">
+            {order.orderNumber}
+          </p>
+        )}
+        {order.tracking && (
+          <p className="text-sm text-gray-500">Tracking: {order.tracking}</p>
+        )}
+      </div>
+      <p className="text-sm font-medium text-gray-900">
+        Total: ${order.totalPrice}
+      </p>
+    </div>
+    <div className="divide-y divide-gray-100">
+      {order.items.map((item, index) => (
+        <OrderItemRow key={item._id ?? index} item={item} />
+      ))}
+    </div>
+  </div>
+);
+
 const Orders = () => {
   const { userInfo } = useUserContext();
-  const [previousOrders, setPreviousOrders] = React.useState<OrderHistory[]>(
-    [],
-  );
-  const [upcomingOrders, setUpcomingOrders] = React.useState<OrderHistory[]>(
-    [],
-  );
+  const [previousOrders, setPreviousOrders] = React.useState<Booking[]>([]);
+  const [upcomingOrders, setUpcomingOrders] = React.useState<Booking[]>([]);
   const { status } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(true);
@@ -75,90 +141,27 @@ const Orders = () => {
     setIsLoading(true);
     getAllBookingsByUserId(userInfo._id)
       .then((data) => {
-        const userBookings = data.data as unknown as OrderHistory[];
+        const orders = data.data as unknown as Booking[];
         const today = dayjs().startOf("day");
+        // The first item's date decides which tab an order belongs in and
+        // how it's sorted, matching how the admin bookings view treats it
+        // as the order's primary date.
+        const primaryDate = (order: Booking) =>
+          dayjs(order.items[0]?.dateBooked);
 
-        const upcoming = userBookings
-          .filter((booking) => dayjs(booking.dateBooked).isAfter(today))
-          .sort((a, b) => dayjs(a.dateBooked).diff(dayjs(b.dateBooked)));
+        const upcoming = orders
+          .filter((order) => primaryDate(order).isAfter(today))
+          .sort((a, b) => primaryDate(a).diff(primaryDate(b)));
 
-        const previous = userBookings
-          .filter(
-            (booking) =>
-              dayjs(booking.dateBooked).isBefore(today) ||
-              dayjs(booking.dateBooked).isSame(today),
-          )
-          .sort((a, b) => dayjs(b.dateBooked).diff(dayjs(a.dateBooked)));
+        const previous = orders
+          .filter((order) => !primaryDate(order).isAfter(today))
+          .sort((a, b) => primaryDate(b).diff(primaryDate(a)));
 
         setUpcomingOrders(upcoming);
         setPreviousOrders(previous);
       })
       .finally(() => setIsLoading(false));
   }, [userInfo]);
-
-  const formatDate = (date: string) => {
-    return dayjs(date).format("D MMMM YYYY");
-  };
-
-  const itemList = (orders: OrderHistory[]) => {
-    return (
-      <>
-        <div className="mt-6 -mb-6 flow-root divide-y divide-gray-200 border-t border-gray-200">
-          {orders.map((product) => (
-            <div key={product._id} className="py-6 sm:flex">
-              <div className="flex space-x-4 sm:min-w-0 sm:flex-1 sm:space-x-6 lg:space-x-8">
-                <img
-                  alt={product.dressImages}
-                  src={product.dressImages}
-                  className="size-20 flex-none rounded-md object-cover sm:size-48"
-                />
-                <div className="min-w-0 flex-1 pt-1.5 sm:pt-0">
-                  <h3 className="text-sm font-medium text-gray-900">
-                    <a href={`dresses/products/${product.dressId}`}>
-                      {product.dressName}
-                    </a>
-                  </h3>
-                  {product.orderNumber && (
-                    <p className="text-sm text-gray-500">
-                      Order: {product.orderNumber}
-                    </p>
-                  )}
-                  <p className="truncate text-sm text-gray-500">
-                    <span>Booked for: {formatDate(product.dateBooked)}</span>{" "}
-                    <span aria-hidden="true" className="mx-1 text-gray-400">
-                      &middot;
-                    </span>{" "}
-                    <span>{product.size}</span>
-                  </p>
-                  <p className="mt-1 font-medium text-gray-900">
-                    {product.price}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {product.deliveryType}
-                  </p>
-                  {product.deliveryType !== DeliveryType.Pickup && product.address && (
-                    <address className="mt-1 not-italic text-sm text-gray-500">
-                      {product.address.apartment
-                        ? `${product.address.apartment}/${product.address.address}`
-                        : product.address.address}
-                      {", "}
-                      {[
-                        product.address.suburb,
-                        product.address.city,
-                        product.address.postCode,
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    </address>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  };
 
   const displayedOrders =
     selectedTab === Selected.Upcoming ? upcomingOrders : previousOrders;
@@ -182,20 +185,22 @@ const Orders = () => {
               Your Orders
             </h1>
             <p className="mt-2 text-sm text-gray-500">
-              Check the status of recent orders, manage returns, and discover
-              similar products.
+              View the details of your recent orders.
             </p>
           </div>
 
           <Tabs selected={selectedTab} onSelect={setSelectedTab} />
           {displayedOrders.length === 0 ? (
             <p className="mt-4 text-sm text-gray-500">
-              No{" "}
-              {selectedTab === Selected.Upcoming ? "upcoming" : "previous"}{" "}
+              No {selectedTab === Selected.Upcoming ? "upcoming" : "previous"}{" "}
               orders
             </p>
           ) : (
-            itemList(displayedOrders)
+            <div className="mt-6 -mb-6 divide-y divide-gray-200 border-t border-gray-200">
+              {displayedOrders.map((order) => (
+                <OrderCard key={order._id} order={order} />
+              ))}
+            </div>
           )}
         </main>
       )}

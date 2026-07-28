@@ -17,6 +17,7 @@ const CreateAccountComponent = () => {
     show: false,
   });
   const [errorMessage, setErrorMessage] = React.useState<string>("");
+  const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,6 +53,8 @@ const CreateAccountComponent = () => {
       role: "user",
     };
 
+    setIsSubmitting(true);
+
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
@@ -61,7 +64,7 @@ const CreateAccountComponent = () => {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        router.push("/login");
+        router.push("/login?accountCreated=true");
         return;
       }
 
@@ -79,6 +82,8 @@ const CreateAccountComponent = () => {
         message: "Could not create account",
         variant: ToastVariant.ERROR,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -221,7 +226,9 @@ const CreateAccountComponent = () => {
 
             </div>
             <div className="sm:col-span-3 mx-auto">
-              <Button type="submit">Create</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating account..." : "Create"}
+              </Button>
             </div>
           </div>
         </form>

@@ -153,11 +153,13 @@ const OrderSuccess = ({
                         </div>
                         <div className="flex pl-4 pr-4 sm:pr-0 sm:pl-6">
                           <dt className="font-medium text-gray-900">Price</dt>
-                          <dd className="ml-2 text-gray-700">{dress?.price}</dd>
+                          <dd className="ml-2 text-gray-700">
+                            ${dress?.price}
+                          </dd>
                         </div>
                         <div className="flex pl-4 sm:pl-6">
                           <dt className="font-medium text-gray-900">
-                            Date booked
+                            Date of event
                           </dt>
                           <dd className="ml-2 text-gray-700">
                             {dayjs(item.dateBooked).format("DD/MM/YYYY")}
