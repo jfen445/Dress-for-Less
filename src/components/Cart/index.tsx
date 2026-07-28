@@ -216,7 +216,7 @@ const Cart = () => {
             <div className="mt-2">
               <p className="text-sm text-gray-500">
                 {isAuthenticated
-                  ? "To checkout, you must update your profile with your mobile number and ID photo"
+                  ? "To checkout, you must complete your profile in account settings"
                   : "To checkout, you must login to your account"}
               </p>
             </div>

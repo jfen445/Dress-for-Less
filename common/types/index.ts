@@ -190,27 +190,6 @@ export type Faq = {
   order?: number;
 };
 
-export type OrderHistory = {
-  _id?: string;
-  dressId: string;
-  userId: string;
-  dateBooked: string;
-  blockedFrom: string;
-  blockedUntil: string;
-  price: number;
-  address?: Address;
-  deliveryType: string;
-  tracking: string;
-  isShipped: boolean;
-  isReturned: boolean;
-  paymentIntent?: string;
-  size: String;
-  dressName: string;
-  dressDescription: string;
-  dressImages: string;
-  orderNumber?: string;
-};
-
 export type TryOnBooking = {
   _id?: string;
   userId: string;

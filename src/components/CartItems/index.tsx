@@ -161,7 +161,7 @@ const CartItems = ({
                             </a>
                           </h4>
                           <p className="ml-4 text-sm font-medium text-gray-900">
-                            {product.price}
+                            ${product.price}
                           </p>
                         </div>
 
