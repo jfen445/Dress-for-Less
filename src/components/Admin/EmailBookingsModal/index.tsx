@@ -123,6 +123,7 @@ const EmailBookingsModal = ({
                 const id = rowKey(li);
                 const checked = selectedIds.has(id);
                 const user = booking.user?.[0];
+                const hasBeenEmailed = Boolean(booking.instructionsSentAt);
                 return (
                   <tr
                     key={id}
@@ -166,9 +167,19 @@ const EmailBookingsModal = ({
                     </td>
                     <td className="py-3 px-3 text-gray-600">{item.size}</td>
                     <td className="py-3 px-3">
-                      <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                        {item.deliveryType}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                          {item.deliveryType}
+                        </span>
+                        {hasBeenEmailed && (
+                          <span
+                            title={`Already emailed: ${dayjs(booking.instructionsSentAt).format("MMM D, YYYY h:mm A")}`}
+                            className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
+                          >
+                            Already emailed
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

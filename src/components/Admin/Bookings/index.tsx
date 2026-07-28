@@ -1,4 +1,8 @@
-import { getAllBookings, createLabels } from "@/api/admin";
+import {
+  getAllBookings,
+  createLabels,
+  markBookingsDownloaded,
+} from "@/api/admin";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
 import { Booking, BookingLineItem, UserType } from "../../../../common/types";
@@ -449,7 +453,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     );
   }, [bookings, deliveryType, selectedStatuses]);
 
-  const labelLineItems = React.useMemo(
+  const twoWeekLineItems = React.useMemo(
     () => [...thisWeekLineItems, ...nextWeekLineItems],
     [thisWeekLineItems, nextWeekLineItems],
   );
@@ -493,6 +497,27 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         variant: ToastVariant.WARNING,
         show: true,
       });
+    }
+  };
+
+  const handleDownloadBookings = async (
+    lineItemsToExport: BookingLineItem[],
+  ) => {
+    downloadCSV(
+      convertToCSV(extractObj(lineItemsToExport) ?? []),
+      "bookings.csv",
+    );
+
+    const bookingIds = [
+      ...new Set(lineItemsToExport.map((li) => li.booking._id as string)),
+    ];
+
+    try {
+      await markBookingsDownloaded(bookingIds);
+      getBookings();
+    } catch {
+      // Best-effort — the CSV has already downloaded, so just skip refreshing
+      // the "already downloaded" indicator rather than surfacing an error.
     }
   };
 
@@ -933,10 +958,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <EmailBookingsModal
         isOpen={emailModalOpen}
         setOpen={setEmailModalOpen}
-        lineItems={thisWeekLineItems}
-        onSent={(message) =>
-          setToast({ message, variant: ToastVariant.SUCCESS, show: true })
-        }
+        lineItems={twoWeekLineItems}
+        onSent={(message) => {
+          getBookings();
+          setToast({ message, variant: ToastVariant.SUCCESS, show: true });
+        }}
         onError={(message) =>
           setToast({ message, variant: ToastVariant.WARNING, show: true })
         }
@@ -944,18 +970,13 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       <DownloadBookingsModal
         isOpen={downloadModalOpen}
         setOpen={setDownloadModalOpen}
-        lineItems={thisWeekLineItems}
-        onDownload={(lineItemsToExport) =>
-          downloadCSV(
-            convertToCSV(extractObj(lineItemsToExport) ?? []),
-            "bookings.csv",
-          )
-        }
+        lineItems={twoWeekLineItems}
+        onDownload={handleDownloadBookings}
       />
       <CreateLabelModal
         isOpen={createLabelModalOpen}
         setOpen={setCreateLabelModalOpen}
-        lineItems={labelLineItems}
+        lineItems={twoWeekLineItems}
         onCreateLabels={handleCreateLabels}
       />
       <BookingHistoryModal
