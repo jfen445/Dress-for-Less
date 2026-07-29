@@ -45,7 +45,7 @@ const DressGrid = () => {
       ) : (
         <>
           <div ref={gridTopRef} />
-          <section className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+          <section className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-3 xl:gap-x-8">
             {paginatedDressList?.map((dress: DressType) => (
               <a
                 key={dress._id}
@@ -59,12 +59,14 @@ const DressGrid = () => {
                     className="w-full h-full object-cover object-center group-hover:opacity-75"
                   />
                 </div>
-                <div className="mt-4 flex items-center justify-between text-base font-medium text-gray-900">
-                  <div>
-                    <p className="text-gray-500 text-sm">{dress.brand}</p>
-                    <h3>{dress.name}</h3>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <p>{dress.brand}</p>
+                    <p>${dress.price}</p>
                   </div>
-                  <p className="text-gray-500 text-sm">${dress.price}</p>
+                  <h3 className="text-base font-medium text-gray-900">
+                    {dress.name}
+                  </h3>
                 </div>
               </a>
             ))}
