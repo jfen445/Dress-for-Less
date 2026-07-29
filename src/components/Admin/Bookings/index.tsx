@@ -1195,7 +1195,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 sm:mt-0">
             <Button onClick={() => setEmailModalOpen(true)}>Email</Button>
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking

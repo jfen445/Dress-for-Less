@@ -1,5 +1,6 @@
 import React from "react";
 import { EventCalendar } from "@mui/x-scheduler/event-calendar";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
@@ -11,6 +12,7 @@ interface IAdminBookingsCalendar {
 
 const AdminBookingsCalendar = ({ deliveryType }: IAdminBookingsCalendar) => {
   const { bookings, thisWeekBookings, pastBookings } = useAdminBooking();
+  const isMobile = useMediaQuery("(max-width:639px)");
 
   const events = React.useMemo(() => {
     const all = [...pastBookings, ...thisWeekBookings, ...bookings];
@@ -39,11 +41,12 @@ const AdminBookingsCalendar = ({ deliveryType }: IAdminBookingsCalendar) => {
       <h2 className="text-base font-semibold leading-6 text-gray-900 mb-4">
         Calendar
       </h2>
-      <div style={{ height: 650 }}>
+      <div style={{ height: isMobile ? 550 : 650 }} className="overflow-x-auto">
         <EventCalendar
+          key={isMobile ? "mobile" : "desktop"}
           events={events}
-          views={["month", "week", "day"]}
-          defaultView="month"
+          views={isMobile ? ["day", "week", "agenda"] : ["month", "week", "day"]}
+          defaultView={isMobile ? "day" : "month"}
           readOnly
           areEventsDraggable={false}
           areEventsResizable={false}

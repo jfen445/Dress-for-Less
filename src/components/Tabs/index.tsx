@@ -47,15 +47,17 @@ const Tabs = ({ selected, setSelectedTab }: ITabs) => {
         <label htmlFor="tabs" className="sr-only">
           Select a tab
         </label>
-        {/* Use an "onChange" listener to redirect the user to the selected tab URL. */}
         <select
           id="tabs"
           name="tabs"
-          // defaultValue={tabList.find((tab) => tab.current).name}
+          value={selected as string}
+          onChange={(e) => setSelectedTab(e.target.value)}
           className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
         >
           {tabList.map((tab) => (
-            <option key={tab.name}>{tab.name}</option>
+            <option key={tab.name} value={tab.name as string}>
+              {tab.name}
+            </option>
           ))}
         </select>
       </div>
