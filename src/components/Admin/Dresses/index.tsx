@@ -137,7 +137,7 @@ const AdminDresses = () => {
               <div ref={gridTopRef} />
               <ul
                 role="list"
-                className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                className="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               >
                 {paginatedDresses.map((dress) => {
                   const activeBookings = statusesByDress[dress._id] ?? [];
@@ -149,13 +149,13 @@ const AdminDresses = () => {
                       className="col-span-1 flex flex-col divide-y divide-gray-200 rounded-lg bg-white text-center shadow cursor-pointer"
                       onClick={() => openDressHistory(dress)}
                     >
-                      <div className="flex flex-1 flex-col p-8">
+                      <div className="flex flex-1 flex-col p-4 sm:p-8">
                         <img
                           alt=""
                           src={dress.images[0]}
-                          className="mx-auto h-32 w-32 flex-shrink-0 rounded-full"
+                          className="mx-auto h-20 w-20 flex-shrink-0 rounded-full sm:h-32 sm:w-32"
                         />
-                        <h3 className="mt-6 text-sm font-medium text-gray-900">
+                        <h3 className="mt-3 text-sm font-medium text-gray-900 sm:mt-6">
                           {dress.name}
                         </h3>
                         <dl className="mt-1 flex flex-grow flex-col justify-between">
