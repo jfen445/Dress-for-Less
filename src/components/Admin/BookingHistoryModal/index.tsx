@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import Modal from "@/components/Modal";
 import { BookingLineItem } from "../../../../common/types";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 interface BookingHistoryModalProps {
   isOpen: boolean;
@@ -56,7 +57,7 @@ const BookingHistoryModal = ({
       <div className="flex items-center gap-3 mb-4">
         {image && (
           <img
-            src={image}
+            src={sizedImageUrl(image, { width: 96 })}
             alt={title}
             className="h-12 w-12 rounded-full object-cover flex-shrink-0"
           />

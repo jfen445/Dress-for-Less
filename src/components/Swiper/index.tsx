@@ -16,6 +16,7 @@ import "swiper/css/effect-fade";
 import "swiper/css/grid";
 import { ImageType } from "../../../common/types";
 import { getSanityImageDimensions } from "../../../lib/utils/image";
+import { sizedImageUrl } from "../../../sanity/lib/image";
 
 interface ICoverFlow {
   images: ImageType[];
@@ -38,7 +39,7 @@ const CoverFlow = ({ images, classname }: ICoverFlow) => {
             return (
               <SwiperSlide key={index}>
                 <Image
-                  src={image.src}
+                  src={sizedImageUrl(image.src, { width: 800 })}
                   alt={image.alt}
                   width={width}
                   height={height}

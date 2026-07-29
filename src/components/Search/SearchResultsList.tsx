@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { DressType } from "../../../common/types";
+import { sizedImageUrl } from "../../../sanity/lib/image";
 
 interface Props {
   results: DressType[];
@@ -27,9 +29,11 @@ const SearchResultsList = ({ results, onSelect, emptyQuery }: Props) => {
             onClick={onSelect}
             className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
           >
-            <img
-              src={dress.images[0]}
+            <Image
+              src={sizedImageUrl(dress.images[0], { width: 80 })}
               alt={dress.name}
+              width={40}
+              height={56}
               className="h-14 w-10 flex-shrink-0 object-cover rounded"
             />
             <div className="min-w-0">

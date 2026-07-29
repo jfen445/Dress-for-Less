@@ -1,10 +1,12 @@
 import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import React from "react";
+import Image from "next/image";
 import { CartItemType } from "../../../common/types";
 import dayjs from "dayjs";
 import { auckland } from "../../../lib/utils/timezone";
 import { useRouter } from "next/router";
 import Button from "../Button";
+import { sizedImageUrl } from "../../../sanity/lib/image";
 
 interface ICartType {
   products: CartItemType[];
@@ -139,13 +141,15 @@ const CartItems = ({
                     </div>
 
                     <div
-                      className="flex-shrink-0 cursor-pointer"
+                      className="relative h-24 w-24 flex-shrink-0 cursor-pointer sm:h-32 sm:w-32"
                       onClick={() => navigateToDressProduct(product._id)}
                     >
-                      <img
-                        alt={product.images[0]}
-                        src={product.images[0]}
-                        className="h-24 w-24 rounded-md object-cover object-center sm:h-32 sm:w-32"
+                      <Image
+                        alt={product.name}
+                        src={sizedImageUrl(product.images[0], { width: 256 })}
+                        fill
+                        sizes="128px"
+                        className="rounded-md object-cover object-center"
                       />
                     </div>
 

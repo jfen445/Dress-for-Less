@@ -1,8 +1,10 @@
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Marquee from "react-fast-marquee";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const HERO_IMAGE_COUNT = 7;
 
@@ -93,57 +95,71 @@ const HeroSection = () => {
                     <div className="absolute transform sm:left-1/2 sm:top-0 sm:translate-x-8 lg:left-1/2 lg:top-1/2 lg:-translate-y-1/2 lg:translate-x-8">
                       <div className="flex items-center space-x-6 lg:space-x-8">
                         <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
-                          <div className="h-64 w-44 overflow-hidden rounded-lg sm:opacity-0 lg:opacity-100">
-                            <img
-                              src={dresses[0].images[0]}
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg sm:opacity-0 lg:opacity-100">
+                            <Image
+                              src={sizedImageUrl(dresses[0].images[0], { width: 352 })}
                               alt=""
-                              className="h-full w-full object-cover object-center"
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
                             />
                           </div>
-                          <div className="h-64 w-44 overflow-hidden rounded-lg">
-                            <img
-                              src={dresses[1].images[0]}
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[1].images[0], { width: 352 })}
                               alt=""
-                              className="h-full w-full object-cover object-center"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
-                          <div className="h-64 w-44 overflow-hidden rounded-lg">
-                            <img
-                              src={dresses[2].images[0]}
-                              alt=""
-                              className="h-full w-full object-cover object-center"
-                            />
-                          </div>
-                          <div className="h-64 w-44 overflow-hidden rounded-lg">
-                            <img
-                              src={dresses[3].images[0]}
-                              alt=""
-                              className="h-full w-full object-cover object-center"
-                            />
-                          </div>
-                          <div className="h-64 w-44 overflow-hidden rounded-lg">
-                            <img
-                              src={dresses[4].images[0]}
-                              alt=""
-                              className="h-full w-full object-cover object-center"
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
                             />
                           </div>
                         </div>
                         <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
-                          <div className="h-64 w-44 overflow-hidden rounded-lg">
-                            <img
-                              src={dresses[5].images[0]}
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[2].images[0], { width: 352 })}
                               alt=""
-                              className="h-full w-full object-cover object-center"
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
                             />
                           </div>
-                          <div className="h-64 w-44 overflow-hidden rounded-lg">
-                            <img
-                              src={dresses[6].images[0]}
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[3].images[0], { width: 352 })}
                               alt=""
-                              className="h-full w-full object-cover object-center"
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
+                            />
+                          </div>
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[4].images[0], { width: 352 })}
+                              alt=""
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[5].images[0], { width: 352 })}
+                              alt=""
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
+                            />
+                          </div>
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[6].images[0], { width: 352 })}
+                              alt=""
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
                             />
                           </div>
                         </div>

@@ -1,7 +1,9 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const FavouritesSection = () => {
   const { allDresses, getFavouriteDresses } = useGlobalContext();
@@ -41,11 +43,13 @@ const FavouritesSection = () => {
             <div className="mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0 lg:gap-x-8">
               {dresses.map((dress: any) => (
                 <div key={dress._id} className="group relative">
-                  <div className="h-96 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2 group-hover:opacity-75 sm:h-auto">
-                    <img
-                      src={dress.images[0]}
+                  <div className="relative h-96 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2 group-hover:opacity-75 sm:h-auto">
+                    <Image
+                      src={sizedImageUrl(dress.images[0], { width: 700 })}
                       alt={dress.name}
-                      className="w-full h-[500px] object-cover object-center group-hover:opacity-75"
+                      fill
+                      sizes="(min-width: 640px) 33vw, 100vw"
+                      className="object-cover object-center group-hover:opacity-75"
                     />
                   </div>
                   <p className="mt-4 text-sm text-gray-500">{dress.brand}</p>

@@ -6,6 +6,7 @@ import { BlockOut } from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const SIZES = ["XS", "S", "M", "L", "XL"];
 
@@ -93,7 +94,7 @@ const AdminBlockOuts = () => {
           {selectedDress && (
             <div className="hidden sm:block flex-shrink-0">
               <img
-                src={selectedDress.images[0]}
+                src={sizedImageUrl(selectedDress.images[0], { width: 320 })}
                 alt={selectedDress.name}
                 className="h-40 w-40 rounded-lg object-cover"
               />
