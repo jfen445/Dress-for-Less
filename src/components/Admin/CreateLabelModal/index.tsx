@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import { BookingLineItem } from "../../../../common/types";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 interface CreateLabelModalProps {
   isOpen: boolean;
@@ -129,7 +130,7 @@ const CreateLabelModal = ({
                       <div className="flex items-center gap-2">
                         {item.dress?.images?.[0] && (
                           <img
-                            src={item.dress.images[0]}
+                            src={sizedImageUrl(item.dress.images[0], { width: 64 })}
                             alt={item.dress.name}
                             className="h-8 w-8 rounded-full object-cover flex-shrink-0"
                           />

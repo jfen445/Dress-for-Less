@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { DressType } from "../../../../common/types";
 import { useDressContext } from "@/context/DressContext";
 import Spinner from "@/components/Spinner";
 import Pagination from "./Pagination";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const PAGE_SIZE = 30;
 
@@ -52,11 +54,13 @@ const DressGrid = () => {
                 href={`/dresses/products/${dress._id}`}
                 className="group"
               >
-                <div className="aspect-[3/4] w-full overflow-hidden rounded-lg">
-                  <img
-                    src={dress.images[0]}
-                    alt="test"
-                    className="w-full h-full object-cover object-center group-hover:opacity-75"
+                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={sizedImageUrl(dress.images[0], { width: 600 })}
+                    alt={dress.name}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, 50vw"
+                    className="object-cover object-center group-hover:opacity-75"
                   />
                 </div>
                 <div className="mt-4">

@@ -3,6 +3,7 @@ import { Tab } from "@headlessui/react";
 import { ImageType } from "../../../../common/types";
 import CoverFlow from "@/components/Swiper";
 import { getSanityImageDimensions } from "../../../../lib/utils/image";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -35,7 +36,7 @@ const ImageSelector = ({ images, classname }: IImageSelector) => {
                       {/* <span className="sr-only">{image.name}</span> */}
                       <span className="absolute inset-0 overflow-hidden rounded-md">
                         <Image
-                          src={image.src}
+                          src={sizedImageUrl(image.src, { width: 192 })}
                           alt={image.alt}
                           fill
                           sizes="96px"
@@ -63,7 +64,7 @@ const ImageSelector = ({ images, classname }: IImageSelector) => {
               return (
                 <Tab.Panel key={image.alt}>
                   <Image
-                    src={image.src}
+                    src={sizedImageUrl(image.src, { width: 1000 })}
                     alt={image.alt}
                     width={width}
                     height={height}

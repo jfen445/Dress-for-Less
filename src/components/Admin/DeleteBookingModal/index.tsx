@@ -4,6 +4,7 @@ import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import { deleteBooking } from "@/api/booking";
 import { Booking } from "../../../../common/types";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 interface IDeleteBookingModal {
   isOpen: boolean;
@@ -46,7 +47,7 @@ const DeleteBookingModal = ({
 
       <div className="flex space-x-4">
         <img
-          src={primaryItem?.dress?.images?.[0]}
+          src={sizedImageUrl(primaryItem?.dress?.images?.[0], { width: 160 })}
           alt={primaryItem?.dress?.name ?? ""}
           className="h-20 w-20 flex-none rounded-lg object-cover"
         />

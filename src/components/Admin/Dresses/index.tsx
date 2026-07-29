@@ -7,6 +7,7 @@ import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
 import Pagination from "../../DressPage/DressGrid/Pagination";
 import BookingHistoryModal from "../BookingHistoryModal";
 import { BookingLineItem, DressType } from "../../../../common/types";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const PAGE_SIZE = 32;
 
@@ -152,7 +153,7 @@ const AdminDresses = () => {
                       <div className="flex flex-1 flex-col p-4 sm:p-8">
                         <img
                           alt=""
-                          src={dress.images[0]}
+                          src={sizedImageUrl(dress.images[0], { width: 256 })}
                           className="mx-auto h-20 w-20 flex-shrink-0 rounded-full sm:h-32 sm:w-32"
                         />
                         <h3 className="mt-3 text-sm font-medium text-gray-900 sm:mt-6">

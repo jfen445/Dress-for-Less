@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import Spinner from "@/components/Spinner";
 import Seo from "@/components/Seo";
 import { DeliveryType } from "../../common/enums/DeliveryType";
+import { sizedImageUrl } from "../../sanity/lib/image";
 
 enum Selected {
   Previous,
@@ -54,7 +55,7 @@ const OrderItemRow = ({ item }: { item: BookingItem }) => (
   <div className="flex space-x-4 py-6 first:pt-0 last:pb-0 sm:space-x-6 lg:space-x-8">
     <img
       alt={item.dress?.name ?? ""}
-      src={item.dress?.images?.[0]}
+      src={sizedImageUrl(item.dress?.images?.[0], { width: 320 })}
       className="size-20 flex-none rounded-md object-cover sm:size-40"
     />
     <div className="min-w-0 flex-1 pt-1.5 sm:pt-0">

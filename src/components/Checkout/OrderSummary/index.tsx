@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import {
   Popover,
   PopoverBackdrop,
@@ -12,6 +13,7 @@ import { getCart } from "@/api/cart";
 import { getUserCoupons } from "@/api/coupon";
 import { calculateCouponDiscount } from "../../../../lib/utils/couponRules";
 import { getDress } from "../../../../sanity/sanity.query";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
 import {
@@ -158,9 +160,11 @@ const OrderSummary = () => {
           >
             {products.map((product) => (
               <li key={product._id} className="flex items-start space-x-4 py-6">
-                <img
-                  alt={product.images[0]}
-                  src={product.images[0]}
+                <Image
+                  alt={product.name}
+                  src={sizedImageUrl(product.images[0], { width: 160 })}
+                  width={80}
+                  height={80}
                   className="h-20 w-20 flex-none rounded-md object-cover object-center"
                 />
                 <div className="flex-auto space-y-1">

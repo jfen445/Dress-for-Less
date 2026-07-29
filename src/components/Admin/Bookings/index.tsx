@@ -28,6 +28,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { updateBooking } from "@/api/booking";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { sizedImageUrl } from "../../../../sanity/lib/image";
 import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useAdminBooking } from "@/context/AdminBookingContext";
@@ -711,7 +712,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 <td className="px-3 py-5 text-sm">
                   <div className="flex items-center">
                     <img
-                      src={primaryItem?.dress?.images[0]}
+                      src={sizedImageUrl(primaryItem?.dress?.images[0], { width: 88 })}
                       alt={primaryItem?.dress?.name ?? ""}
                       className="h-11 w-11 rounded-full cursor-pointer"
                       onClick={(e) => {
@@ -733,7 +734,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       {additionalItems.map((item: any) => (
                         <div key={item._id} className="flex items-center">
                           <img
-                            src={item.dress?.images?.[0]}
+                            src={sizedImageUrl(item.dress?.images?.[0], { width: 88 })}
                             alt={item.dress?.name ?? ""}
                             className="h-11 w-11 rounded-full cursor-pointer"
                           />
@@ -863,7 +864,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                           className={`flex space-x-6 ${index > 0 ? "border-t border-gray-200 pt-6" : ""}`}
                         >
                           <img
-                            src={item.dress?.images?.[0]}
+                            src={sizedImageUrl(item.dress?.images?.[0], { width: 320 })}
                             alt={item.dress?.name ?? ""}
                             className="h-40 w-40 rounded-lg object-cover cursor-zoom-in transition-transform hover:scale-105"
                             onClick={(e) => {
@@ -955,7 +956,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           onClick={closeEnlargedImage}
         >
           <img
-            src={enlargedImage.src}
+            src={sizedImageUrl(enlargedImage.src, { width: 1200 })}
             alt={enlargedImage.alt}
             className={`max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl transition-all duration-200 ease-out ${
               isEnlargedImageVisible
@@ -1139,7 +1140,7 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                               >
                                 {dress.image && (
                                   <img
-                                    src={dress.image}
+                                    src={sizedImageUrl(dress.image, { width: 64 })}
                                     alt={dress.name}
                                     className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
                                   />

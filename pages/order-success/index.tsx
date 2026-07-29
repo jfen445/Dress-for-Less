@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { useCartContext } from "@/context/CartContext";
 import { hasDeliveryItem, SHIPPING_FEE } from "../../lib/utils/deliveryRules";
+import { sizedImageUrl } from "../../sanity/lib/image";
 
 const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY as string);
 
@@ -132,8 +133,8 @@ const OrderSuccess = ({
                   className="flex flex-col space-y-6 border-b border-gray-200 py-10 sm:flex-row sm:space-x-6 sm:space-y-0"
                 >
                   <img
-                    alt={dress?.images[0]}
-                    src={dress?.images[0]}
+                    alt={dress?.name ?? ""}
+                    src={sizedImageUrl(dress?.images[0], { width: 320 })}
                     className="h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40"
                   />
                   <div className="flex min-w-0 flex-auto flex-col">
