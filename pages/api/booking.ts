@@ -73,9 +73,7 @@ export default async function handler(
     const bookings = await getBookingAvailabilityByDress(dressId);
 
     if (bookings.length === 0) {
-      res.status(404).json({
-        message: "There are no bookings made under this dress",
-      });
+      return res.status(200).json([]);
     }
 
     const bookingItems = bookings as BookingAvailability[];
@@ -247,9 +245,7 @@ export default async function handler(
         nzPostDpid: item.address?.nzPostDpid,
         // Overwritten with the server-verified value for the item(s) sharing
         // the checkout's shipping address, rather than trusting the client.
-        isRuralDelivery: item.address?.nzPostDpid
-          ? isRuralDelivery
-          : false,
+        isRuralDelivery: item.address?.nzPostDpid ? isRuralDelivery : false,
         ruralDeliveryNumber: item.address?.ruralDeliveryNumber,
       },
       size: item.size,
@@ -305,7 +301,10 @@ export default async function handler(
           },
         })
         .catch((err) =>
-          console.error("Failed to attach order metadata to Stripe payment", err),
+          console.error(
+            "Failed to attach order metadata to Stripe payment",
+            err,
+          ),
         );
     }
 
@@ -395,7 +394,8 @@ export default async function handler(
         const key = `${item.dressId}|${item.size}|${item.dateBooked}`;
         if (seen.has(key)) {
           return res.status(400).json({
-            message: "The same dress, size and date was selected more than once",
+            message:
+              "The same dress, size and date was selected more than once",
           });
         }
         seen.add(key);
@@ -423,8 +423,7 @@ export default async function handler(
       const bookingItems = [];
       for (const item of itemsPayload) {
         const dress = await getDress(item.dressId);
-        if (!dress)
-          return res.status(404).json({ message: "Dress not found" });
+        if (!dress) return res.status(404).json({ message: "Dress not found" });
 
         const blocked = await checkBlockOut(
           item.dressId,
