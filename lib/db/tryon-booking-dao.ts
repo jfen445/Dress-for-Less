@@ -53,6 +53,10 @@ export async function updateTryOnBookingStatus(
   return TryOnBookingSchema.updateOne({ _id: bookingId }, { $set: { status } });
 }
 
+export async function deleteTryOnBooking(bookingId: String) {
+  return TryOnBookingSchema.findByIdAndDelete(bookingId);
+}
+
 export async function grantTryOnCoupon(userId: string, date: string) {
   const startDate = auckland.startOfDay(date);
   const expiryDate = startDate
