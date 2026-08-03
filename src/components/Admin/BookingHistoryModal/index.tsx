@@ -85,6 +85,9 @@ const BookingHistoryModal = ({
                 Size
               </th>
               <th className="py-3 px-3 text-left font-semibold text-gray-700">
+                Type
+              </th>
+              <th className="py-3 px-3 text-left font-semibold text-gray-700">
                 Status
               </th>
             </tr>
@@ -92,7 +95,7 @@ const BookingHistoryModal = ({
           <tbody className="divide-y divide-gray-100 bg-white">
             {sortedLineItems.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-400">
+                <td colSpan={6} className="py-8 text-center text-gray-400">
                   No booking history to display.
                 </td>
               </tr>
@@ -117,6 +120,9 @@ const BookingHistoryModal = ({
                       {dayjs(item.dateBooked).format("MMM D, YYYY")}
                     </td>
                     <td className="py-3 px-3 text-gray-600">{item.size}</td>
+                    <td className="py-3 px-3 text-gray-600">
+                      {item.deliveryType}
+                    </td>
                     <td className="py-3 px-3">
                       <span
                         className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColour(
