@@ -14,6 +14,7 @@ import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { checkBlockOut } from "../../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../../lib/utils/bookingWindow";
 import { getNextOrderNumber } from "../../../lib/utils/orderNumber";
+import { sendEmailConfirmation } from "../payment/paymentConfirm";
 
 export default async function handler(
   req: NextApiRequest,
@@ -66,7 +67,9 @@ export default async function handler(
     } = req.body;
 
     if (!Array.isArray(itemsPayload) || itemsPayload.length === 0) {
-      return res.status(400).json({ message: "At least one dress is required" });
+      return res
+        .status(400)
+        .json({ message: "At least one dress is required" });
     }
     if (!deliveryType) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -115,7 +118,11 @@ export default async function handler(
       const dress = await getDress(item.dressId);
       if (!dress) return res.status(404).json({ message: "Dress not found" });
 
-      const blocked = await checkBlockOut(item.dressId, item.size, item.dateBooked);
+      const blocked = await checkBlockOut(
+        item.dressId,
+        item.size,
+        item.dateBooked,
+      );
       if (blocked)
         return res
           .status(409)
@@ -170,7 +177,11 @@ export default async function handler(
 
     await booking.save();
 
-    // await sendEmailConfirmation(booking.toObject());
+    try {
+      await sendEmailConfirmation(booking.toObject());
+    } catch (err) {
+      console.error("Failed to send admin-created booking confirmation email", err);
+    }
 
     res.status(201).json({ message: "Booking created", booking });
   }
