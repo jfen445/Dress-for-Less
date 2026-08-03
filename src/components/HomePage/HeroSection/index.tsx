@@ -77,7 +77,13 @@ const HeroSection = () => {
     poolRef.current = shuffled;
     nextPoolIndexRef.current = HERO_IMAGE_COUNT;
     slotQueueRef.current = [];
-    setDresses(shuffled.slice(0, HERO_IMAGE_COUNT));
+    // Only replace the visible images the first time real data arrives —
+    // once the initial 7 are on screen, swapping them all at once for a
+    // freshly-shuffled set reads as a glitch. After that, slots only change
+    // one at a time via the rotation interval below.
+    setDresses((prev) =>
+      prev.length === 0 ? shuffled.slice(0, HERO_IMAGE_COUNT) : prev,
+    );
   }, [allDresses, getHomeScreenDresses]);
 
   React.useEffect(() => {
@@ -155,6 +161,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
@@ -166,6 +173,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
@@ -179,6 +187,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
@@ -190,6 +199,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
@@ -201,6 +211,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
@@ -214,6 +225,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
@@ -225,6 +237,7 @@ const HeroSection = () => {
                               alt=""
                               fill
                               sizes="176px"
+                              priority
                               className="object-cover object-center"
                             />
                           </div>
