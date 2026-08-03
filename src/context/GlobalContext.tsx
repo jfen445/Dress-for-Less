@@ -59,7 +59,8 @@ const GlobalContextProvider = ({
   };
 
   const getFavouriteDresses = (count: number = 3) => {
-    const shuffled = [...allDresses].sort(() => Math.random() - 0.5); // Shuffle the array
+    const withImages = allDresses.filter((dress) => dress.images?.length > 0);
+    const shuffled = [...withImages].sort(() => Math.random() - 0.5); // Shuffle the array
     return shuffled.slice(0, count); // Get the first 'count' elements
   };
 
