@@ -1,5 +1,6 @@
 import { CouponSchema } from "./schema";
 import { CouponType } from "../../common/enums/CouponType";
+import { CouponScope } from "../../common/enums/CouponScope";
 import { isCouponUsableByUser } from "../utils/couponRules";
 
 export async function getAllCoupons() {
@@ -11,6 +12,7 @@ export async function createCoupon(data: {
   code?: string;
   discountAmount: number;
   discountType: CouponType;
+  appliesTo?: CouponScope;
   isGlobal?: boolean;
   maxRedemptions?: number;
   startDate: string;

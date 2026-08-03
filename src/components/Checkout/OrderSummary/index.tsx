@@ -113,7 +113,8 @@ const OrderSummary = () => {
     const selected = availableCoupons.filter((c) =>
       selectedCouponIds.includes(c._id ?? ""),
     );
-    return calculateCouponDiscount(selected, parseFloat(sumPrices()));
+    const itemPrices = products.map(({ price }) => parseInt(price));
+    return calculateCouponDiscount(selected, itemPrices);
   };
 
   const formatDate = (date: string) => {
