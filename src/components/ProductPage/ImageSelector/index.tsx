@@ -1,3 +1,4 @@
+import * as React from "react";
 import Image from "next/image";
 import { Tab } from "@headlessui/react";
 import { ImageType } from "../../../../common/types";
@@ -13,6 +14,31 @@ interface IImageSelector {
   images: ImageType[];
   classname: string;
 }
+
+const ImagePanel = ({ image }: { image: ImageType }) => {
+  const [loaded, setLoaded] = React.useState(false);
+  const { width, height } = getSanityImageDimensions(image.src);
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      {!loaded && (
+        <span className="absolute h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-secondary-pink" />
+      )}
+      <Image
+        src={sizedImageUrl(image.src, { width: 1400 })}
+        alt={image.alt}
+        width={width}
+        height={height}
+        sizes="(min-width: 1024px) 50vw, 100vw"
+        onLoad={() => setLoaded(true)}
+        className={classNames(
+          "h-full w-auto max-w-full object-contain mx-auto sm:rounded-lg transition-opacity duration-200",
+          loaded ? "opacity-100" : "opacity-0",
+        )}
+      />
+    </div>
+  );
+};
 
 const ImageSelector = ({ images, classname }: IImageSelector) => {
   return (
@@ -57,23 +83,12 @@ const ImageSelector = ({ images, classname }: IImageSelector) => {
             </Tab.List>
           </div>
 
-          <Tab.Panels className="aspect-h-1 aspect-w-1 w-full mx-auto">
-            {images.map((image) => {
-              const { width, height } = getSanityImageDimensions(image.src);
-
-              return (
-                <Tab.Panel key={image.alt}>
-                  <Image
-                    src={sizedImageUrl(image.src, { width: 1000 })}
-                    alt={image.alt}
-                    width={width}
-                    height={height}
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="h-96 w-auto mx-auto sm:rounded-lg"
-                  />
-                </Tab.Panel>
-              );
-            })}
+          <Tab.Panels className="w-full mx-auto h-[70vh]">
+            {images.map((image) => (
+              <Tab.Panel key={image.alt} className="h-full w-full">
+                <ImagePanel image={image} />
+              </Tab.Panel>
+            ))}
           </Tab.Panels>
         </Tab.Group>
       </div>

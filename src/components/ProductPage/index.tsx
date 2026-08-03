@@ -279,7 +279,7 @@ const Product = ({ dress }: ProductProps) => {
       <Toast toast={toast} setToast={setToast} href={"/cart"} />
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
         {/* Product details */}
-        <div className="lg:max-w-lg lg:self-end">
+        <div className="lg:max-w-lg lg:self-start">
           <div className="mt-4">
             <p className="text-sm text-gray-500">{dress?.brand}</p>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
