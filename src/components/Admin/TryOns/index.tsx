@@ -5,6 +5,7 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import CreateTryOnBookingModal from "@/components/Admin/CreateTryOnBookingModal";
+import DeleteTryOnBookingModal from "@/components/Admin/DeleteTryOnBookingModal";
 import EmailTryOnRemindersModal from "@/components/Admin/EmailTryOnRemindersModal";
 import AdminTryOnAvailability from "@/components/Admin/TryOnAvailability";
 import { TryOnStatus } from "../../../../common/enums/TryOnStatus";
@@ -47,6 +48,9 @@ const AdminTryOns = () => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<TryOnBookingRow | null>(
+    null,
+  );
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
     variant: ToastVariant.WARNING,
@@ -162,6 +166,15 @@ const AdminTryOns = () => {
                 ))}
               </select>
             </td>
+            <td className="px-3 py-4 text-right text-sm">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(booking)}
+                className="text-red-600 hover:underline"
+              >
+                Delete
+              </button>
+            </td>
           </tr>
         ))}
       </>
@@ -182,6 +195,24 @@ const AdminTryOns = () => {
             show: true,
           });
         }}
+      />
+      <DeleteTryOnBookingModal
+        isOpen={!!deleteTarget}
+        setOpen={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        booking={deleteTarget}
+        onDeleted={(bookingId) => {
+          setBookings((prev) => prev.filter((b) => b._id !== bookingId));
+          setToast({
+            message: "Try-on booking deleted",
+            variant: ToastVariant.SUCCESS,
+            show: true,
+          });
+        }}
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
       />
       <EmailTryOnRemindersModal
         isOpen={emailModalOpen}
@@ -254,6 +285,9 @@ const AdminTryOns = () => {
                       >
                         Status
                       </th>
+                      <th scope="col" className="px-3 py-3.5">
+                        <span className="sr-only">Delete</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
@@ -263,7 +297,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={5}
+                        colSpan={6}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         This week try-ons
@@ -277,7 +311,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={5}
+                        colSpan={6}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         Upcoming try-ons
@@ -291,7 +325,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={5}
+                        colSpan={6}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         Previous try-ons
@@ -302,7 +336,7 @@ const AdminTryOns = () => {
                     {bookings.length === 0 && (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="py-6 text-center text-sm text-gray-500"
                         >
                           No try-on bookings yet.

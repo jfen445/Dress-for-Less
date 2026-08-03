@@ -43,7 +43,7 @@ const FavouritesSection = () => {
             <div className="mt-6 grid grid-cols-1 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0 lg:gap-x-8">
               {dresses.map((dress: any) => (
                 <div key={dress._id} className="group relative">
-                  <div className="relative h-96 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2 group-hover:opacity-75 sm:h-auto">
+                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg group-hover:opacity-75">
                     <Image
                       src={sizedImageUrl(dress.images[0], { width: 700 })}
                       alt={dress.name}

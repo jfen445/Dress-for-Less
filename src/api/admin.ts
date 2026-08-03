@@ -83,6 +83,10 @@ export async function updateTryOnBookingStatus(
   });
 }
 
+export async function deleteTryOnBooking(bookingId: string) {
+  return api.delete(`/api/admin/tryOnBookings?bookingId=${bookingId}`);
+}
+
 export async function sendTryOnReminderEmails(bookingIds: string[]) {
   return api.post(`/api/admin/sendTryOnReminderEmails`, { bookingIds });
 }

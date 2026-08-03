@@ -9,6 +9,7 @@ import {
   updateTryOnBookingStatus,
   checkTryOnSlotTaken,
   grantTryOnCoupon,
+  deleteTryOnBooking,
 } from "../../../lib/db/tryon-booking-dao";
 import { getAvailabilityForDate } from "../../../lib/db/tryon-availability-dao";
 import { TryOnBookingSchema } from "../../../lib/db/schema";
@@ -47,6 +48,21 @@ export default async function handler(
 
     await updateTryOnBookingStatus(bookingId, status);
     return res.status(200).json({ message: "Status updated" });
+  }
+
+  if (req.method === "DELETE") {
+    const bookingId = req.query.bookingId as string;
+
+    if (!bookingId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const deleted = await deleteTryOnBooking(bookingId);
+    if (!deleted) {
+      return res.status(404).json({ message: "Try-on booking not found" });
+    }
+
+    return res.status(200).json({ message: "Try-on booking deleted" });
   }
 
   if (req.method === "POST") {
