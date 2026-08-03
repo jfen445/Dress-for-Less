@@ -42,6 +42,10 @@ const getSizes = (dress?: DressType): Sizes =>
     ? { xs: dress.xs, s: dress.s, m: dress.m, l: dress.l, xl: dress.xl }
     : {};
 
+const inputCls =
+  "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
+const labelCls = "block text-sm font-medium text-gray-700 mb-1";
+
 type EditableLineItem = {
   id: string;
   itemId?: string; // existing BookingItem._id, undefined for a newly added row
@@ -66,6 +70,52 @@ interface IEditBookingModal {
   onEdited: () => void;
   onError: (message: string) => void;
 }
+
+const AddressFields = ({
+  value,
+  onChange,
+}: {
+  value: Address;
+  onChange: (field: EditableAddressField, val: string) => void;
+}) => (
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {(
+      [
+        { field: "address", label: "Address", required: true },
+        { field: "apartment", label: "Apartment / Suite", required: false },
+        { field: "suburb", label: "Suburb", required: false },
+        { field: "city", label: "City", required: true },
+        { field: "postCode", label: "Postal code", required: true },
+        { field: "company", label: "Company", required: false },
+      ] as { field: EditableAddressField; label: string; required: boolean }[]
+    ).map(({ field, label, required }) => (
+      <div key={field}>
+        <label className={labelCls}>
+          {label}{" "}
+          {!required && (
+            <span className="text-gray-400 font-normal">(optional)</span>
+          )}
+        </label>
+        <input
+          type="text"
+          value={value[field] ?? ""}
+          onChange={(e) => onChange(field, e.target.value)}
+          required={required}
+          className={inputCls}
+        />
+      </div>
+    ))}
+    <div>
+      <label className={labelCls}>Country</label>
+      <input
+        type="text"
+        value="New Zealand"
+        disabled
+        className={`${inputCls} bg-gray-100`}
+      />
+    </div>
+  </div>
+);
 
 const EditBookingModal = ({
   isOpen,
@@ -248,56 +298,6 @@ const EditBookingModal = ({
       setIsSubmitting(false);
     }
   };
-
-  const inputCls =
-    "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
-  const labelCls = "block text-sm font-medium text-gray-700 mb-1";
-
-  const AddressFields = ({
-    value,
-    onChange,
-  }: {
-    value: Address;
-    onChange: (field: EditableAddressField, val: string) => void;
-  }) => (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {(
-        [
-          { field: "address", label: "Address", required: true },
-          { field: "apartment", label: "Apartment / Suite", required: false },
-          { field: "suburb", label: "Suburb", required: false },
-          { field: "city", label: "City", required: true },
-          { field: "postCode", label: "Postal code", required: true },
-          { field: "company", label: "Company", required: false },
-        ] as { field: EditableAddressField; label: string; required: boolean }[]
-      ).map(({ field, label, required }) => (
-        <div key={field}>
-          <label className={labelCls}>
-            {label}{" "}
-            {!required && (
-              <span className="text-gray-400 font-normal">(optional)</span>
-            )}
-          </label>
-          <input
-            type="text"
-            value={value[field] ?? ""}
-            onChange={(e) => onChange(field, e.target.value)}
-            required={required}
-            className={inputCls}
-          />
-        </div>
-      ))}
-      <div>
-        <label className={labelCls}>Country</label>
-        <input
-          type="text"
-          value="New Zealand"
-          disabled
-          className={`${inputCls} bg-gray-100`}
-        />
-      </div>
-    </div>
-  );
 
   return (
     <Modal isOpen={isOpen} setOpen={setOpen}>
