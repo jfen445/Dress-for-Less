@@ -17,6 +17,7 @@ import BillingForm from "./BillingForm";
 import TermsModal from "../TermsModal";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { CouponType } from "../../../../common/enums/CouponType";
+import { CouponScope } from "../../../../common/enums/CouponScope";
 import {
   hasDeliveryItem,
   isDeliveryAllowedForDate,
@@ -325,6 +326,10 @@ const CheckoutForm = () => {
                         {coupon.discountType === CouponType.Percentage
                           ? `${coupon.discountAmount}% off`
                           : `$${coupon.discountAmount.toFixed(2)} off`}
+                        {coupon.appliesTo === CouponScope.SingleItem &&
+                          (coupon.discountType === CouponType.Percentage
+                            ? " - applied to your cheapest item"
+                            : " - applied to your most expensive item")}
                         {!coupon.isGlobal && (
                           <> - {formatCouponExpiry(coupon.expiryDate)}</>
                         )}

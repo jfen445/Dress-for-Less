@@ -46,13 +46,13 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         setSuggestions(data.addresses);
         setStatusMessage(
           data.addresses.length === 0
-            ? "No matching address found - you can continue typing it manually."
+            ? "No matching address found. Please check the spelling or try a different search."
             : null,
         );
       } catch {
         setSuggestions([]);
         setStatusMessage(
-          "Address lookup is temporarily unavailable. You can enter your address manually.",
+          "Address lookup is temporarily unavailable. Please try again in a moment.",
         );
       }
     }, SEARCH_DEBOUNCE_MS);

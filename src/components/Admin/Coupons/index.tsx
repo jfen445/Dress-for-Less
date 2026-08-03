@@ -9,6 +9,7 @@ import {
 import { getCouponStatus } from "../../../../lib/utils/couponRules";
 import { Coupon, UserType } from "../../../../common/types";
 import { CouponType } from "../../../../common/enums/CouponType";
+import { CouponScope } from "../../../../common/enums/CouponScope";
 import { CouponStatus } from "../../../../common/enums/CouponStatus";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
@@ -31,6 +32,9 @@ const AdminCoupons = () => {
   const [maxRedemptions, setMaxRedemptions] = React.useState("");
   const [discountType, setDiscountType] = React.useState<CouponType>(
     CouponType.Flat,
+  );
+  const [appliesTo, setAppliesTo] = React.useState<CouponScope>(
+    CouponScope.Cart,
   );
   const [discountAmount, setDiscountAmount] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
@@ -125,6 +129,7 @@ const AdminCoupons = () => {
       code: isGlobal ? code.trim().toUpperCase() : undefined,
       discountAmount: amount,
       discountType,
+      appliesTo,
       isGlobal,
       maxRedemptions: redemptionLimit,
       startDate,
@@ -136,6 +141,7 @@ const AdminCoupons = () => {
         setCode("");
         setMaxRedemptions("");
         setDiscountType(CouponType.Flat);
+        setAppliesTo(CouponScope.Cart);
         setDiscountAmount("");
         setStartDate("");
         setDurationDays("");
@@ -180,6 +186,13 @@ const AdminCoupons = () => {
     c.isGlobal
       ? `Global (${c.code ?? "—"}) - ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
       : getUserLabel(c.userId);
+
+  const getAppliesToLabel = (c: Coupon) => {
+    if (c.appliesTo !== CouponScope.SingleItem) return "Entire cart";
+    return c.discountType === CouponType.Percentage
+      ? "Cheapest dress"
+      : "Most expensive dress";
+  };
 
   const statusClass = (status: CouponStatus) =>
     status === CouponStatus.Active
@@ -294,6 +307,27 @@ const AdminCoupons = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Applies to
+            </label>
+            <select
+              value={appliesTo}
+              onChange={(e) => setAppliesTo(e.target.value as CouponScope)}
+              className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+              required
+            >
+              <option value={CouponScope.Cart}>Entire cart</option>
+              <option value={CouponScope.SingleItem}>One dress</option>
+            </select>
+            {appliesTo === CouponScope.SingleItem && (
+              <p className="mt-1 text-xs text-gray-500">
+                Percentage discounts apply to the cheapest dress in the cart;
+                flat discounts apply to the most expensive.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Discount amount (
               {discountType === CouponType.Percentage ? "%" : "$"})
             </label>
@@ -389,6 +423,12 @@ const AdminCoupons = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Applies to
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         Reason
                       </th>
                       <th
@@ -424,6 +464,9 @@ const AdminCoupons = () => {
                             {c.discountType === CouponType.Percentage
                               ? `${c.discountAmount}%`
                               : `$${c.discountAmount.toFixed(2)}`}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {getAppliesToLabel(c)}
                           </td>
                           <td className="px-3 py-4 text-sm text-gray-500 max-w-[16rem] truncate">
                             {c.reason || "-"}

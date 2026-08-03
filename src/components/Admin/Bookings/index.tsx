@@ -2,10 +2,16 @@ import {
   getAllBookings,
   createLabels,
   markBookingsDownloaded,
+  getBlockOuts,
 } from "@/api/admin";
 import dayjs from "dayjs";
 import React, { Fragment } from "react";
-import { Booking, BookingLineItem, UserType } from "../../../../common/types";
+import {
+  BlockOut,
+  Booking,
+  BookingLineItem,
+  UserType,
+} from "../../../../common/types";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import UserModal from "../UserModal";
@@ -119,7 +125,16 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     subtitle?: string;
     image?: string;
     lineItems: BookingLineItem[];
+    hideDressColumn?: boolean;
+    blockOuts?: BlockOut[];
   } | null>(null);
+  const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
+
+  React.useEffect(() => {
+    getBlockOuts()
+      .then((res) => setBlockOuts(res.data as BlockOut[]))
+      .catch(() => {});
+  }, []);
 
   const [collapsedDayGroups, setCollapsedDayGroups] = React.useState<
     Set<string>
@@ -286,6 +301,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       subtitle: brand,
       image,
       lineItems,
+      hideDressColumn: true,
+      blockOuts: blockOuts.filter((b) => b.dressId === dressId),
     });
     setHistoryModalOpen(true);
     closeSearch();
@@ -1017,6 +1034,8 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
         subtitle={historyTarget?.subtitle}
         image={historyTarget?.image}
         lineItems={historyTarget?.lineItems ?? []}
+        hideDressColumn={historyTarget?.hideDressColumn}
+        blockOuts={historyTarget?.blockOuts}
       />
       <DeleteBookingModal
         isOpen={deleteModalOpen}

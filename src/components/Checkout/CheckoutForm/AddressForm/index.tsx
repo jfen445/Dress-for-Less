@@ -13,12 +13,17 @@ const AddressForm = () => {
   const [postCode, setPostCode] = React.useState("");
   const [isRuralDelivery, setIsRuralDelivery] = React.useState(false);
   const [resolveError, setResolveError] = React.useState<string | null>(null);
+  const [isAddressVerified, setIsAddressVerified] = React.useState(false);
 
   const handleAddressTextChange = (text: string) => {
     setAddressText(text);
     setIsRuralDelivery(false);
     setResolveError(null);
     setValidatedAddress(null);
+    setSuburb("");
+    setCity("");
+    setPostCode("");
+    setIsAddressVerified(false);
   };
 
   const handleSelectSuggestion = async (suggestion: AddressSuggestion) => {
@@ -40,6 +45,7 @@ const AddressForm = () => {
       if (detail.city) setCity(detail.city);
       if (detail.postcode) setPostCode(detail.postcode);
       setIsRuralDelivery(detail.isRuralDelivery);
+      setIsAddressVerified(true);
 
       setValidatedAddress({
         addressText: streetLine,
@@ -53,7 +59,7 @@ const AddressForm = () => {
       setIsRuralDelivery(false);
       setValidatedAddress(null);
       setResolveError(
-        "Could not confirm this address's delivery details. You can continue with the address as entered.",
+        "Could not confirm this address's delivery details. Please try selecting it again.",
       );
     }
   };
@@ -100,6 +106,11 @@ const AddressForm = () => {
         {resolveError && (
           <p className="mt-1 text-xs text-gray-500">{resolveError}</p>
         )}
+        {!isAddressVerified && (
+          <p className="mt-1 text-xs text-gray-500">
+            Select an address above to fill in suburb, city and postcode.
+          </p>
+        )}
       </div>
 
       <div className="sm:col-span-3">
@@ -136,6 +147,7 @@ const AddressForm = () => {
             autoComplete="address-level2"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             required
+            disabled={!isAddressVerified}
             value={suburb}
             onChange={(e) =>
               setSuburb((e.target as HTMLInputElement).value)
@@ -157,6 +169,7 @@ const AddressForm = () => {
             name="city"
             type="text"
             autoComplete="address-level2"
+            disabled={!isAddressVerified}
             value={city}
             onChange={(e) => setCity((e.target as HTMLInputElement).value)}
           />
@@ -196,6 +209,7 @@ const AddressForm = () => {
             type="text"
             autoComplete="postal-code"
             required
+            disabled={!isAddressVerified}
             value={postCode}
             onChange={(e) =>
               setPostCode((e.target as HTMLInputElement).value)

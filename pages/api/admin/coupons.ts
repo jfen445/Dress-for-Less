@@ -12,6 +12,7 @@ import { authOptions } from "../auth/[...nextauth]";
 import { findUser, findUserById } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
 import { CouponType } from "../../../common/enums/CouponType";
+import { CouponScope } from "../../../common/enums/CouponScope";
 import StoreCreditEmail, {
   getStoreCreditSubject,
 } from "@/components/Emails/StoreCredit";
@@ -53,6 +54,7 @@ export default async function handler(
       code,
       discountAmount,
       discountType,
+      appliesTo,
       isGlobal,
       maxRedemptions,
       startDate,
@@ -76,6 +78,10 @@ export default async function handler(
 
     if (!Object.values(CouponType).includes(discountType)) {
       return res.status(400).json({ message: "discountType is invalid" });
+    }
+
+    if (appliesTo !== undefined && !Object.values(CouponScope).includes(appliesTo)) {
+      return res.status(400).json({ message: "appliesTo is invalid" });
     }
 
     let redemptionLimit: number | undefined;
@@ -135,6 +141,7 @@ export default async function handler(
         code: isGlobal ? normalizedCode : undefined,
         discountAmount: amount,
         discountType,
+        appliesTo: appliesTo ?? CouponScope.Cart,
         isGlobal: !!isGlobal,
         maxRedemptions: redemptionLimit,
         startDate: normalizedStart.toISOString(),

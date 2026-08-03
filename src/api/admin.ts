@@ -1,5 +1,6 @@
 import api from "./client";
 import { CouponType } from "../../common/enums/CouponType";
+import { CouponScope } from "../../common/enums/CouponScope";
 
 export async function getAllBookings() {
   return api.get(`/api/admin/bookings`);
@@ -115,6 +116,7 @@ export async function createCoupon(data: {
   code?: string;
   discountAmount: number;
   discountType: CouponType;
+  appliesTo?: CouponScope;
   isGlobal?: boolean;
   maxRedemptions?: number;
   startDate: string;

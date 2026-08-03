@@ -3,6 +3,7 @@ import { BookingStatus } from "../enums/BookingStatus";
 import { DeliveryType } from "../enums/DeliveryType";
 import { TryOnStatus } from "../enums/TryOnStatus";
 import { CouponType } from "../enums/CouponType";
+import { CouponScope } from "../enums/CouponScope";
 
 export type ProfileType = {
   _id: string;
@@ -212,6 +213,7 @@ export type Coupon = {
   code?: string;
   discountAmount: number;
   discountType: CouponType;
+  appliesTo?: CouponScope;
   isGlobal: boolean;
   maxRedemptions?: number;
   redeemedByUserIds?: string[];

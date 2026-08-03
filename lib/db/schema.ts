@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { CouponType } from "../../common/enums/CouponType";
+import { CouponScope } from "../../common/enums/CouponScope";
 
 const Schema = mongoose.Schema;
 
@@ -174,6 +175,11 @@ const couponSchema = new Schema(
       enum: Object.values(CouponType),
       required: true,
       default: CouponType.Flat,
+    },
+    appliesTo: {
+      type: String,
+      enum: Object.values(CouponScope),
+      default: CouponScope.Cart,
     },
     // Global coupons are available to every customer (each may redeem once,
     // tracked in redeemedByUserIds) rather than being owned by a single userId.

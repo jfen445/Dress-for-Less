@@ -7,6 +7,12 @@ import { DressType } from "../../../../common/types";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const HERO_IMAGE_COUNT = 7;
+const ROTATE_INTERVAL_MS = 10000;
+// Firing one slot change every (ROTATE_INTERVAL_MS / 7)ms and stepping
+// through the slots means each individual slot still only changes once per
+// ROTATE_INTERVAL_MS, but they cascade one at a time instead of all
+// flipping together.
+const STAGGER_MS = ROTATE_INTERVAL_MS / HERO_IMAGE_COUNT;
 
 // Two different dresses (e.g. colour variants of the same style) can share
 // the same photo — picking naively by index could show that image twice in
@@ -39,16 +45,62 @@ const HeroSection = () => {
     getDressesWithUniqueImages(allDresses, HERO_IMAGE_COUNT),
   );
 
+  // Extra unique-image dresses beyond the 7 currently on screen, used as a
+  // pool to rotate slots into over time. Kept in a ref (not state) since
+  // updating it shouldn't itself trigger a re-render.
+  const poolRef = React.useRef<DressType[]>([]);
+  const nextPoolIndexRef = React.useRef(HERO_IMAGE_COUNT);
+  // Shuffled queue of slot indices still to change this cycle — reshuffled
+  // each time it empties, so every slot still changes exactly once per
+  // cycle, but which one goes next is randomised each time.
+  const slotQueueRef = React.useRef<number[]>([]);
+
+  const drawNextSlot = () => {
+    if (slotQueueRef.current.length === 0) {
+      const order = Array.from({ length: HERO_IMAGE_COUNT }, (_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      slotQueueRef.current = order;
+    }
+    return slotQueueRef.current.pop() as number;
+  };
+
   React.useEffect(() => {
     // Shuffle the full list first, then dedupe — slicing to 7 before
     // deduping would waste unique images sitting later in the shuffle.
-    setDresses(
-      getDressesWithUniqueImages(
-        getHomeScreenDresses(allDresses.length),
-        HERO_IMAGE_COUNT,
-      ),
+    const shuffled = getDressesWithUniqueImages(
+      getHomeScreenDresses(allDresses.length),
+      allDresses.length,
     );
+    poolRef.current = shuffled;
+    nextPoolIndexRef.current = HERO_IMAGE_COUNT;
+    slotQueueRef.current = [];
+    setDresses(shuffled.slice(0, HERO_IMAGE_COUNT));
   }, [allDresses, getHomeScreenDresses]);
+
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      const pool = poolRef.current;
+      // Not enough spare dresses to rotate into without repeating one
+      // that's already visible in another slot.
+      if (pool.length <= HERO_IMAGE_COUNT) return;
+
+      const slot = drawNextSlot();
+      const nextDress = pool[nextPoolIndexRef.current % pool.length];
+      nextPoolIndexRef.current += 1;
+
+      setDresses((prev) => {
+        if (prev.length < HERO_IMAGE_COUNT) return prev;
+        const next = [...prev];
+        next[slot] = nextDress;
+        return next;
+      });
+    }, STAGGER_MS);
+
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <>
@@ -97,7 +149,9 @@ const HeroSection = () => {
                         <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                           <div className="relative h-64 w-44 overflow-hidden rounded-lg sm:opacity-0 lg:opacity-100">
                             <Image
-                              src={sizedImageUrl(dresses[0].images[0], { width: 352 })}
+                              src={sizedImageUrl(dresses[0].images[0], {
+                                width: 352,
+                              })}
                               alt=""
                               fill
                               sizes="176px"
@@ -106,36 +160,9 @@ const HeroSection = () => {
                           </div>
                           <div className="relative h-64 w-44 overflow-hidden rounded-lg">
                             <Image
-                              src={sizedImageUrl(dresses[1].images[0], { width: 352 })}
-                              alt=""
-                              fill
-                              sizes="176px"
-                              className="object-cover object-center"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
-                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
-                            <Image
-                              src={sizedImageUrl(dresses[2].images[0], { width: 352 })}
-                              alt=""
-                              fill
-                              sizes="176px"
-                              className="object-cover object-center"
-                            />
-                          </div>
-                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
-                            <Image
-                              src={sizedImageUrl(dresses[3].images[0], { width: 352 })}
-                              alt=""
-                              fill
-                              sizes="176px"
-                              className="object-cover object-center"
-                            />
-                          </div>
-                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
-                            <Image
-                              src={sizedImageUrl(dresses[4].images[0], { width: 352 })}
+                              src={sizedImageUrl(dresses[1].images[0], {
+                                width: 352,
+                              })}
                               alt=""
                               fill
                               sizes="176px"
@@ -146,7 +173,9 @@ const HeroSection = () => {
                         <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                           <div className="relative h-64 w-44 overflow-hidden rounded-lg">
                             <Image
-                              src={sizedImageUrl(dresses[5].images[0], { width: 352 })}
+                              src={sizedImageUrl(dresses[2].images[0], {
+                                width: 352,
+                              })}
                               alt=""
                               fill
                               sizes="176px"
@@ -155,7 +184,44 @@ const HeroSection = () => {
                           </div>
                           <div className="relative h-64 w-44 overflow-hidden rounded-lg">
                             <Image
-                              src={sizedImageUrl(dresses[6].images[0], { width: 352 })}
+                              src={sizedImageUrl(dresses[3].images[0], {
+                                width: 352,
+                              })}
+                              alt=""
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
+                            />
+                          </div>
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[4].images[0], {
+                                width: 352,
+                              })}
+                              alt=""
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid flex-shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[5].images[0], {
+                                width: 352,
+                              })}
+                              alt=""
+                              fill
+                              sizes="176px"
+                              className="object-cover object-center"
+                            />
+                          </div>
+                          <div className="relative h-64 w-44 overflow-hidden rounded-lg">
+                            <Image
+                              src={sizedImageUrl(dresses[6].images[0], {
+                                width: 352,
+                              })}
                               alt=""
                               fill
                               sizes="176px"

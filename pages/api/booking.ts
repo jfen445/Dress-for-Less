@@ -150,7 +150,8 @@ export default async function handler(
           .json({ message: "One or more coupons are invalid or already used" });
       }
 
-      discountAmount = calculateCouponDiscount(coupons, itemsSubtotal);
+      const itemPrices = items.map(priceForItem);
+      discountAmount = calculateCouponDiscount(coupons, itemPrices);
     }
 
     // Re-confirm rural status with NZ Post (by DPID) rather than trusting the

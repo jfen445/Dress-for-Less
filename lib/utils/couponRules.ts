@@ -1,23 +1,46 @@
 import { auckland, dayjs } from "./timezone";
 import { CouponType } from "../../common/enums/CouponType";
+import { CouponScope } from "../../common/enums/CouponScope";
 import { CouponStatus } from "../../common/enums/CouponStatus";
 
 export type DiscountableCoupon = {
   discountAmount: number;
   discountType: CouponType;
+  appliesTo?: CouponScope;
 };
 
-// Each coupon is computed independently against `subtotal` (dress items
-// only, never shipping) and summed — coupons don't compound/stack sequentially.
+// Each coupon is computed independently against `itemPrices` (dress items
+// only, never shipping) and summed — coupons don't compound/stack
+// sequentially. Cart-scoped (or missing/legacy) coupons discount the full
+// subtotal. SingleItem-scoped coupons pick their target by discount type:
+// percentage targets the cheapest dress (minimizes the discount given),
+// flat targets the most expensive dress (so its dollar value isn't
+// wasted/capped on a cheap item) and is capped there so it can't spill into
+// other items.
 export function calculateCouponDiscount(
   coupons: DiscountableCoupon[],
-  subtotal: number,
+  itemPrices: number[],
 ): number {
+  const subtotal = itemPrices.reduce((sum, p) => sum + p, 0);
+  const cheapestItemPrice =
+    itemPrices.length > 0 ? Math.min(...itemPrices) : 0;
+  const mostExpensiveItemPrice =
+    itemPrices.length > 0 ? Math.max(...itemPrices) : 0;
+
   return coupons.reduce((sum, c) => {
-    if (c.discountType === CouponType.Percentage) {
-      return sum + (subtotal * c.discountAmount) / 100;
+    const isSingleItemScope = c.appliesTo === CouponScope.SingleItem;
+    const isPercentage = c.discountType === CouponType.Percentage;
+
+    if (!isSingleItemScope) {
+      return (
+        sum + (isPercentage ? (subtotal * c.discountAmount) / 100 : c.discountAmount)
+      );
     }
-    return sum + c.discountAmount;
+
+    if (isPercentage) {
+      return sum + (cheapestItemPrice * c.discountAmount) / 100;
+    }
+    return sum + Math.min(c.discountAmount, mostExpensiveItemPrice);
   }, 0);
 }
 
