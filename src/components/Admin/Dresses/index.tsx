@@ -3,10 +3,11 @@ import Spinner from "@/components/Spinner";
 import Input from "@/components/Input";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { useAdminBooking } from "@/context/AdminBookingContext";
+import { getBlockOuts } from "@/api/admin";
 import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
 import Pagination from "../../DressPage/DressGrid/Pagination";
 import BookingHistoryModal from "../BookingHistoryModal";
-import { BookingLineItem, DressType } from "../../../../common/types";
+import { BlockOut, BookingLineItem, DressType } from "../../../../common/types";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 
 const PAGE_SIZE = 32;
@@ -29,7 +30,15 @@ const AdminDresses = () => {
     subtitle?: string;
     image?: string;
     lineItems: BookingLineItem[];
+    blockOuts: BlockOut[];
   } | null>(null);
+  const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
+
+  React.useEffect(() => {
+    getBlockOuts()
+      .then((res) => setBlockOuts(res.data as BlockOut[]))
+      .catch(() => {});
+  }, []);
 
   const allBookingsHistory = React.useMemo(
     () => [...thisWeekBookings, ...bookings, ...pastBookings],
@@ -97,6 +106,7 @@ const AdminDresses = () => {
       subtitle: dress.brand,
       image: dress.images?.[0],
       lineItems,
+      blockOuts: blockOuts.filter((b) => b.dressId === dress._id),
     });
     setHistoryModalOpen(true);
   };
@@ -110,6 +120,8 @@ const AdminDresses = () => {
         subtitle={historyTarget?.subtitle}
         image={historyTarget?.image}
         lineItems={historyTarget?.lineItems ?? []}
+        blockOuts={historyTarget?.blockOuts ?? []}
+        hideDressColumn
       />
       <div className="p-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center pb-4">

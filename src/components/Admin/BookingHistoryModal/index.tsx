@@ -1,7 +1,7 @@
 import React from "react";
 import dayjs from "dayjs";
 import Modal from "@/components/Modal";
-import { BookingLineItem } from "../../../../common/types";
+import { BlockOut, BookingLineItem } from "../../../../common/types";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 
@@ -12,6 +12,13 @@ interface BookingHistoryModalProps {
   subtitle?: string;
   image?: string;
   lineItems: BookingLineItem[];
+  // Hide the per-row Dress column when the dress is already shown in the
+  // header above (e.g. opened from a single dress's history) — not safe to
+  // hide when rows can span multiple dresses (e.g. a user's history).
+  hideDressColumn?: boolean;
+  // Only meaningful for a single dress's history — block-outs are per-dress,
+  // so callers should only pass this when the modal is scoped to one dress.
+  blockOuts?: BlockOut[];
 }
 
 const getStatusColour = (status: BookingStatus) => {
@@ -43,13 +50,23 @@ const BookingHistoryModal = ({
   subtitle,
   image,
   lineItems,
+  hideDressColumn,
+  blockOuts,
 }: BookingHistoryModalProps) => {
+  const columnCount = hideDressColumn ? 5 : 6;
   const sortedLineItems = React.useMemo(
     () =>
       [...lineItems].sort((a, b) =>
         dayjs(b.item.dateBooked).diff(dayjs(a.item.dateBooked)),
       ),
     [lineItems],
+  );
+  const sortedBlockOuts = React.useMemo(
+    () =>
+      [...(blockOuts ?? [])].sort((a, b) =>
+        dayjs(b.startDate).diff(dayjs(a.startDate)),
+      ),
+    [blockOuts],
   );
 
   return (
@@ -72,10 +89,16 @@ const BookingHistoryModal = ({
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 sticky top-0">
             <tr>
-              <th className="py-3 pl-4 pr-3 text-left font-semibold text-gray-700">
-                Dress
-              </th>
-              <th className="py-3 px-3 text-left font-semibold text-gray-700">
+              {!hideDressColumn && (
+                <th className="py-3 pl-4 pr-3 text-left font-semibold text-gray-700">
+                  Dress
+                </th>
+              )}
+              <th
+                className={`py-3 text-left font-semibold text-gray-700 ${
+                  hideDressColumn ? "pl-4 pr-3" : "px-3"
+                }`}
+              >
                 User
               </th>
               <th className="py-3 px-3 text-left font-semibold text-gray-700">
@@ -95,7 +118,7 @@ const BookingHistoryModal = ({
           <tbody className="divide-y divide-gray-100 bg-white">
             {sortedLineItems.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-400">
+                <td colSpan={columnCount} className="py-8 text-center text-gray-400">
                   No booking history to display.
                 </td>
               </tr>
@@ -104,20 +127,24 @@ const BookingHistoryModal = ({
                 const user = booking.user?.[0];
                 return (
                   <tr key={item._id ?? `${booking._id}-${item.dressId}`}>
-                    <td className="py-3 pl-4 pr-3">
-                      <div className="font-medium text-gray-900">
-                        {item.dress?.name}
-                      </div>
-                      <div className="text-gray-500 text-xs">
-                        {item.dress?.brand}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
+                    {!hideDressColumn && (
+                      <td className="py-3 pl-4 pr-3">
+                        <div className="font-medium text-gray-900">
+                          {item.dress?.name}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          {item.dress?.brand}
+                        </div>
+                      </td>
+                    )}
+                    <td
+                      className={`py-3 ${hideDressColumn ? "pl-4 pr-3" : "px-3"}`}
+                    >
                       <div className="text-gray-900">{user?.name}</div>
                       <div className="text-gray-500 text-xs">{user?.email}</div>
                     </td>
                     <td className="py-3 px-3 text-gray-600 whitespace-nowrap">
-                      {dayjs(item.dateBooked).format("MMM D, YYYY")}
+                      {dayjs(item.dateBooked).format("ddd, MMM D, YYYY")}
                     </td>
                     <td className="py-3 px-3 text-gray-600">{item.size}</td>
                     <td className="py-3 px-3 text-gray-600">
@@ -139,6 +166,37 @@ const BookingHistoryModal = ({
           </tbody>
         </table>
       </div>
+
+      {sortedBlockOuts.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">
+            Block-out periods
+          </h3>
+          <ul className="divide-y divide-gray-100 rounded-md border border-gray-200 text-sm">
+            {sortedBlockOuts.map((blockOut) => (
+              <li
+                key={blockOut._id}
+                className="flex items-center justify-between gap-3 px-4 py-2"
+              >
+                <div>
+                  <span className="font-medium text-gray-900">
+                    {blockOut.size}
+                  </span>{" "}
+                  <span className="text-gray-600">
+                    {dayjs(blockOut.startDate).format("MMM D, YYYY")} –{" "}
+                    {dayjs(blockOut.endDate).format("MMM D, YYYY")}
+                  </span>
+                </div>
+                {blockOut.reason && (
+                  <span className="text-gray-500 text-xs truncate">
+                    {blockOut.reason}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Modal>
   );
 };
