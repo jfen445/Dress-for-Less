@@ -279,6 +279,22 @@ const Account = () => {
             </div>
           </div>
 
+          {isEditMode && (
+            <p className="mt-4 text-sm text-gray-500 sm:max-w-xl">
+              We collect this information to create your account and process
+              your rentals. See our{" "}
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 underline"
+              >
+                Privacy Policy
+              </a>{" "}
+              for details.
+            </p>
+          )}
+
           {!isEditMode ? (
             <div className="mt-8 hidden md:flex">
               <Button

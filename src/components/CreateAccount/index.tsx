@@ -225,6 +225,21 @@ const CreateAccountComponent = () => {
               </div>
 
             </div>
+            <div className="md:col-span-2">
+              <p className="text-sm text-gray-500">
+                We collect this information to create your account and
+                process your rentals. See our{" "}
+                <a
+                  href="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 underline"
+                >
+                  Privacy Policy
+                </a>{" "}
+                for details.
+              </p>
+            </div>
             <div className="sm:col-span-3 mx-auto">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Creating account..." : "Create"}
