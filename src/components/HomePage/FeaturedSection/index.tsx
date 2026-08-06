@@ -20,9 +20,12 @@ const FeaturedSection = () => {
             deliver it straight to your door - or collect from Auckland.
           </p>
           <p className="mt-3 text-xl text-white">
-            Create an account or sign in with Google to save your favourite
-            dresses, speed through checkout, and keep track of your rental
-            bookings.
+            Create an account or sign in using your preferred method to securely
+            manage your dress rentals, view upcoming bookings, track your
+            orders, save your details for faster checkout, and access your
+            rental history. If you choose to sign in with Google, we use your
+            Google account solely to authenticate your identity and create your
+            Dress For Less NZ account.
           </p>
           <a
             href={"/faq"}
