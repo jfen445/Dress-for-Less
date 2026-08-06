@@ -19,6 +19,11 @@ const FeaturedSection = () => {
             hundreds of designer dresses, choose your dates, and we&apos;ll
             deliver it straight to your door - or collect from Auckland.
           </p>
+          <p className="mt-3 text-xl text-white">
+            Create an account or sign in with Google to save your favourite
+            dresses, speed through checkout, and keep track of your rental
+            bookings.
+          </p>
           <a
             href={"/faq"}
             className="mt-8 block w-full rounded-md border border-transparent bg-white px-8 py-3 text-base font-medium text-gray-900 hover:bg-gray-100 sm:w-auto"
