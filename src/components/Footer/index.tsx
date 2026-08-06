@@ -51,10 +51,18 @@ const Footer = () => {
           </Link>
         </div>
 
-        <div className="border-t border-gray-200 py-4">
+        <div className="border-t border-gray-200 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p className="text-sm text-gray-500">
             Copyright &copy; 2021 Dress for Less, Inc.
           </p>
+          <div className="flex gap-4 text-sm text-gray-500">
+            <Link href="/policies" className="hover:underline">
+              Terms & Conditions
+            </Link>
+            <Link href="/privacy-policy" className="hover:underline">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
