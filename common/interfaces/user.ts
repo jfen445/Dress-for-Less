@@ -42,10 +42,13 @@ export interface IBooking {
   isReturned: boolean;
   paymentIntent: string;
   paymentSuccess: boolean;
+  // Set by checkout's reserve step, before the charge. Its presence is what
+  // makes an unpaid row eligible to lapse — see lib/utils/reservation.ts.
+  reservedAt?: string;
   status: BookingStatus;
   couponIds?: string[];
   discountAmount?: number;
-  orderNumber: string;
+  orderNumber?: string;
 }
 
 export interface IAddress {

@@ -132,6 +132,9 @@ export type Booking = {
   isShipped: boolean;
   isReturned: boolean;
   paymentIntent: string;
+  // Present when checkout reserved this row before charging. Absent on
+  // bookings created before the reservation scheme, and on admin-created ones.
+  reservedAt?: string;
   user?: UserType[];
   status: BookingStatus;
   couponIds?: string[];
@@ -217,11 +220,21 @@ export type Coupon = {
   isGlobal: boolean;
   maxRedemptions?: number;
   redeemedByUserIds?: string[];
+  // Slots held by checkouts that have reserved but not yet paid — a redemption
+  // on loan. Counts against capacity until it lapses or is handed back.
+  // See lib/utils/couponRules.ts.
+  pendingClaims?: CouponClaim[];
   startDate: string;
   expiryDate: string;
   isRedeemed: boolean;
   reason?: string;
   createdAt?: string;
+};
+
+export type CouponClaim = {
+  userId: string;
+  paymentIntent: string;
+  expiresAt: string;
 };
 
 export type OrderReceipt = {

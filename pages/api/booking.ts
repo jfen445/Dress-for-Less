@@ -5,6 +5,8 @@ import { IBooking, IBookingItem } from "../../common/interfaces/user";
 import {
   checkDuplicateBooking,
   deleteBooking,
+  findLapsedReservations,
+  findOwnBookingHolds,
   getBookingAvailabilityByDress,
   getBookingsById,
   removeBookingItem,
@@ -15,21 +17,33 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import { auckland } from "../../lib/utils/timezone";
 import {
-  isCouponUsableByUser,
   calculateCouponDiscount,
+  isCouponUsableByUser,
 } from "../../lib/utils/couponRules";
+import {
+  lapsedReservationCutoff,
+  reservationExpiry,
+} from "../../lib/utils/reservation";
+import { reconcileReservation } from "../../lib/booking/reconcileReservation";
 import { createUser, findUser } from "../../lib/db/user-dao";
-import { getCouponsByIds, redeemCoupons } from "../../lib/db/coupon-dao";
+import {
+  claimCoupon,
+  getCouponsByIds,
+  releaseCouponClaims,
+} from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
 import { getDress } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
-import { isBookingAvailable } from "../../lib/utils/checkBookingAvailability";
+import {
+  isBookingAvailable,
+  outranksReservation,
+  ReservationRank,
+} from "../../lib/utils/checkBookingAvailability";
 import {
   calculateShippingFee,
   hasDeliveryItem,
 } from "../../lib/utils/deliveryRules";
-import { getNextOrderNumber } from "../../lib/utils/orderNumber";
 import { resolveRuralDeliveryStatus } from "../../lib/nzpost/client";
 
 const FREE_COUPON_CHECKOUT_PREFIX = "FREE_COUPON_";
@@ -80,7 +94,12 @@ export default async function handler(
 
     res.status(200).json(bookingItems);
   } else if (req.method == "POST") {
-    if (!session) {
+    // Checkout's reserve step. Everything that could make this order
+    // impossible — an exhausted coupon, a dress taken since the customer
+    // opened the page, a blocked-out date — is settled here, BEFORE the card
+    // is charged. A reservation that fails costs the customer nothing; one
+    // that fails after the charge costs them money we then have to give back.
+    if (!session?.user?.email) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -89,14 +108,26 @@ export default async function handler(
     const paymentIntent = req.body.paymentIntent as string;
     const couponIds = (req.body.couponIds as string[] | undefined) ?? [];
 
+    if (!paymentIntent) {
+      return res.status(400).json({ message: "paymentIntent is required" });
+    }
+
+    const users = await findUser(session.user.email);
+    const user = users[0];
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const reservingUserId = user._id.toString();
+
+    const now = auckland.now().toISOString();
     var errorResponse: String[] = [];
 
     // Resolve the authoritative price for each dress from Sanity. The client
     // sends item.price, but it must never be trusted for money: otherwise a
     // shopper could tamper with the payload (and the matching PaymentIntent)
     // to rent any dress for the Stripe minimum. Every downstream figure —
-    // subtotal, coupon coverage, persisted price, and the final total that is
-    // reconciled against the Stripe charge — is derived from this map.
+    // subtotal, coupon coverage, persisted price, and the amount the card is
+    // actually charged — is derived from this map.
     const dressPriceById = new Map<string, number>();
     for (const item of items) {
       if (!dressPriceById.has(item.dressId)) {
@@ -115,22 +146,103 @@ export default async function handler(
       0,
     );
 
+    // A customer must not be blocked by their own abandoned attempt: they
+    // reserve, their card is declined, and their own ghost hold then tells them
+    // the dress is already booked. Reconciled rather than deleted, because
+    // those reservations still have live PaymentIntents that must be cancelled
+    // before their rows can safely go.
+    const ownHolds = await findOwnBookingHolds(
+      reservingUserId,
+      items,
+      paymentIntent,
+    );
+    for (const hold of ownHolds) {
+      await reconcileReservation(hold);
+    }
+
+    // Availability gates run before anything with a side effect, so a failure
+    // here needs no unwinding. Each check ignores this checkout's own
+    // reservation, which may already exist from a previous attempt.
+    // `outranking` is only passed on the post-write re-check; see there.
+    const checkAvailability = async (outranking?: ReservationRank) => {
+      const unavailable: String[] = [];
+
+      for (const item of items) {
+        const duplicates = (
+          await checkDuplicateBooking(
+            item.dressId,
+            item.size,
+            item.dateBooked,
+            undefined,
+            paymentIntent,
+          )
+        ).filter(
+          (row: any) => !outranking || outranksReservation(row, outranking),
+        );
+
+        const blockedOut = await checkBlockOut(
+          item.dressId,
+          item.size as string,
+          item.dateBooked,
+        );
+
+        const available = await isBookingAvailable(
+          item.dressId,
+          item.size as string,
+          item.dateBooked,
+          item.deliveryType,
+          paymentIntent,
+          outranking,
+        );
+
+        if (duplicates.length > 0 || blockedOut || !available) {
+          unavailable.push(item.dressId);
+        }
+      }
+
+      return unavailable;
+    };
+
+    errorResponse = await checkAvailability();
+
+    // Being blocked might just mean somebody else's checkout died holding this
+    // date. Reservations only stop blocking once their payment has been proven
+    // dead, so settle any that have outlived their window and look again —
+    // otherwise a date stays unsellable until the cron happens to run, and a
+    // scheduler outage would quietly take dates off sale.
+    if (errorResponse.length > 0) {
+      const lapsed = await findLapsedReservations(lapsedReservationCutoff(now));
+      let freedAny = false;
+
+      for (const hold of lapsed) {
+        if (hold === paymentIntent) continue;
+        if ((await reconcileReservation(hold)) === "cancelled") freedAny = true;
+      }
+
+      if (freedAny) errorResponse = await checkAvailability();
+    }
+
+    if (errorResponse.length > 0) {
+      return res.status(409).json({
+        message:
+          "One or more dresses have already been booked for the selected day.",
+        body: errorResponse,
+      });
+    }
+
+    // Coupon slots are claimed here, not merely checked. A read-then-act
+    // validation would let two customers checking out at the same instant both
+    // be told yes and both redeem, taking a code past its limit — so each slot
+    // is taken atomically by claimCoupon, and whoever loses that race is
+    // stopped here with their card untouched.
+    //
+    // The claim lasts as long as the reservation it belongs to and is handed
+    // back the moment that reservation dies, so an abandoned cart can't sit on
+    // a one-use code.
     let discountAmount = 0;
     let coupons: any[] = [];
-    let redeemingUserId: string | undefined;
 
     if (couponIds.length > 0) {
-      if (!session.user?.email) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      const users = await findUser(session.user.email);
-      const user = users[0];
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      redeemingUserId = user._id.toString();
-
       coupons = await getCouponsByIds(couponIds);
 
       if (coupons.length !== couponIds.length) {
@@ -139,15 +251,27 @@ export default async function handler(
           .json({ message: "One or more coupons could not be found" });
       }
 
-      const now = auckland.now().toISOString();
-      const invalidCoupon = coupons.find(
-        (c) => !isCouponUsableByUser(c, redeemingUserId!, now),
-      );
+      const claimExpiresAt = reservationExpiry(now);
 
-      if (invalidCoupon) {
-        return res
-          .status(400)
-          .json({ message: "One or more coupons are invalid or already used" });
+      for (const coupon of coupons) {
+        const won = await claimCoupon(
+          coupon,
+          reservingUserId,
+          paymentIntent,
+          claimExpiresAt,
+          now,
+        );
+
+        if (!won) {
+          // Give back whatever this attempt managed to take, so a partial
+          // failure across a multi-coupon order doesn't strand the others.
+          await releaseCouponClaims(paymentIntent);
+
+          return res.status(409).json({
+            message:
+              "This coupon is no longer available. You have not been charged.",
+          });
+        }
       }
 
       const itemPrices = items.map(priceForItem);
@@ -176,57 +300,28 @@ export default async function handler(
       );
     }
 
+    // Every exit from here on has to hand the coupon slots back. They were
+    // taken on the assumption this reservation would complete, and a code that
+    // stays locked for fifteen minutes because a checkout fell over downstream
+    // is the same unavailable-coupon bug wearing a different hat.
+    const abandon = async (status: number, body: Record<string, unknown>) => {
+      await releaseCouponClaims(paymentIntent);
+      return res.status(status).json(body);
+    };
+
     const isFreeCouponCheckout = paymentIntent.startsWith(
       FREE_COUPON_CHECKOUT_PREFIX,
     );
-
-    let stripePayment: Stripe.PaymentIntent | undefined;
 
     if (isFreeCouponCheckout) {
       const sumPrices =
         itemsSubtotal +
         calculateShippingFee(hasDeliveryItem(items), isRuralDelivery);
       if (discountAmount < sumPrices) {
-        return res
-          .status(400)
-          .json({ message: "Coupons do not cover the total price" });
-      }
-    } else {
-      const payment = await stripe.paymentIntents.retrieve(paymentIntent);
-
-      if (payment.status !== "succeeded") {
-        return res.status(400).json({
-          message: "Payment not confirmed. Please try again.",
+        return abandon(400, {
+          message: "Coupons do not cover the total price",
         });
       }
-
-      stripePayment = payment;
-    }
-
-    for (const item of items) {
-      const checkBooking = await checkDuplicateBooking(
-        item.dressId,
-        item.size,
-        item.dateBooked,
-      );
-
-      const available = await isBookingAvailable(
-        item.dressId,
-        item.size as string,
-        item.dateBooked,
-        item.deliveryType,
-      );
-
-      if (checkBooking.length > 0 || !available) {
-        errorResponse.push(item.dressId);
-      }
-    }
-
-    if (errorResponse.length > 0) {
-      return res.status(404).json({
-        message: "This dressed has already been booked the the selected day. ",
-        body: errorResponse,
-      });
     }
 
     const bookingItems: IBookingItem[] = items.map((item) => ({
@@ -264,53 +359,70 @@ export default async function handler(
       shippingFee -
       discountAmount;
 
-    if (
-      stripePayment &&
-      stripePayment.amount !== Math.round(totalPrice * 100)
-    ) {
-      console.error(
-        "Stripe charge amount does not match server-verified booking total — rejecting booking",
-        {
-          paymentIntent,
-          stripeAmountCents: stripePayment.amount,
-          verifiedTotalCents: Math.round(totalPrice * 100),
-        },
-      );
-      return res.status(400).json({
-        message:
-          "Payment amount does not match the order total. No booking was created — please contact us if you were charged.",
-      });
-    }
+    // The server, not the browser, decides what the card is charged. The
+    // intent was created with a client-computed figure just to render the
+    // payment form; here it is pinned to the total we just derived from Sanity
+    // prices and server-verified rural status.
+    //
+    // Refusing to raise the amount is what makes the quoted total binding: if
+    // the server arrives at more than the customer was shown, they get sent
+    // back to re-quote rather than silently charged the difference. Lowering
+    // is safe and always in their favour.
+    const totalCents = Math.round(totalPrice * 100);
 
-    const existingBooking = await BookingSchema.findOne(
-      { paymentIntent },
-      "orderNumber",
-    );
-    const orderNumber =
-      existingBooking?.orderNumber ?? (await getNextOrderNumber());
-
-    // Best-effort: so the order number/customer are visible on the Stripe
-    // dashboard without having to cross-reference the DB. Never block booking
-    // creation on this — the payment has already succeeded.
     if (!isFreeCouponCheckout) {
-      await stripe.paymentIntents
-        .update(paymentIntent, {
-          metadata: {
-            orderNumber,
-            name: session.user?.name ?? "",
-            email: session.user?.email ?? "",
-          },
-        })
-        .catch((err) =>
+      const payment = await stripe.paymentIntents.retrieve(paymentIntent);
+
+      if (payment.status === "succeeded") {
+        // Already charged — nothing left to pin, so fall back to reconciling.
+        // Only reachable while the client still pays before reserving; once
+        // the reserve moves ahead of the charge this branch goes quiet.
+        if (payment.amount !== totalCents) {
           console.error(
-            "Failed to attach order metadata to Stripe payment",
-            err,
-          ),
-        );
+            "Stripe charge amount does not match server-verified booking total",
+            {
+              paymentIntent,
+              stripeAmountCents: payment.amount,
+              verifiedTotalCents: totalCents,
+            },
+          );
+          return abandon(400, {
+            message:
+              "Payment amount does not match the order total. No booking was created — please contact us if you were charged.",
+          });
+        }
+      } else if (payment.amount !== totalCents) {
+        if (totalCents > payment.amount) {
+          console.error("Server total exceeds the amount quoted to the customer", {
+            paymentIntent,
+            quotedCents: payment.amount,
+            verifiedTotalCents: totalCents,
+          });
+          return abandon(409, {
+            message:
+              "The total for this order has changed. Please go back and check out again. You have not been charged.",
+          });
+        }
+
+        try {
+          await stripe.paymentIntents.update(paymentIntent, {
+            amount: totalCents,
+          });
+        } catch (err) {
+          console.error("Failed to set the Stripe amount for a reservation", err);
+          return abandon(500, {
+            message:
+              "We couldn't prepare your payment. Please try again. You have not been charged.",
+          });
+        }
+      }
     }
 
     const booking: IBooking = {
-      userId: bookingPayload.userId,
+      // From the session, not the payload. The client sends a userId, but this
+      // row decides whose booking it is and whose coupon slot was spent, so it
+      // has to come from the authenticated caller.
+      userId: reservingUserId,
       items: bookingItems,
       totalPrice,
       billingAddress: {
@@ -327,22 +439,65 @@ export default async function handler(
       isReturned: bookingPayload.isReturned,
       paymentIntent,
       paymentSuccess: false,
+      // Marks this as a hold rather than a booking. It blocks the dress while
+      // the customer pays, and lapses on its own if they never come back.
+      reservedAt: now,
       status: bookingPayload.status,
       couponIds,
       discountAmount,
-      orderNumber,
     };
 
-    const filter = { paymentIntent };
-    const options = { upsert: true };
-
-    await BookingSchema.updateOne(filter, booking, options);
-
-    if (couponIds.length > 0) {
-      await redeemCoupons(coupons, redeemingUserId!);
+    // Upsert on paymentIntent so a retry refreshes the reservation in place
+    // rather than stacking a second one. The order number is deliberately not
+    // allocated here — an abandoned checkout shouldn't consume one — so it is
+    // assigned when the payment is confirmed.
+    try {
+      await BookingSchema.updateOne(
+        { paymentIntent },
+        booking,
+        { upsert: true },
+      );
+    } catch (err) {
+      console.error("Failed to write reservation", err);
+      return abandon(500, {
+        message:
+          "We couldn't hold your booking. Please try again. You have not been charged.",
+      });
     }
 
-    res.status(200).json({ message: "Booking successful", booking });
+    // The availability check above and this write aren't one atomic operation,
+    // so two simultaneous reserves can both pass it and both write. Availability
+    // is a count against per-size stock across overlapping blocking windows,
+    // which no single-document guard can express — so verify afterwards instead.
+    //
+    // Safe to do the work and then undo it precisely because nothing has been
+    // charged yet. Counting only rows that outrank this reservation is what
+    // stops both racers standing down: the ordering is total, so exactly one of
+    // them concludes it should give way.
+    const contested = await checkAvailability({ reservedAt: now, paymentIntent });
+
+    if (contested.length > 0) {
+      await BookingSchema.deleteOne({
+        paymentIntent,
+        paymentSuccess: { $ne: true },
+        reservedAt: { $ne: null },
+      });
+
+      console.warn("Lost a concurrent race for a dress date; reservation undone", {
+        paymentIntent,
+        dressIds: contested,
+      });
+
+      // The intent is deliberately left alive: nothing was charged, and the
+      // customer needs it to retry with a different date.
+      return abandon(409, {
+        message:
+          "One or more dresses have already been booked for the selected day.",
+        body: contested,
+      });
+    }
+
+    res.status(200).json({ message: "Booking reserved", booking });
   } else if (req.method == "PATCH") {
     const isAdmin = await requireAdmin(req, res);
     if (!isAdmin) return;

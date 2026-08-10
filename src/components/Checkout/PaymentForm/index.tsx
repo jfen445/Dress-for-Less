@@ -11,7 +11,7 @@ import { Stripe } from "@stripe/stripe-js";
 import Button from "@/components/Button";
 import { Address } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
-import { checkValidBooking, createBooking } from "@/api/booking";
+import { reserveBooking } from "@/api/booking";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
@@ -47,19 +47,42 @@ const PaymentForm = ({
     show: false,
   });
 
+  const showError = (message: string) =>
+    setToast({
+      ...toast,
+      message,
+      variant: ToastVariant.ERROR,
+      show: true,
+    });
+
+  // Reserve, then charge. The dress and any coupon slot are secured server-side
+  // before the card is touched, so an exhausted coupon or a date that went
+  // while the customer was typing stops the payment instead of being discovered
+  // after their money has moved.
   async function handleSubmit(e: FormEvent) {
     setIsLoading(true);
 
     e.preventDefault();
 
     if (stripe == null || elements == null) {
-      setToast({
-        ...toast,
-        message:
-          "Something went wrong with the payment. Please refresh and try again",
-        variant: ToastVariant.ERROR,
-        show: true,
-      });
+      showError(
+        "Something went wrong with the payment. Please refresh and try again",
+      );
+      setIsLoading(false);
+
+      return;
+    }
+
+    // The reservation is keyed to this payment, so its id has to be resolved
+    // before the payment is made rather than read off the result afterwards.
+    const { paymentIntent: pendingIntent, error: retrieveError } =
+      await stripe.retrievePaymentIntent(clientSecret);
+
+    if (retrieveError || !pendingIntent) {
+      console.error("Could not resolve payment intent:", retrieveError);
+      showError(
+        "Something went wrong with the payment. Please refresh and try again",
+      );
       setIsLoading(false);
 
       return;
@@ -74,66 +97,48 @@ const PaymentForm = ({
       clientSecret,
     );
 
-    let isValid = true;
-
-    await checkValidBooking(booking)
-      .then()
-      .catch((err) => {
-        console.error(err);
-        setToast({
-          ...toast,
-          message: err.message,
-          variant: ToastVariant.ERROR,
-          show: true,
-        });
-        isValid = false;
-      });
-
-    if (!isValid) {
+    try {
+      await reserveBooking(booking, pendingIntent.id, selectedCouponIds);
+    } catch (err: any) {
+      console.error(err);
+      showError(err.message);
       setIsLoading(false);
+
       return;
     }
 
-    stripe
-      .confirmPayment({
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
         confirmParams: {
           return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-success`,
         },
-      })
-      .then(async ({ error, paymentIntent }) => {
-        if (error) {
-          console.error("Payment failed:", error);
-          setToast({
-            ...toast,
-            message:
-              error?.message ?? "A payment error occured. Please try again",
-            variant: ToastVariant.ERROR,
-            show: true,
-          });
-        }
-
-        if (paymentIntent && paymentIntent.status === "succeeded") {
-          await createBooking(booking, paymentIntent.id, selectedCouponIds)
-            .then(() => {
-              router.push("/order-success?paymentIntent=" + paymentIntent.id);
-            })
-            .catch((err) => {
-              console.error(err);
-              setToast({
-                ...toast,
-                message: err.message,
-                variant: ToastVariant.ERROR,
-                show: true,
-              });
-            });
-        }
-      })
-      .finally(() => {
-        setIsLoading(false);
-        refreshCart();
       });
+
+      if (error || paymentIntent?.status !== "succeeded") {
+        if (error) console.error("Payment failed:", error);
+
+        // The reservation is deliberately left in place. A declined card leaves
+        // the intent in requires_payment_method — still confirmable — and the
+        // customer is standing right here about to try another card. Releasing
+        // would cancel that intent, and the payment form is still mounted
+        // against its client secret, so the retry could only ever fail.
+        //
+        // Holding the dress for a customer who is actively paying for it is the
+        // right outcome anyway. If they walk away instead, the reserve
+        // reconciles their own stale hold on their next attempt, and the sweep
+        // reconciles it regardless once it lapses.
+        showError(error?.message ?? "A payment error occured. Please try again");
+
+        return;
+      }
+
+      router.push("/order-success?paymentIntent=" + paymentIntent.id);
+    } finally {
+      setIsLoading(false);
+      refreshCart();
+    }
   }
 
   return (
