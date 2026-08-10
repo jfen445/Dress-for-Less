@@ -6,7 +6,7 @@ import {
   deleteCoupon,
   getAllAdminUsers,
 } from "@/api/admin";
-import { getCouponStatus } from "../../../../lib/utils/couponRules";
+import { activeClaims, getCouponStatus } from "../../../../lib/utils/couponRules";
 import { Coupon, UserType } from "../../../../common/types";
 import { CouponType } from "../../../../common/enums/CouponType";
 import { CouponScope } from "../../../../common/enums/CouponScope";
@@ -182,10 +182,20 @@ const AdminCoupons = () => {
     return u ? `${u.name} - ${u.email}` : id;
   };
 
-  const getCustomerLabel = (c: Coupon) =>
-    c.isGlobal
-      ? `Global (${c.code ?? "—"}) - ${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`
-      : getUserLabel(c.userId);
+  // Held slots are reported separately rather than folded into the redeemed
+  // count: they aren't spent, and a code showing "1/1 redeemed" that reverts to
+  // 0/1 fifteen minutes later reads as a bug. Naming them explains why a code
+  // can be unavailable while its redeemed count still says there is room.
+  const getCustomerLabel = (c: Coupon) => {
+    if (!c.isGlobal) return getUserLabel(c.userId);
+
+    const held = activeClaims(c).length;
+    const redeemed = `${c.redeemedByUserIds?.length ?? 0}/${c.maxRedemptions ?? 0} redeemed`;
+
+    return `Global (${c.code ?? "—"}) - ${redeemed}${
+      held > 0 ? `, ${held} held in checkout` : ""
+    }`;
+  };
 
   const getAppliesToLabel = (c: Coupon) => {
     if (c.appliesTo !== CouponScope.SingleItem) return "Entire cart";

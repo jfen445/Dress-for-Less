@@ -74,6 +74,12 @@ const bookingSchema = new Schema(
     isReturned: { type: Boolean, required: true, default: false },
     paymentIntent: { type: String, required: true },
     paymentSuccess: { type: Boolean, required: true, default: false },
+    // Set when the row was written by checkout's reserve step, before payment.
+    // Its presence is what makes an unpaid row eligible to be released or swept
+    // once it lapses — rows predating the reservation scheme have no reservedAt
+    // and keep blocking their date indefinitely, because some of them are real
+    // bookings whose confirmation step never ran.
+    reservedAt: { type: String, required: false },
     status: { type: String, required: true },
     couponIds: { type: [String], required: false, default: [] },
     discountAmount: { type: Number, required: false, default: 0 },
@@ -86,6 +92,27 @@ const bookingSchema = new Schema(
 
 // Sparse: legacy bookings won't have an orderNumber until the backfill script runs.
 bookingSchema.index({ orderNumber: 1 }, { unique: true, sparse: true });
+
+// One row per payment, enforced by the database. The reserve upserts on
+// { paymentIntent }, and two requests carrying the same intent — a double
+// submit — can both miss the find and both insert. The post-write race check
+// can't sort that out either: identical twins tie on both reservedAt and
+// paymentIntent, so outranksReservation clears both and neither stands down.
+// This makes the second insert fail instead.
+//
+// Partial rather than plain, because paymentIntent is only a key for rows that
+// checkout wrote. Admin-created bookings all share the literal "ADMIN_MANUAL"
+// (pages/api/admin/bookings.ts) and legacy rows predate the scheme; neither
+// carries reservedAt, so both stay outside the constraint. Note the filter must
+// use $exists — partial indexes don't accept $ne, which is what the query side
+// uses for the same "is this a reservation" test.
+//
+// autoIndex is off in production (see db.ts), so run
+// scripts/create-booking-indexes.js to build this against a live database.
+bookingSchema.index(
+  { paymentIntent: 1 },
+  { unique: true, partialFilterExpression: { reservedAt: { $exists: true } } },
+);
 
 const BookingSchema =
   mongoose.models.Bookings ?? mongoose.model("Bookings", bookingSchema);
@@ -192,6 +219,37 @@ const couponSchema = new Schema(
     },
     redeemedByUserIds: {
       type: [mongoose.Schema.ObjectId],
+      required: false,
+      default: [],
+    },
+    // Slots held by checkouts that have reserved but not yet paid. A claim is
+    // a redemption on loan: it counts against capacity exactly like a real one,
+    // so a code can't be spent twice while the first customer is at the card
+    // form, but it is handed back if that payment never lands.
+    //
+    // Claiming is the one thing here that has to be atomic, which is why this
+    // is an array on the coupon itself rather than a separate collection —
+    // capacity and the claim then live in a single document, so one guarded
+    // update can check and take a slot in the same write. See claimCoupon in
+    // lib/db/coupon-dao.ts.
+    //
+    // expiresAt is the reservation's own deadline (lib/utils/reservation.ts),
+    // so a claim and the dress hold it accompanies lapse together.
+    pendingClaims: {
+      type: [
+        new Schema(
+          {
+            // String rather than ObjectId (unlike redeemedByUserIds): a claim
+            // is transient bookkeeping, never joined on, and every comparison
+            // it takes part in happens inside an aggregation expression where
+            // a plain string is one less conversion to get wrong.
+            userId: { type: String, required: true },
+            paymentIntent: { type: String, required: true },
+            expiresAt: { type: String, required: true },
+          },
+          { _id: false },
+        ),
+      ],
       required: false,
       default: [],
     },

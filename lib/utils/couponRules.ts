@@ -44,6 +44,13 @@ export function calculateCouponDiscount(
   }, 0);
 }
 
+// A slot held by a checkout that has reserved but not yet paid.
+export type CouponClaim = {
+  userId: string;
+  paymentIntent: string;
+  expiresAt: string;
+};
+
 export type CouponLike = {
   startDate: string;
   expiryDate: string;
@@ -51,12 +58,38 @@ export type CouponLike = {
   isGlobal?: boolean;
   maxRedemptions?: number;
   redeemedByUserIds?: string[];
+  pendingClaims?: CouponClaim[];
 };
 
+// How many slots this coupon has in total. Personal coupons are inherently
+// single-use; global ones sell as many as maxRedemptions says.
+export function couponCapacity(coupon: CouponLike): number {
+  return coupon.isGlobal ? (coupon.maxRedemptions ?? 0) : 1;
+}
+
+// Claims that are still holding a slot. An expired one is ignored rather than
+// deleted — it stops counting the moment it lapses, and the next write to the
+// coupon prunes it. Nothing has to run on time for capacity to be correct.
+export function activeClaims(
+  coupon: CouponLike,
+  now: string = auckland.now().toISOString(),
+): CouponClaim[] {
+  return (coupon.pendingClaims ?? []).filter((c) => c.expiresAt > now);
+}
+
+function sameId(a: unknown, b: unknown): boolean {
+  return String(a) === String(b);
+}
 
 // Aggregate exhaustion, independent of any one customer: personal coupons
 // have a single possible redeemer (isRedeemed); global coupons are exhausted
 // once every slot has been claimed.
+//
+// Deliberately counts permanent redemptions only. A slot merely held by an
+// in-flight checkout is not spent, and folding those in here would make the
+// admin table report a code as "Redeemed" for fifteen minutes because someone
+// abandoned a cart. Availability — which does count held slots — is
+// isCouponUsableByUser's job.
 function isFullyRedeemed(coupon: CouponLike): boolean {
   if (coupon.isGlobal) {
     return (
@@ -87,18 +120,44 @@ export function isCouponActive(
 // coupons require ownership; global coupons require the customer not have
 // already claimed one of the limited slots (a global coupon can be "Active"
 // overall while still being off-limits to someone who already redeemed it).
+//
+// Slots held by *other* customers mid-checkout count as taken, which is what
+// stops a code being spent past its limit by two people paying at once. The
+// customer's own claim is the opposite — it means they already hold this slot,
+// so it makes the coupon usable to them, not unusable.
+//
+// This is the display and pre-flight answer. The binding one is claimCoupon
+// (lib/db/coupon-dao.ts), which re-asks it as a guarded write so the decision
+// and the taking of the slot happen in a single atomic operation.
 export function isCouponUsableByUser(
   coupon: CouponLike & { userId?: string },
   userId: string,
   now: string = auckland.now().toISOString(),
 ): boolean {
   if (!isCouponActive(coupon, now)) return false;
+
+  const claims = activeClaims(coupon, now);
+  const holdsOwnClaim = claims.some((c) => sameId(c.userId, userId));
+
   if (coupon.isGlobal) {
-    return !(coupon.redeemedByUserIds ?? []).some(
-      (id) => id.toString() === userId.toString(),
+    const alreadyRedeemed = (coupon.redeemedByUserIds ?? []).some((id) =>
+      sameId(id, userId),
+    );
+    if (alreadyRedeemed) return false;
+    if (holdsOwnClaim) return true;
+
+    return (
+      (coupon.redeemedByUserIds?.length ?? 0) + claims.length <
+      couponCapacity(coupon)
     );
   }
-  return coupon.userId?.toString() === userId.toString();
+
+  if (!sameId(coupon.userId, userId)) return false;
+
+  // A personal coupon has exactly one possible owner, so any claim on it is
+  // necessarily theirs — but check rather than assume, so a stray claim from
+  // some other user can only ever be restrictive.
+  return holdsOwnClaim || claims.length === 0;
 }
 
 // Relative countdown for display (e.g. "expires in 2 days") rather than a

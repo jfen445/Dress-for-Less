@@ -37,10 +37,10 @@ All API routes live under `pages/api/`. Client-side calls go through the axios i
 
 Key routes:
 - `pages/api/payment/intent.ts` — creates a Stripe PaymentIntent (NZD, requires session)
-- `pages/api/payment/paymentConfirm.ts` — confirms payment and creates booking
-- `pages/api/booking.ts` — CRUD for bookings
+- `pages/api/payment/paymentConfirm.ts` — marks a reservation paid, redeems its coupons, allocates the order number, sends the receipt
+- `pages/api/booking.ts` — POST is checkout's *reserve* step (see Checkout flow); GET/PATCH/DELETE are availability and admin management
+- `pages/api/booking/release.ts` — hands an unpaid reservation back when payment fails
 - `pages/api/cart.ts` — cart operations; `pages/api/syncCart.ts` merges a guest cart into a logged-in user's cart on login
-- `pages/api/validateBooking.ts` — checks if a dress/size/date combination is already booked
 - `pages/api/admin/bookings.ts` — admin-only booking management
 
 ### Context providers
@@ -60,8 +60,78 @@ Unauthenticated users' cart items are stored in `localStorage` under the key `lo
 
 1. Product page → user picks a size and rental date → "Add to Cart"
 2. Cart page (`/cart`) → review items
-3. Checkout page (`/checkout`) → address form + Stripe card element → creates PaymentIntent → confirms payment → creates booking in MongoDB
-4. `/order-success` — confirmation page
+3. Checkout page (`/checkout`) → address form → "Continue to payment" creates the PaymentIntent → Stripe card element
+4. "Submit Booking" **reserves before it charges** — see below
+5. `/order-success` — calls `paymentConfirm`, which is what actually marks the booking paid
+
+**Checkout reserves, then charges.** `POST /api/booking` runs every check that could
+make an order impossible — coupon usability, duplicate/availability/blockout — and
+writes the booking row with `reservedAt` set and `paymentSuccess: false`, *before*
+`stripe.confirmPayment` is called (`src/components/Checkout/PaymentForm/index.tsx`).
+
+The invariant the whole design exists to hold: **money and booking move together, or
+neither moves.** A refund is not a safety net here — it would be evidence the design
+failed. The original bug was the opposite order: a coupon that ran out mid-checkout
+took the customer's money and gave them no booking.
+
+- **The unpaid booking row *is* the dress hold.** `getBookingAvailabilityByDress` and
+  `checkDuplicateBooking` count every row regardless of `paymentSuccess`, so a
+  reservation blocks its date for free.
+- **A hold has no expiry.** It stops blocking when its row is deleted, and a row is only
+  deleted once its PaymentIntent has been *cancelled*. Releasing a date on a timer while
+  its payment was still confirmable is exactly how a dress gets booked twice: the hold
+  stops counting, someone else takes the date, then the original 3DS completes.
+  `RESERVATION_TTL_MINUTES` (`lib/utils/reservation.ts`) says when a hold becomes
+  eligible for *reconciling*, not when it stops blocking.
+- **`lib/booking/reconcileReservation.ts` is the only sanctioned way to destroy a
+  reservation.** It cancels the PaymentIntent, then deletes the row — or, if the cancel
+  fails because the payment already succeeded, **promotes** the reservation into a real
+  booking instead. Returns `cancelled` / `promoted` / `unresolved`; `unresolved` leaves
+  the row blocking, because blocking a date we could have sold is recoverable and
+  selling one twice is not. No other code path deletes a reservation.
+- **Coupon slots are claimed, not just checked.** `claimCoupon` (`lib/db/coupon-dao.ts`)
+  takes a slot with a single guarded `findOneAndUpdate` whose filter *is* the capacity
+  condition, so two customers checking out at the same instant can't both be told yes.
+  The pipeline-form update prunes lapsed claims and appends the new one in the same
+  write, and excludes this checkout's own claim from the count so a retry is idempotent.
+  Claims live in `pendingClaims` on the coupon itself — capacity and claim in one
+  document is what makes a single atomic write possible.
+  `isCouponUsableByUser` counts other customers' live claims against capacity (the
+  customer's own claim makes a coupon *usable* to them, not blocked); `getCouponStatus`
+  deliberately does not, so the admin table doesn't report a code as Redeemed because
+  someone abandoned a cart. A claim expires with the reservation it belongs to
+  (`reservationExpiry`), and is handed back everywhere a reservation dies — the
+  reserve's own failure paths, `reconcileReservation`, and the cancelled webhook.
+- **The reserve verifies again after writing.** The pre-write check and the write aren't
+  atomic, and availability is a count against per-size stock across overlapping windows,
+  which no single-document guard can express. So it re-checks counting only rows that
+  `outranksReservation` (`lib/utils/checkBookingAvailability.ts`) says take precedence —
+  a total ordering, so exactly one side of a race backs out rather than both. Undoing is
+  free because nothing has been charged.
+- **The server sets the Stripe amount**, pinning the PaymentIntent to its own computed
+  total and refusing to raise it above the quoted figure.
+- **Order numbers are allocated at confirmation**, so abandoned checkouts don't burn them.
+- **A customer's own stale hold is reconciled on retry** (`findOwnBookingHolds`), or a
+  declined card would leave them blocked by their own ghost.
+
+**Stripe, not the browser, is the authority on payment.**
+`pages/api/webhooks/checkout.ts` handles `payment_intent.succeeded` and calls the same
+`confirmReservation` that `/order-success` does — whichever arrives first wins, the
+other reports `alreadyConfirmed` and does nothing (the guard is the `paymentSuccess`
+condition on the `updateMany`). `payment_intent.canceled` drops the reservation
+outright — that intent can never be confirmed again, so it is the one case where
+deleting a row without cancelling first is safe. `payment_intent.payment_failed` is
+deliberately **not** handled: a declined card leaves the intent in
+`requires_payment_method`, still confirmable, and freeing the date on that event is how
+a retry ends up charged with no booking. A succeeded payment with *no* reservation
+should be unreachable; it raises an admin alert and deliberately does **not** refund
+automatically — moving money is never part of the normal machinery.
+
+`pages/api/cron/sweep-reservations.ts` (POST + `Bearer CRON_SECRET`, like the other
+crons) reconciles lapsed holds on a timer. It is not the only thing that can: the
+reserve also reconciles lapsed holds on demand when one blocks it, so a scheduler
+outage delays cleanup rather than quietly taking dates out of sale. Schedule it every
+~5 minutes.
 
 ### Rural delivery detection
 
@@ -75,7 +145,7 @@ Two independent gates must both pass for a date to be bookable:
 1. **Notice-from-today** — `isPickupAllowedForDate`/`isDeliveryAllowedForDate` (`lib/utils/deliveryRules.ts`): cutoff is 8pm the day before that method's dispatch date.
 2. **No conflict** — `isDateBlockedByExistingBooking` against existing bookings of the same dress+size, counted against that size's stock.
 
-Client (`src/components/ProductPage/Calendar/index.tsx`) and server (`lib/utils/checkBookingAvailability.ts`, used by `pages/api/booking.ts` and `pages/api/validateBooking.ts`) share the same functions, so they can't drift apart. `scripts/migrate-booking-windows.js` backfills `blockedFrom`/`blockedUntil` for bookings created before this scheme existed.
+Client (`src/components/ProductPage/Calendar/index.tsx`) and server (`lib/utils/checkBookingAvailability.ts`, used by `pages/api/booking.ts`) share the same functions, so they can't drift apart. The lapsed-hold filter lives in the DAO for the same reason — the Calendar reads availability through `GET /api/booking`, so filtering at a call site would let the two views disagree. `scripts/migrate-booking-windows.js` backfills `blockedFrom`/`blockedUntil` for bookings created before this scheme existed.
 
 ### Admin
 
@@ -91,4 +161,4 @@ Use the shared components instead of native HTML elements: `src/components/Butto
 
 ### Environment variables required
 
-`MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `RESEND_API_KEY`, `RESEND_EMAIL_ADDRESS`, `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NZPOST_CLIENT_ID`, `NZPOST_CLIENT_SECRET`, and optionally `NEXT_PUBLIC_COMING_SOON` (set to `"true"` to show the coming-soon page instead of the app).
+`MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `RESEND_API_KEY`, `RESEND_EMAIL_ADDRESS`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (signing secret for `pages/api/webhooks/checkout.ts` — without it the webhook rejects every event and confirmation falls back to the browser alone), `CRON_SECRET` (bearer token the scheduled jobs under `pages/api/cron/` require), `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NZPOST_CLIENT_ID`, `NZPOST_CLIENT_SECRET`, and optionally `NEXT_PUBLIC_COMING_SOON` (set to `"true"` to show the coming-soon page instead of the app).

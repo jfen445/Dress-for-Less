@@ -11,6 +11,8 @@ import { authOptions } from "../auth/[...nextauth]";
 import { dbConnect } from "../../../lib/db/db";
 import { findUser } from "../../../lib/db/user-dao";
 import { formatBookingDate } from "../../../lib/utils/formatBookingDate";
+import { getCouponsByIds, redeemCoupons } from "../../../lib/db/coupon-dao";
+import { getNextOrderNumber } from "../../../lib/utils/orderNumber";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -65,31 +67,16 @@ export default async function handler(
       }
     }
 
-    const result = await BookingSchema.updateMany(
-      { paymentIntent: intent, paymentSuccess: { $ne: true } },
-      { $set: { paymentSuccess: true } },
-    );
+    const { booking: updatedBooking, alreadyConfirmed } =
+      await confirmReservation(intent, {
+        name: session.user?.name ?? "",
+        email: session.user?.email ?? "",
+      });
 
-    const updatedBookings = await getBookingsByPaymentIntent(intent);
-    const updatedBooking = updatedBookings[0] as Booking | undefined;
-
-    if (result.modifiedCount === 0) {
+    if (alreadyConfirmed) {
       return res
         .status(200)
         .json({ message: "No bookings updated", booking: updatedBooking });
-    }
-
-    if (updatedBooking) {
-      for (const item of updatedBooking.items) {
-        await removeItemFromCartByFields(
-          updatedBooking.userId,
-          item.dressId,
-          item.dateBooked,
-          item.size,
-        );
-      }
-
-      await sendEmailConfirmation(updatedBooking);
     }
 
     return res
@@ -99,6 +86,96 @@ export default async function handler(
     console.error("paymentConfirm error", err);
     return res.status(500).json({ message: "Update Error" });
   }
+}
+
+// Turns a paid-for reservation into a real booking: marks it paid, redeems the
+// coupon slots it was holding, allocates its order number, clears the cart and
+// sends the receipt.
+//
+// Callers must have established that the payment succeeded — this does not
+// check Stripe itself, because its two callers already know: the webhook is
+// told by Stripe, and /api/payment/paymentConfirm verifies before calling.
+//
+// Safe to call repeatedly and concurrently. The guard on paymentSuccess means
+// exactly one call wins the write; every other call reports alreadyConfirmed
+// and does nothing, so a customer can't be emailed twice or a coupon redeemed
+// twice when the browser and the webhook arrive together.
+export async function confirmReservation(
+  intent: string,
+  customer?: { name?: string; email?: string },
+): Promise<{ booking?: Booking; alreadyConfirmed: boolean }> {
+  // Claim the confirmation first, and only then spend a number on it. Doing it
+  // the other way round burns one per caller rather than one per booking: the
+  // browser and the webhook routinely arrive together, both allocate, and the
+  // loser's number is thrown away — which is why the sequence had gaps.
+  const result = await BookingSchema.updateMany(
+    { paymentIntent: intent, paymentSuccess: { $ne: true } },
+    { $set: { paymentSuccess: true } },
+  );
+
+  if (result.modifiedCount === 0) {
+    const [already] = (await getBookingsByPaymentIntent(intent)) as Booking[];
+    return { booking: already, alreadyConfirmed: true };
+  }
+
+  // Past the guard, so this call is the sole confirmer and the allocation
+  // happens exactly once. Still conditional on not already having a number:
+  // a legacy or admin-created row arriving here keeps the one it came with.
+  const [confirmed] = (await getBookingsByPaymentIntent(intent)) as Booking[];
+
+  if (confirmed && !confirmed.orderNumber) {
+    const orderNumber = await getNextOrderNumber();
+    await BookingSchema.updateMany(
+      { paymentIntent: intent },
+      { $set: { orderNumber } },
+    );
+  }
+
+  const updatedBookings = await getBookingsByPaymentIntent(intent);
+  const updatedBooking = updatedBookings[0] as Booking | undefined;
+
+  if (updatedBooking) {
+    // Turn the held coupon slots into permanent redemptions. This is the
+    // point of no return for a coupon — up to here the slot was only on
+    // loan, and any failure handed it back. Passing the intent lets the same
+    // write drop the claim as it records the redemption, so the slot is never
+    // counted twice, once as held and once as spent.
+    const couponIds = updatedBooking.couponIds ?? [];
+    if (couponIds.length > 0) {
+      const coupons = await getCouponsByIds(couponIds);
+      await redeemCoupons(coupons, String(updatedBooking.userId), intent);
+    }
+
+    for (const item of updatedBooking.items) {
+      await removeItemFromCartByFields(
+        updatedBooking.userId,
+        item.dressId,
+        item.dateBooked,
+        item.size,
+      );
+    }
+
+    // Best-effort: puts the order number and customer on the Stripe
+    // dashboard so it can be read without cross-referencing the DB. Never
+    // block confirmation on it — the payment has already succeeded.
+    if (!intent.startsWith(FREE_COUPON_CHECKOUT_PREFIX)) {
+      await stripe.paymentIntents
+        .update(intent, {
+          metadata: {
+            orderNumber: updatedBooking.orderNumber ?? "",
+            name: customer?.name ?? "",
+            email: customer?.email ?? "",
+          },
+        })
+        .catch((err) =>
+          console.error("Failed to attach order metadata to Stripe payment", err),
+        );
+    }
+
+    await sendEmailConfirmation(updatedBooking);
+  }
+
+  return { booking: updatedBooking, alreadyConfirmed: false };
 }
 
 export async function sendEmailConfirmation(booking: Booking) {

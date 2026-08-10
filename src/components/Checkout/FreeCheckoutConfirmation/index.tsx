@@ -5,7 +5,7 @@ import { ProductContext } from "..";
 import Button from "@/components/Button";
 import { Address } from "../../../../common/types";
 import { useUserContext } from "@/context/UserContext";
-import { checkValidBooking, createBooking } from "@/api/booking";
+import { reserveBooking } from "@/api/booking";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import { useRouter } from "next/router";
 import Spinner from "@/components/Spinner";
@@ -51,36 +51,16 @@ const FreeCheckoutConfirmation = ({
       sentinelPaymentIntent,
     );
 
-    let isValid = true;
-
-    await checkValidBooking(booking)
-      .then()
-      .catch((err) => {
-        setToast({
-          ...toast,
-          message: err.message,
-          variant: ToastVariant.ERROR,
-          show: true,
-        });
-        isValid = false;
-      });
-
-    if (!isValid) {
-      setIsLoading(false);
-      return;
-    }
-
-    await createBooking(booking, sentinelPaymentIntent, selectedCouponIds)
+    // No separate pre-flight: reserving performs every availability and coupon
+    // check itself, and there is no payment step here for it to guard.
+    await reserveBooking(booking, sentinelPaymentIntent, selectedCouponIds)
       .then(() => {
         router.push("/order-success?paymentIntent=" + sentinelPaymentIntent);
       })
       .catch((err) => {
         setToast({
           ...toast,
-          message:
-            err?.response?.data?.message ??
-            err.message ??
-            "A booking error occured. Please try again",
+          message: err.message ?? "A booking error occured. Please try again",
           variant: ToastVariant.ERROR,
           show: true,
         });

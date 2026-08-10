@@ -36,7 +36,12 @@ const OrderSuccess = ({
     [booking],
   );
 
-  const paymentIntent = router.query.paymentIntent;
+  // Two spellings, because there are two ways to arrive here: checkout pushes
+  // ?paymentIntent= itself, while Stripe's own return_url redirect (used by
+  // payment methods that leave the site to authenticate) appends
+  // ?payment_intent=. Reading only the first left redirect-based payments on a
+  // permanent spinner with their booking never confirmed.
+  const paymentIntent = router.query.paymentIntent ?? router.query.payment_intent;
 
   React.useEffect(() => {
     const confirm = async () => {
@@ -53,11 +58,15 @@ const OrderSuccess = ({
             console.log(err);
             setIsLoading(false);
           });
+      } else if (router.isReady) {
+        // Nothing to confirm — don't leave the customer watching a spinner.
+        setIsLoading(false);
       }
     };
 
     confirm();
   }, [
+    router.isReady,
     params,
     router.query,
     router.query.payment_intent_client_secret,

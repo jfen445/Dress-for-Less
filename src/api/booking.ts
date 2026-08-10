@@ -1,12 +1,19 @@
 import api from "./client";
 import { Booking } from "../../common/types";
 
-export async function createBooking(
+// Reserves the dress and the coupon slot. Must be called BEFORE the card is
+// charged: a failure here is how checkout avoids taking money for an order it
+// can't fulfil.
+export async function reserveBooking(
   booking: Booking,
   paymentIntent: string,
   couponIds?: string[],
 ) {
   return api.post(`/api/booking`, { booking, paymentIntent, couponIds });
+}
+
+export async function releaseReservation(paymentIntent: string) {
+  return api.post(`/api/booking/release`, { paymentIntent });
 }
 
 export async function confirmBooking(intent: string) {
@@ -31,8 +38,4 @@ export async function getAllBookingsByUserId(userId: string) {
 
 export async function getBlockOutsByDress(dressId: string) {
   return api.get(`/api/blockouts?dressId=${dressId}`);
-}
-
-export async function checkValidBooking(booking: Booking) {
-  return api.post(`/api/validateBooking`, { booking });
 }
