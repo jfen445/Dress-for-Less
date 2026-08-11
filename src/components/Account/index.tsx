@@ -8,6 +8,7 @@ import Toast, { ToastType, ToastVariant } from "../Toast";
 import { useUserContext } from "@/context/UserContext";
 import Spinner from "../Spinner";
 import { useCartContext } from "@/context/CartContext";
+import { capitalise } from "../../../lib/utils/capitalise";
 
 const Account = () => {
   const { data: session } = useSession();
@@ -15,12 +16,12 @@ const Account = () => {
   const { refreshCart } = useCartContext();
   const [firstName, setFirstName] = React.useState<string>(
     session && session.user && session.user.name
-      ? session.user.name.split(" ")[0]
+      ? capitalise(session.user.name.split(" ")[0])
       : "",
   );
   const [lastName, setLastName] = React.useState<string>(
     session && session.user && session.user.name
-      ? session.user.name.split(" ")[1]
+      ? capitalise(session.user.name.split(" ")[1])
       : "",
   );
   const [mobile, setMobile] = React.useState<string>("");
@@ -46,8 +47,8 @@ const Account = () => {
         .then((res) => {
           if (res === undefined) return;
           const user = res.data as unknown as UserType;
-          setFirstName(user.name.split(" ")[0]);
-          setLastName(user.name.split(" ")[1]);
+          setFirstName(capitalise(user.name.split(" ")[0]));
+          setLastName(capitalise(user.name.split(" ")[1]));
           setMobile(user.mobileNumber);
           setInstagramHandle(user.instagramHandle ?? "");
         })
@@ -75,7 +76,10 @@ const Account = () => {
 
     const user: UserType = {
       email: formElements.email.value,
-      name: formElements.firstname.value + " " + formElements.lastname.value,
+      name:
+        capitalise(formElements.firstname.value) +
+        " " +
+        capitalise(formElements.lastname.value),
       mobileNumber: mobile,
       instagramHandle: instagramHandle,
       role: "user",
@@ -175,7 +179,9 @@ const Account = () => {
                 <Input
                   value={firstName}
                   onChange={(e) =>
-                    setFirstName((e.target as HTMLInputElement).value)
+                    setFirstName(
+                      capitalise((e.target as HTMLInputElement).value),
+                    )
                   }
                   id="firstname"
                   name="firstname"
@@ -197,7 +203,9 @@ const Account = () => {
                 <Input
                   value={lastName}
                   onChange={(e) =>
-                    setLastName((e.target as HTMLInputElement).value)
+                    setLastName(
+                      capitalise((e.target as HTMLInputElement).value),
+                    )
                   }
                   id="lastname"
                   name="lastname"
