@@ -4,6 +4,7 @@ import { UserType } from "../../../../common/types";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { updateUserAccount } from "@/api/user";
+import { capitalise } from "../../../../lib/utils/capitalise";
 
 interface IUserModal {
   isOpen: boolean;
@@ -22,7 +23,7 @@ const UserModal = ({ isOpen, setOpen, user, children, onSaved }: IUserModal) => 
 
   React.useEffect(() => {
     if (!isOpen) return;
-    setName(user?.name ?? "");
+    setName(capitalise(user?.name ?? ""));
     setMobileNumber(user?.mobileNumber ?? "");
     setInstagramHandle(user?.instagramHandle ?? "");
     setError("");
@@ -36,7 +37,7 @@ const UserModal = ({ isOpen, setOpen, user, children, onSaved }: IUserModal) => 
     try {
       const updatedUser: UserType = {
         ...user,
-        name,
+        name: capitalise(name),
         mobileNumber,
         instagramHandle,
       };
@@ -92,7 +93,7 @@ const UserModal = ({ isOpen, setOpen, user, children, onSaved }: IUserModal) => 
                 <div className="mt-2">
                   <Input
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => setName(capitalise(e.target.value))}
                     id="firstname"
                     name="firstname"
                     type="text"
