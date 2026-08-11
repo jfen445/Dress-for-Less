@@ -10,7 +10,7 @@ export function getSanityImageDimensions(url: string): {
   width: number;
   height: number;
 } {
-  const match = url.match(DIMENSIONS_PATTERN);
+  const match = url?.match(DIMENSIONS_PATTERN);
   if (!match) return FALLBACK_DIMENSIONS;
 
   return { width: Number(match[1]), height: Number(match[2]) };
