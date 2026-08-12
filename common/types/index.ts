@@ -205,6 +205,10 @@ export type TryOnBooking = {
   price: number;
   paymentIntent: string;
   paymentSuccess: boolean;
+  // Set on rows the reserve step wrote. An *unpaid* row carrying one is a live
+  // hold on its slot; once paymentSuccess is true it's just history, which is
+  // why confirmation leaves it alone (as the rental flow does).
+  reservedAt?: string;
   status: TryOnStatus;
   user?: UserType[];
   createdAt?: string;

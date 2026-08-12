@@ -58,7 +58,7 @@ const TryOnConfirmationEmail = ({
             <strong>Time:</strong> {formatTryOnTimeSlot(timeSlot)}
           </Text>
           <Text style={detailLine}>
-            <strong>Try-on fee:</strong> ${price.toFixed(2)} — paid
+            <strong>Try-on fee:</strong> ${price.toFixed(2)} - paid
           </Text>
           <Text style={detailLine}>
             <strong>Location:</strong> Albany, Auckland

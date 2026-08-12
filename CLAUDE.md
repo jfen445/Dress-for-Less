@@ -127,11 +127,61 @@ a retry ends up charged with no booking. A succeeded payment with *no* reservati
 should be unreachable; it raises an admin alert and deliberately does **not** refund
 automatically — moving money is never part of the normal machinery.
 
+Not every payment is a rental, though, so the webhook routes on a `kind`
+(`common/enums/PaymentKind.ts`) that `pages/api/payment/intent.ts` stamps into the
+PaymentIntent's metadata — `rental` by default, `tryOn` from the try-on flow. Try-ons
+live in a different collection entirely, so without this every successful try-on looked
+like an orphaned rental charge and alerted. Both branches confirm the same way and both
+treat a missing row as the same alarm. Rental intents created before `kind` existed
+carry no marker, so the rental branch also checks the try-on collection before alerting.
+
 `pages/api/cron/sweep-reservations.ts` (POST + `Bearer CRON_SECRET`, like the other
-crons) reconciles lapsed holds on a timer. It is not the only thing that can: the
-reserve also reconciles lapsed holds on demand when one blocks it, so a scheduler
-outage delays cleanup rather than quietly taking dates out of sale. Schedule it every
-~5 minutes.
+crons) reconciles lapsed holds — rentals and try-ons in one pass — every 15 minutes via
+`.github/workflows/sweep-reservations.yml`. It is not the only thing that can: both
+reserve paths reconcile lapsed holds on demand when one blocks them, so a scheduler
+outage delays cleanup rather than quietly taking dates out of sale. That on-demand path
+is the load-bearing one — a slot only needs freeing at the moment somebody wants it,
+which is exactly when the reserve looks.
+
+### Try-on bookings
+
+A separate flow (`/try-on`) with its own collection (`TryOnBookingSchema`), its own
+availability (`TryOnAvailabilitySchema`, managed from `/admin`), and a flat
+`TRY_ON_FEE`; booking one grants the customer a `TRY_ON_COUPON_AMOUNT` coupon.
+
+It holds the same invariant as the rental checkout, by the same means — **the unpaid
+row is the slot hold, written before the card is touched.** It did not always: it used
+to charge first and write the row afterwards, so a slot taken in between left a
+customer charged with no appointment, and two customers could both pay for the same
+slot because the uniqueness index only refused the second *write*, after both cards had
+been hit.
+
+- **`POST /api/tryOnBooking` is the reserve**, called before `stripe.confirmPayment`
+  (`src/components/TryOn/PaymentForm/index.tsx`). It verifies the intent is the
+  caller's own and is for `TRY_ON_FEE`, reconciles the customer's own stale holds
+  (`findOwnTryOnHolds`) and any lapsed hold blocking it, then upserts the row on
+  `{ paymentIntent }` with `reservedAt` set and `paymentSuccess: false`.
+- **The unique index on `{ date, timeSlot }` is the race guard**, and it deliberately
+  covers every row rather than only paid ones — that scoping is what allowed the double
+  sale. `autoIndex` is off in production, so it is built by
+  `scripts/migrate-tryon-slot-index.js`, not by declaring it in the schema.
+- **`lib/tryOn/confirmTryOnReservation.ts`** marks the row paid, grants the coupon and
+  sends the confirmation. Idempotent via the `paymentSuccess` guard on its own write, so
+  `/api/tryOnBooking/confirm` and the webhook can race without double-granting or
+  double-emailing.
+- **`lib/tryOn/reconcileTryOnReservation.ts` is the only sanctioned way to destroy a
+  hold** — cancel the PaymentIntent, then delete; promote instead if the cancel fails
+  because the payment already succeeded; leave the row holding if it can't find out.
+  Same three outcomes and same reasoning as the rental version.
+- **Admin-created try-ons** (`pages/api/admin/tryOnBookings.ts`) carry
+  `paymentIntent: "ADMIN_MANUAL"` and `paymentSuccess: true`, so they never appear as
+  holds and are never swept.
+
+`stripe.confirmPayment` here passes `redirect: "if_required"` with no `return_url`, so a
+3DS challenge needing a full redirect fails rather than completing. Reserve-then-charge
+makes that failure *safe* — the hold survives, the sweep reconciles it, and nobody is
+charged without an appointment — but supporting redirect-based 3DS for try-ons needs a
+return page and hasn't been built.
 
 ### Rural delivery detection
 

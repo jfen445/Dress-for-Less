@@ -1,0 +1,20 @@
+name: Sweep Reservations
+
+on:
+  schedule:
+    # Every 15 minutes. Reservations become eligible for reconciling after
+    # RESERVATION_TTL_MINUTES (15), so this settles an abandoned hold within
+    # roughly half an hour. Not tighter: GitHub's scheduler drifts and drops runs
+    # under load at finer granularity, and the reserve paths already reconcile
+    # blocking holds on demand — this is the backstop, not the mechanism.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # allow manual trigger for testing
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reconcile lapsed reservations
+        run: |
+          curl -f --location-trusted -X POST https://${{ secrets.APP_URL }}/api/cron/sweep-reservations \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
