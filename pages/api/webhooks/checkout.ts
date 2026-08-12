@@ -4,19 +4,17 @@ import { Resend } from "resend";
 import { dbConnect } from "../../../lib/db/db";
 import { getBookingsByPaymentIntent } from "../../../lib/db/booking-dao";
 import { releaseCouponClaims } from "../../../lib/db/coupon-dao";
-import { getTryOnBookingByPaymentIntent } from "../../../lib/db/tryon-booking-dao";
+import {
+  deleteTryOnReservation,
+  getTryOnBookingByPaymentIntent,
+} from "../../../lib/db/tryon-booking-dao";
 import { BookingSchema } from "../../../lib/db/schema";
 import { PaymentKind } from "../../../common/enums/PaymentKind";
 import { confirmReservation } from "../payment/paymentConfirm";
+import { confirmTryOnReservation } from "../../../lib/tryOn/confirmTryOnReservation";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 const ADMIN_NOTIFICATION_EMAIL = "dressforlessnz@gmail.com";
-
-// How long after a try-on payment succeeds we still expect its booking row to
-// be on its way. Unlike a rental, a try-on charges *before* it books, so for a
-// few seconds after the charge there is legitimately no row to find and the
-// webhook must not cry orphan. See handleTryOnSucceeded.
-const TRY_ON_BOOKING_GRACE_SECONDS = 3 * 60;
 
 // Stripe signs the exact bytes it sent, so the body must not be parsed before
 // the signature is checked.
@@ -68,7 +66,7 @@ export default async function handler(
 
     switch (event.type) {
       case "payment_intent.succeeded":
-        await handleSucceeded(payment, event.created);
+        await handleSucceeded(payment);
         break;
 
       // Only a cancelled intent is genuinely dead. `payment_intent.payment_failed`
@@ -97,12 +95,9 @@ export default async function handler(
 // through the same PaymentIntent endpoint but land in their own collection, so
 // the intent carries a `kind` telling us which flow — and therefore which
 // collection and which guarantees — applies.
-async function handleSucceeded(
-  payment: Stripe.PaymentIntent,
-  eventCreatedAt: number,
-) {
+async function handleSucceeded(payment: Stripe.PaymentIntent) {
   if (payment.metadata?.kind === PaymentKind.TryOn) {
-    await handleTryOnSucceeded(payment, eventCreatedAt);
+    await handleTryOnSucceeded(payment);
     return;
   }
 
@@ -127,49 +122,45 @@ async function handleSucceeded(
   });
 }
 
-// A try-on booking is written by the browser *after* the charge clears
-// (pages/api/tryOnBooking.ts), so there is nothing for this webhook to confirm
-// — by the time the row exists it is already paid, emailed and couponed. All
-// this does is notice when the row never arrives, which for try-ons is a real
-// possibility rather than an impossibility: the slot can be taken in the
-// seconds between charging and booking.
+// The try-on flow reserves before it charges too, so by the time Stripe tells us
+// about a payment its hold is already in the database. That makes this the exact
+// mirror of the rental case: confirm the hold we find, and treat not finding one
+// as the alarm it is.
 //
-// The catch is that we race the browser. Stripe usually reaches us while that
-// POST is still in flight, so a missing row means "not yet" far more often than
-// it means "never". We throw rather than alert inside the grace window: Stripe
-// takes the non-2xx as a retry signal and comes back later, by which point the
-// row exists (nothing to do) or the window has closed (a genuine orphan). The
-// event's timestamp is fixed at first delivery, so the window really does
-// elapse across retries instead of restarting.
-async function handleTryOnSucceeded(
-  payment: Stripe.PaymentIntent,
-  eventCreatedAt: number,
-) {
+// This used to need a grace window. When the row was written *after* the charge,
+// the webhook raced the browser and a missing row meant "not yet" more often
+// than "never", so it forced a Stripe redelivery instead of alerting. Reserving
+// first removed the race and the window with it.
+async function handleTryOnSucceeded(payment: Stripe.PaymentIntent) {
   const booking = await getTryOnBookingByPaymentIntent(payment.id);
-  if (booking) {
+
+  if (!booking) {
+    await alertOrphanedTryOnPayment(payment);
     return;
   }
 
-  const secondsSincePayment = Math.floor(Date.now() / 1000) - eventCreatedAt;
-  if (secondsSincePayment < TRY_ON_BOOKING_GRACE_SECONDS) {
-    throw new Error(
-      `Try-on booking for ${payment.id} not written yet after ${secondsSincePayment}s — asking Stripe to redeliver`,
-    );
-  }
-
-  await alertOrphanedTryOnPayment(payment);
+  await confirmTryOnReservation(payment.id, {
+    name: payment.metadata?.name,
+    email: payment.metadata?.email ?? payment.receipt_email ?? undefined,
+  });
 }
 
 // A cancelled intent can never be confirmed again, so this is the one case
 // where dropping the row outright is safe — the cancel that reconcileReservation
 // would normally perform first has already happened, which is why we are being
 // told about it.
+//
+// Both collections, because we don't know which flow the intent belonged to and
+// it costs nothing to ask: each delete is narrow enough to only ever match an
+// unpaid reservation, and an intent only ever has a row in one of them.
 async function handleCancelled(paymentIntentId: string) {
   const deleted = await BookingSchema.deleteOne({
     paymentIntent: paymentIntentId,
     paymentSuccess: { $ne: true },
     reservedAt: { $ne: null },
   });
+
+  const deletedTryOn = await deleteTryOnReservation(paymentIntentId);
 
   // Unconditionally, not only when a row was deleted: the claim can outlive its
   // reservation if the row went first, and an orphaned claim holds a coupon
@@ -178,6 +169,10 @@ async function handleCancelled(paymentIntentId: string) {
 
   if (deleted.deletedCount > 0) {
     console.log(`Released reservation for abandoned payment ${paymentIntentId}`);
+  }
+
+  if (deletedTryOn.deletedCount > 0) {
+    console.log(`Released try-on hold for abandoned payment ${paymentIntentId}`);
   }
 }
 
@@ -220,10 +215,10 @@ async function alertOrphanedPayment(payment: Stripe.PaymentIntent) {
   });
 }
 
-// The try-on equivalent, and a milder one: this state is reachable by design,
-// because a try-on charges before it books. The customer has paid and has no
-// slot, most likely because someone else took it in between. Still no automatic
-// refund — the usual resolution is to give them the slot, not their money back.
+// The try-on equivalent, and no longer the milder one: now that try-on reserves
+// before it charges, a paid try-on with no hold behind it is as unreachable as
+// the rental case above, and means the same thing — something upstream is
+// charging without reserving.
 async function alertOrphanedTryOnPayment(payment: Stripe.PaymentIntent) {
   const amount = (payment.amount / 100).toFixed(2);
   const customer =
@@ -242,13 +237,15 @@ async function alertOrphanedTryOnPayment(payment: Stripe.PaymentIntent) {
       `Amount: $${amount} ${payment.currency?.toUpperCase()}`,
       `Customer: ${customer}`,
       "",
-      "A try-on payment succeeded but no try-on booking was ever written. The",
-      "try-on flow charges before it books, so this happens when the booking",
-      "step failed afterwards — usually the slot was taken in between.",
+      "A try-on payment succeeded with no slot reserved behind it, which should",
+      "not be possible — the try-on checkout reserves before it charges, and a",
+      "hold is never removed without cancelling its payment first.",
       "",
       "Nothing has been refunded automatically. Contact the customer, then",
       "either add their try-on by hand from the Try-Ons tab in /admin or refund",
       "the payment in the Stripe dashboard.",
+      "",
+      "If this repeats, try-on checkout is charging customers without reserving.",
     ],
   });
 }

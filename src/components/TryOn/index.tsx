@@ -386,6 +386,7 @@ const TryOn = () => {
             {clientSecret && userInfo && (
               <Elements options={{ clientSecret }} stripe={stripePromise}>
                 <TryOnPaymentForm
+                  clientSecret={clientSecret}
                   date={selectedDate}
                   timeSlot={selectedSlot}
                   name={userInfo.name}

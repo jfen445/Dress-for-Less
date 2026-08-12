@@ -7,15 +7,17 @@ import { TryOnBookingSchema } from "../../lib/db/schema";
 import {
   getTakenTryOnSlots,
   checkTryOnSlotTaken,
-  grantTryOnCoupon,
+  findOwnTryOnHolds,
+  findLapsedTryOnReservations,
 } from "../../lib/db/tryon-booking-dao";
 import { getAvailabilityForDate } from "../../lib/db/tryon-availability-dao";
 import { isTryOnBookingAllowedForDate } from "../../lib/utils/tryOnRules";
+import { lapsedReservationCutoff } from "../../lib/utils/reservation";
+import { reconcileTryOnReservation } from "../../lib/tryOn/reconcileTryOnReservation";
 import { findUser } from "../../lib/db/user-dao";
+import { auckland } from "../../lib/utils/timezone";
 import { TryOnStatus } from "../../common/enums/TryOnStatus";
 import { TRY_ON_FEE } from "../../common/constants/tryOn";
-import { Resend } from "resend";
-import TryOnConfirmationEmail from "@/components/Emails/TryOnConfirmation";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   typescript: true,
@@ -46,6 +48,13 @@ export default async function handler(
     return res.status(200).json({ takenSlots, availableSlots });
   }
 
+  // Reserve, then charge. This runs *before* stripe.confirmPayment, and writes
+  // an unpaid row that holds the slot while the customer pays. A slot that goes
+  // while they are typing their card stops the payment from happening at all,
+  // rather than being discovered after their money has moved.
+  //
+  // Nothing here charges anything, so every failure path can simply return —
+  // there is no money to unwind.
   if (req.method === "POST") {
     const session = await getServerSession(req, res, authOptions);
     if (!session || !session.user?.email) {
@@ -72,20 +81,19 @@ export default async function handler(
     }
 
     try {
+      // The payment hasn't happened yet — that's the point — so this checks the
+      // intent is the caller's own and is for the amount we expect, not that it
+      // has succeeded. Without the ownership check any signed-in customer could
+      // reserve a slot against somebody else's PaymentIntent.
       const payment = await stripe.paymentIntents.retrieve(paymentIntent);
 
-      if (
-        payment.status !== "succeeded" ||
-        payment.amount !== TRY_ON_FEE * 100
-      ) {
-        return res.status(402).json({ message: "Payment not confirmed" });
+      if (payment.amount !== TRY_ON_FEE * 100) {
+        return res.status(400).json({ message: "Unexpected payment amount" });
       }
 
-      const alreadyTaken = await checkTryOnSlotTaken(date, timeSlot);
-      if (alreadyTaken.length > 0) {
-        return res
-          .status(409)
-          .json({ message: "This time slot has already been booked" });
+      const intentOwner = payment.metadata?.email ?? payment.receipt_email;
+      if (intentOwner !== session.user.email) {
+        return res.status(403).json({ error: "Forbidden" });
       }
 
       const users = await findUser(session.user.email);
@@ -94,78 +102,91 @@ export default async function handler(
         return res.status(404).json({ message: "User not found" });
       }
 
-      const booking = new TryOnBookingSchema({
-        userId: user._id,
-        name,
-        email: session.user.email,
-        phone: phone ?? "",
+      // A customer must not be blocked by their own abandoned attempt: they
+      // reserve, their card is declined, they come back on a fresh intent, and
+      // their own ghost hold tells them the slot is taken. Reconciled rather
+      // than deleted, because those holds still have live PaymentIntents that
+      // must be cancelled before their rows can safely go.
+      const ownHolds = await findOwnTryOnHolds(
+        String(user._id),
         date,
         timeSlot,
-        price: TRY_ON_FEE,
         paymentIntent,
-        paymentSuccess: true,
-        status: TryOnStatus.Booked,
-      });
+      );
+      for (const hold of ownHolds) {
+        await reconcileTryOnReservation(hold);
+      }
 
-      await booking.save();
+      let taken = await checkTryOnSlotTaken(date, timeSlot, paymentIntent);
 
-      // Best-effort: so the booking is identifiable on the Stripe dashboard
-      // without cross-referencing the DB. Never block the booking on this.
-      await stripe.paymentIntents
-        .update(paymentIntent, {
-          metadata: {
-            tryOnBookingId: booking._id.toString(),
+      // Being blocked might just mean somebody else's checkout died holding this
+      // slot. Holds only stop blocking once their payment has been proven dead,
+      // so settle any that have outlived their window and look again — otherwise
+      // a slot stays unsellable until the cron happens to run, and a scheduler
+      // outage would quietly take appointments off sale.
+      if (taken.length > 0) {
+        const lapsed = await findLapsedTryOnReservations(
+          lapsedReservationCutoff(),
+        );
+        let freedAny = false;
+
+        for (const hold of lapsed) {
+          if (hold === paymentIntent) continue;
+          if ((await reconcileTryOnReservation(hold)) === "cancelled") {
+            freedAny = true;
+          }
+        }
+
+        if (freedAny) {
+          taken = await checkTryOnSlotTaken(date, timeSlot, paymentIntent);
+        }
+      }
+
+      if (taken.length > 0) {
+        return res
+          .status(409)
+          .json({ message: "This time slot has already been booked" });
+      }
+
+      // Upsert on the intent, so a double submit or a retry after a dropped
+      // connection updates this checkout's own hold instead of colliding with
+      // it. A different intent reaching for the same slot fails the unique index
+      // below and is turned away — with nothing charged, which is the whole
+      // point of doing this first.
+      const booking = await TryOnBookingSchema.findOneAndUpdate(
+        { paymentIntent },
+        {
+          $set: {
+            userId: user._id,
             name,
             email: session.user.email,
+            phone: phone ?? "",
+            date,
+            timeSlot,
+            price: TRY_ON_FEE,
+            paymentIntent,
+            reservedAt: auckland.now().toISOString(),
+            status: TryOnStatus.Booked,
           },
-        })
-        .catch((err) =>
-          console.error("Failed to attach try-on metadata to Stripe payment", err),
-        );
+          $setOnInsert: { paymentSuccess: false },
+        },
+        { upsert: true, new: true },
+      );
 
-      await grantTryOnCoupon(user._id, date);
-
-      await sendTryOnConfirmationEmail({
-        email: session.user.email,
-        name,
-        date,
-        timeSlot,
-        price: TRY_ON_FEE,
-      });
-
-      return res.status(201).json({ message: "Try-on booked", booking });
+      return res.status(201).json({ message: "Try-on slot reserved", booking });
     } catch (err: any) {
+      // The unique index on { date, timeSlot } firing: somebody else's reserve
+      // landed between the check above and this write. They got the slot, this
+      // customer's card was never touched.
       if (err?.code === 11000) {
         return res
           .status(409)
           .json({ message: "This time slot has already been booked" });
       }
-      return res.status(500).json({ message: "Booking error", error: err });
+      console.error("Try-on reserve failed", err);
+      return res.status(500).json({ message: "Booking error" });
     }
   }
 
   return res.status(405).json({ message: "Method not allowed" });
-}
-
-export async function sendTryOnConfirmationEmail({
-  email,
-  name,
-  date,
-  timeSlot,
-  price,
-}: {
-  email: string;
-  name: string;
-  date: string;
-  timeSlot: string;
-  price: number;
-}) {
-  const resend = new Resend(process.env.RESEND_API_KEY as string);
-
-  await resend.emails.send({
-    from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
-    to: [email],
-    subject: "Your Dress for Less Try-On Confirmation",
-    react: TryOnConfirmationEmail({ name, date, timeSlot, price }),
-  });
 }

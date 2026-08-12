@@ -152,15 +152,30 @@ const tryOnBookingSchema = new Schema(
     price: { type: Number, required: true },
     paymentIntent: { type: String, required: true },
     paymentSuccess: { type: Boolean, required: true, default: false },
+    // Set when the row was written by the try-on reserve step, before payment.
+    // Its presence is what makes an unpaid row eligible to be swept once it
+    // lapses — admin-created rows have no reservedAt and are never touched.
+    // A string, not a Date, to match bookingSchema: the cutoff comparisons in
+    // findLapsedTryOnReservations are $lt against an ISO string.
+    reservedAt: { type: String, required: false },
     status: { type: String, required: true, default: "Booked" },
   },
   { timestamps: true },
 );
 
-tryOnBookingSchema.index(
-  { date: 1, timeSlot: 1 },
-  { unique: true, partialFilterExpression: { paymentSuccess: true } },
-);
+// One row per slot, paid or not — the database decides who gets a slot, not a
+// read followed by a write.
+//
+// This used to be scoped to paymentSuccess: true, which is exactly what let two
+// customers pay for the same appointment: both passed the read, both were
+// charged, and the index only refused the second *write* — after both cards had
+// been hit. Now the reserve writes an unpaid row before the card is touched, so
+// covering every row makes the insert itself the race guard and the loser is
+// stopped with nothing charged.
+//
+// autoIndex is off in production (see db.ts), so run
+// scripts/migrate-tryon-slot-index.js to build this against a live database.
+tryOnBookingSchema.index({ date: 1, timeSlot: 1 }, { unique: true });
 
 const TryOnBookingSchema =
   mongoose.models.TryOnBookings ??

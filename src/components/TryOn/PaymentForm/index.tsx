@@ -9,9 +9,13 @@ import React, { FormEvent } from "react";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
-import { createTryOnBooking } from "@/api/tryOnBooking";
+import {
+  confirmTryOnBooking,
+  reserveTryOnBooking,
+} from "@/api/tryOnBooking";
 
 interface ITryOnPaymentForm {
+  clientSecret: string;
   date: string;
   timeSlot: string;
   name: string;
@@ -20,6 +24,7 @@ interface ITryOnPaymentForm {
 }
 
 const TryOnPaymentForm = ({
+  clientSecret,
   date,
   timeSlot,
   name,
@@ -35,58 +40,95 @@ const TryOnPaymentForm = ({
     show: false,
   });
 
+  const showError = (message: string) =>
+    setToast({
+      message,
+      variant: ToastVariant.ERROR,
+      show: true,
+    });
+
+  // Reserve, then charge. The slot is held server-side before the card is
+  // touched, so an appointment that goes while the customer is typing stops the
+  // payment instead of being discovered after their money has moved.
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setIsLoading(true);
 
     if (stripe == null || elements == null) {
-      setToast({
-        message:
-          "Something went wrong with the payment. Please refresh and try again",
-        variant: ToastVariant.ERROR,
-        show: true,
-      });
+      showError(
+        "Something went wrong with the payment. Please refresh and try again",
+      );
       setIsLoading(false);
       return;
     }
 
-    stripe
-      .confirmPayment({
+    try {
+      // The reservation is keyed to this payment, so its id has to be resolved
+      // before the payment is made rather than read off the result afterwards.
+      const { paymentIntent: pendingIntent, error: retrieveError } =
+        await stripe.retrievePaymentIntent(clientSecret);
+
+      if (retrieveError || !pendingIntent) {
+        console.error("Could not resolve payment intent:", retrieveError);
+        showError(
+          "Something went wrong with the payment. Please refresh and try again",
+        );
+        return;
+      }
+
+      try {
+        await reserveTryOnBooking({
+          date,
+          timeSlot,
+          name,
+          phone,
+          paymentIntent: pendingIntent.id,
+        });
+      } catch (err: any) {
+        // Nothing has been charged. A slot taken by somebody else surfaces
+        // here, which is the whole reason this runs first.
+        showError(
+          err?.response?.data?.message ??
+            "We couldn't hold that time slot. Please pick another and try again.",
+        );
+        return;
+      }
+
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
-      })
-      .then(async ({ error, paymentIntent }) => {
-        if (error) {
-          setToast({
-            message:
-              error?.message ?? "A payment error occured. Please try again",
-            variant: ToastVariant.ERROR,
-            show: true,
-          });
-          return;
-        }
+      });
 
-        if (paymentIntent && paymentIntent.status === "succeeded") {
-          await createTryOnBooking({
-            date,
-            timeSlot,
-            name,
-            phone,
-            paymentIntent: paymentIntent.id,
-          })
-            .then(() => onSuccess())
-            .catch((err) => {
-              setToast({
-                message:
-                  err?.response?.data?.message ??
-                  "Something went wrong confirming your booking. Please contact us.",
-                variant: ToastVariant.ERROR,
-                show: true,
-              });
-            });
-        }
-      })
-      .finally(() => setIsLoading(false));
+      if (error || paymentIntent?.status !== "succeeded") {
+        if (error) console.error("Payment failed:", error);
+
+        // The hold is deliberately left in place. A declined card leaves the
+        // intent in requires_payment_method — still confirmable — and the
+        // customer is standing right here about to try another card. Releasing
+        // would cancel that intent, and the payment form is still mounted
+        // against its client secret, so the retry could only ever fail.
+        //
+        // Holding a slot for a customer who is actively paying for it is the
+        // right outcome anyway. If they walk away instead, the reserve
+        // reconciles their own stale hold on their next attempt, and the sweep
+        // reconciles it regardless once it lapses.
+        showError(error?.message ?? "A payment error occured. Please try again");
+        return;
+      }
+
+      try {
+        await confirmTryOnBooking(paymentIntent.id);
+      } catch (err) {
+        // The payment succeeded and the hold is already theirs, so this is not
+        // a failed booking — only a confirmation that didn't get acknowledged
+        // here. Stripe's webhook calls the same confirm and will finish the job.
+        console.error("Try-on confirmation call failed", err);
+      }
+
+      onSuccess();
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

@@ -8,7 +8,9 @@ export async function getAvailableTryOnDates() {
   return api.get(`/api/tryOnAvailability`);
 }
 
-export async function createTryOnBooking(payload: {
+// Holds the slot before the card is charged. Failing here means no payment has
+// been attempted, which is the point — see the comment in TryOn/PaymentForm.
+export async function reserveTryOnBooking(payload: {
   date: string;
   timeSlot: string;
   name: string;
@@ -16,4 +18,8 @@ export async function createTryOnBooking(payload: {
   paymentIntent: string;
 }) {
   return api.post(`/api/tryOnBooking`, payload);
+}
+
+export async function confirmTryOnBooking(intent: string) {
+  return api.post(`/api/tryOnBooking/confirm`, { intent });
 }

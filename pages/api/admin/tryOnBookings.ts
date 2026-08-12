@@ -15,7 +15,7 @@ import { getAvailabilityForDate } from "../../../lib/db/tryon-availability-dao";
 import { TryOnBookingSchema } from "../../../lib/db/schema";
 import { TryOnStatus } from "../../../common/enums/TryOnStatus";
 import { TRY_ON_FEE } from "../../../common/constants/tryOn";
-import { sendTryOnConfirmationEmail } from "../tryOnBooking";
+import { sendTryOnConfirmationEmail } from "../../../lib/tryOn/confirmTryOnReservation";
 
 export default async function handler(
   req: NextApiRequest,
