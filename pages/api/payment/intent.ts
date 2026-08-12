@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
+import { PaymentKind } from "../../../common/enums/PaymentKind";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   typescript: true,
@@ -22,6 +23,17 @@ export default async function handler(
     if (isNaN(amount) || amount < 50) {
       return res.status(400).json({ message: "Invalid amount" });
     }
+
+    // Which flow this payment belongs to. Defaults to Rental so an intent is
+    // never left unattributed — the webhook needs it to know where to look for
+    // the booking, and to know whether a missing one is an emergency.
+    const requestedKind = req.query.kind as string | undefined;
+    const kind = Object.values(PaymentKind).includes(
+      requestedKind as PaymentKind,
+    )
+      ? (requestedKind as PaymentKind)
+      : PaymentKind.Rental;
+
     try {
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
@@ -29,6 +41,7 @@ export default async function handler(
         receipt_email: session.user?.email ?? undefined,
         metadata: {
           email: session.user?.email ?? "",
+          kind,
         },
       });
       res.status(200).json({

@@ -17,6 +17,7 @@ import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useUserContext } from "@/context/UserContext";
 import { getClientSecret } from "@/api/payment";
+import { PaymentKind } from "../../../common/enums/PaymentKind";
 import {
   TRY_ON_FEE,
   formatTryOnTimeSlot,
@@ -122,7 +123,7 @@ const TryOn = () => {
     setIsLoading(true);
     setErrorMessage(undefined);
 
-    await getClientSecret((TRY_ON_FEE * 100).toString())
+    await getClientSecret((TRY_ON_FEE * 100).toString(), PaymentKind.TryOn)
       .then((data) => {
         setClientSecret(data?.data.clientSecret);
         setIsPaymentStep(true);

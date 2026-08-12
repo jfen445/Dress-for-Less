@@ -127,6 +127,21 @@ a retry ends up charged with no booking. A succeeded payment with *no* reservati
 should be unreachable; it raises an admin alert and deliberately does **not** refund
 automatically — moving money is never part of the normal machinery.
 
+Not every payment is a rental, though, so the webhook routes on a `kind`
+(`common/enums/PaymentKind.ts`) that `pages/api/payment/intent.ts` stamps into the
+PaymentIntent's metadata — `rental` by default, `tryOn` from the try-on flow. Try-ons
+are booked in a different collection entirely, so without this every successful try-on
+looked like an orphaned rental charge and alerted. Try-on is also still
+**charge-then-book** (`pages/api/tryOnBooking.ts` writes the row after
+`stripe.confirmPayment` returns), which has two consequences the webhook has to
+respect: a missing row is genuinely possible rather than unreachable, and for the first
+few seconds it usually just means the browser's POST is still in flight. So the try-on
+branch throws inside `TRY_ON_BOOKING_GRACE_SECONDS` to make Stripe redeliver rather
+than alerting on a race, and only alerts once the window has elapsed — measured from
+the event's own timestamp, which stays fixed across retries. Rental intents created
+before `kind` existed carry no marker, so the rental branch also checks the try-on
+collection before alerting.
+
 `pages/api/cron/sweep-reservations.ts` (POST + `Bearer CRON_SECRET`, like the other
 crons) reconciles lapsed holds on a timer. It is not the only thing that can: the
 reserve also reconciles lapsed holds on demand when one blocks it, so a scheduler
