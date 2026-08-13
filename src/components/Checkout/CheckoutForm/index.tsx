@@ -20,10 +20,12 @@ import { CouponType } from "../../../../common/enums/CouponType";
 import { CouponScope } from "../../../../common/enums/CouponScope";
 import {
   hasDeliveryItem,
-  isDeliveryAllowedForDate,
-  isDateWithinCurrentWeekend,
+  isBookingAllowedForDate,
+  isPickupAllowedForDate,
 } from "../../../../lib/utils/deliveryRules";
 import { auckland } from "../../../../lib/utils/timezone";
+import useNow from "@/hooks/useNow";
+import { Dayjs } from "dayjs";
 import { formatCouponExpiry } from "../../../../lib/utils/couponRules";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
@@ -61,10 +63,67 @@ const CheckoutForm = () => {
   const [termsAccepted, setTermsAccepted] = React.useState<boolean>(false);
   const [termsError, setTermsError] = React.useState<boolean>(false);
   const [termsModalOpen, setTermsModalOpen] = React.useState<boolean>(false);
-  const [deliveryError, setDeliveryError] = React.useState<string>();
 
   const email =
     session && session.user && session.user.email ? session.user.email : "";
+
+  const formatDate = (date: string) => auckland.format(date, "dddd, D MMMM");
+
+  // Notice-from-today, per item and per method — the same gate the Calendar, the
+  // cart, and the reserve apply. Returns what to tell the customer, or undefined
+  // when every item still clears its cutoff.
+  //
+  // Two problems with two different remedies: a Delivery item can often still be
+  // collected in person, whereas an item with no method left has to go. Split
+  // them so we never send someone to a pickup that has already closed too.
+  const describeLateItems = (at: Dayjs): string | undefined => {
+    const lateItems = products.filter(
+      (product) =>
+        !isBookingAllowedForDate(product.dateBooked, product.deliveryType, at),
+    );
+    if (lateItems.length === 0) return undefined;
+
+    const switchableToPickup = lateItems.filter(
+      (product) =>
+        product.deliveryType === DeliveryType.Delivery &&
+        isPickupAllowedForDate(product.dateBooked, at),
+    );
+    const unbookable = lateItems.filter(
+      (product) => !switchableToPickup.includes(product),
+    );
+
+    const list = (items: typeof products) =>
+      items
+        .map((item) => `${item.name} (${formatDate(item.dateBooked)})`)
+        .join(", ");
+
+    const messages: string[] = [];
+
+    if (switchableToPickup.length > 0) {
+      messages.push(
+        `Delivery is no longer available for: ${list(switchableToPickup)}. Please go back and switch ${
+          switchableToPickup.length > 1 ? "these items" : "this item"
+        } to pickup.`,
+      );
+    }
+
+    if (unbookable.length > 0) {
+      messages.push(
+        `It's too late to book: ${list(unbookable)}. Please remove ${
+          unbookable.length > 1 ? "these items" : "this item"
+        } and choose another date.`,
+      );
+    }
+
+    return messages.join(" ");
+  };
+
+  // Derived during render off a ticking clock, so the form answers the moment a
+  // cutoff lapses on an open tab — and so the message the customer reads and the
+  // condition that blocks submission are the same value, never two that can
+  // disagree. Freshness beyond a minute is the server reserve's job.
+  const now = useNow();
+  const lateItemsError = describeLateItems(now);
 
   const getSecret = async () => {
     await getClientSecret(totalPrice.toString())
@@ -105,23 +164,10 @@ const CheckoutForm = () => {
       setTermsError(false);
     }
 
-    const invalidDeliveryItems = products.filter(
-      (product) =>
-        product.deliveryType === DeliveryType.Delivery &&
-        !isDeliveryAllowedForDate(product.dateBooked),
-    );
-
-    if (invalidDeliveryItems.length > 0) {
+    // The banner is already on screen if this is set; blocking on the same value
+    // means the button can never refuse silently.
+    if (lateItemsError) {
       isError = true;
-      setDeliveryError(
-        `Delivery is no longer available for: ${invalidDeliveryItems
-          .map((item) => item.name)
-          .join(", ")}. Please go back and switch ${
-          invalidDeliveryItems.length > 1 ? "these items" : "this item"
-        } to pickup.`,
-      );
-    } else {
-      setDeliveryError(undefined);
     }
 
     const isDelivery = hasDeliveryItem(products);
@@ -215,21 +261,6 @@ const CheckoutForm = () => {
     }
   };
 
-  const isThisWeekendBookings = () => {
-    const now = auckland.now();
-    return products.some((item) =>
-      isDateWithinCurrentWeekend(item.dateBooked, now),
-    );
-  };
-
-  const isBookingValid = () => {
-    const currentDayOfWeek = auckland.now().day();
-
-    const isValid = currentDayOfWeek >= 1 && currentDayOfWeek <= 4;
-
-    return (isThisWeekendBookings() && isValid) || !isThisWeekendBookings();
-  };
-
   // Only one coupon can be applied at a time — selecting a new one replaces
   // whatever was previously selected instead of adding to it.
   const toggleCoupon = (couponId: string) => {
@@ -293,9 +324,9 @@ const CheckoutForm = () => {
               </div>
             </section>
 
-            {deliveryError && (
+            {lateItemsError && (
               <div className="mt-4 bg-red-100 p-2 rounded-md text-sm text-red-700">
-                {deliveryError}
+                {lateItemsError}
               </div>
             )}
 
@@ -372,7 +403,7 @@ const CheckoutForm = () => {
               </div>
             </section>
 
-            {isBookingValid() && (
+            {!lateItemsError && (
               <>
                 {hasDeliveryItem(products) && (
                   <section aria-labelledby="shipping-heading" className="mt-10">
@@ -476,7 +507,7 @@ const CheckoutForm = () => {
               </>
             )}
           </div>
-          {isBookingValid() && (
+          {!lateItemsError && (
             <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
               <Button
                 type="submit"

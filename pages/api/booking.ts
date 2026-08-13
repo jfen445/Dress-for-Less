@@ -43,6 +43,7 @@ import {
 import {
   calculateShippingFee,
   hasDeliveryItem,
+  isBookingAllowedForDate,
 } from "../../lib/utils/deliveryRules";
 import { resolveRuralDeliveryStatus } from "../../lib/nzpost/client";
 
@@ -121,6 +122,31 @@ export default async function handler(
 
     const now = auckland.now().toISOString();
     var errorResponse: String[] = [];
+
+    // Notice-from-today. The Calendar and the checkout form apply this too, but
+    // both evaluate in a browser: a cart left open past 8pm, a stale tab, or a
+    // hand-made request would otherwise reserve and charge for a date we can no
+    // longer dispatch in time. Evaluated against a single instant so a
+    // multi-item order can't straddle the cutoff, and placed ahead of the price
+    // lookup and every side effect — a failure here unwinds nothing.
+    const pastCutoff = items
+      .filter(
+        (item) =>
+          !isBookingAllowedForDate(
+            item.dateBooked,
+            item.deliveryType,
+            auckland.toZone(now),
+          ),
+      )
+      .map((item) => item.dressId);
+
+    if (pastCutoff.length > 0) {
+      return res.status(409).json({
+        message:
+          "It's too late to book one or more of these dates. Please choose another date. You have not been charged.",
+        body: pastCutoff,
+      });
+    }
 
     // Resolve the authoritative price for each dress from Sanity. The client
     // sends item.price, but it must never be trusted for money: otherwise a

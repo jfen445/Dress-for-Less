@@ -2,8 +2,9 @@ import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import React from "react";
 import Image from "next/image";
 import { CartItemType } from "../../../common/types";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { auckland } from "../../../lib/utils/timezone";
+import { isBookingAllowedForDate } from "../../../lib/utils/deliveryRules";
 import { useRouter } from "next/router";
 import Button from "../Button";
 import { sizedImageUrl } from "../../../sanity/lib/image";
@@ -13,6 +14,9 @@ interface ICartType {
   selectedProducts: string[];
   setSelectedProducts: React.Dispatch<React.SetStateAction<string[]>>;
   removeItem: (cartItemId: CartItemType) => void;
+  // Passed down rather than read here, so the rows flagged below and the parent's
+  // Checkout button are always judging against the same instant.
+  now: Dayjs;
 }
 
 const CartItems = ({
@@ -20,6 +24,7 @@ const CartItems = ({
   removeItem,
   selectedProducts,
   setSelectedProducts,
+  now,
 }: ICartType) => {
   const router = useRouter();
 
@@ -78,9 +83,10 @@ const CartItems = ({
     }
   };
 
-  const isInvalidDate = (day: string | number | Date) => {
-    return auckland.now().isAfter(auckland.toZone(day));
-  };
+  // The cutoff subsumes the past-date check this used to do — every cutoff falls
+  // at least a day before its event date — so one predicate covers both.
+  const isTooLateToBook = (product: CartItemType) =>
+    !isBookingAllowedForDate(product.dateBooked, product.deliveryType, now);
 
   return (
     <form className="mt-12">
@@ -172,17 +178,21 @@ const CartItems = ({
                         <p className="mt-1 text-sm text-gray-500">
                           Size: {product.size}
                         </p>
-                        <div className="flex flex-row items-baseline">
-                          <p className="mt-1 text-sm text-gray-500">
-                            Booked for: {formatDate(product.dateBooked)}
-                          </p>
-                          {isInvalidDate(product.dateBooked) && (
-                            <ExclamationCircleIcon className="size-4 text-red-500 ml-1" />
-                          )}
-                        </div>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Booked for: {formatDate(product.dateBooked)}
+                        </p>
                         <p className="mt-1 text-sm text-gray-500">
                           {product.deliveryType}
                         </p>
+                        {isTooLateToBook(product) && (
+                          <div className="mt-1 flex flex-row items-baseline text-red-600">
+                            <ExclamationCircleIcon className="size-4 shrink-0 self-center" />
+                            <p className="ml-1 text-sm">
+                              Too late to book this date - remove it to check
+                              out.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-4 flex flex-1 items-end justify-end">
