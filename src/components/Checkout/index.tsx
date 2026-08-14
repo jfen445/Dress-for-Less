@@ -2,8 +2,13 @@
 
 import React from "react";
 import OrderSummary from "./OrderSummary";
-import { CartItemType, Coupon } from "../../../common/types";
+import { CartItemType, CartType, Coupon } from "../../../common/types";
 import CheckoutForm from "./CheckoutForm";
+import Spinner from "../Spinner";
+import { useUserContext } from "@/context/UserContext";
+import { useSession } from "next-auth/react";
+import { getCart } from "@/api/cart";
+import { getDress } from "../../../sanity/sanity.query";
 
 export type ValidatedAddress = {
   addressText: string;
@@ -39,11 +44,66 @@ const Checkout = () => {
     [],
   );
   const [discountAmount, setDiscountAmount] = React.useState<number>(0);
-  const [availableCoupons, setAvailableCoupons] = React.useState<Coupon[]>(
-    [],
-  );
+  const [availableCoupons, setAvailableCoupons] = React.useState<Coupon[]>([]);
   const [validatedAddress, setValidatedAddress] =
     React.useState<ValidatedAddress | null>(null);
+
+  const { userInfo } = useUserContext();
+  const { status } = useSession();
+  const [isLoadingProducts, setIsLoadingProducts] =
+    React.useState<boolean>(true);
+
+  // The cart is fetched here rather than in OrderSummary because this component
+  // owns `products`, and because everything below reads that array: an empty one
+  // is indistinguishable from a real order with no delivery items and nothing
+  // past its cutoff, so rendering before it arrives shows a $0 total and briefly
+  // passes gates that should fail.
+  React.useEffect(() => {
+    if (status === "loading") return;
+
+    if (!userInfo?._id) {
+      // Nothing to load a cart for. The API client redirects on 401, but don't
+      // spin forever if we somehow land here signed out.
+      if (status === "unauthenticated") setIsLoadingProducts(false);
+      return;
+    }
+
+    let cancelled = false;
+    const productIds = new URLSearchParams(window.location.search).getAll("id");
+
+    const loadProducts = async () => {
+      try {
+        const data = await getCart(userInfo._id as string);
+        const cartItems = data.data as unknown as CartType[];
+        const selectedItems = cartItems.filter((item) =>
+          productIds.includes(item._id ?? ""),
+        );
+
+        const dresses = await Promise.all(
+          selectedItems.map(async (item) => {
+            const dress = await getDress(item.dressId);
+            dress.dateBooked = item.dateBooked;
+            dress.cartItemId = item._id;
+            dress.size = item.size;
+            dress.deliveryType = item.deliveryType;
+            return dress as CartItemType;
+          }),
+        );
+
+        if (!cancelled) setProducts(dresses);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setIsLoadingProducts(false);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userInfo, status]);
 
   return (
     <ProductContext.Provider
@@ -73,17 +133,17 @@ const Checkout = () => {
           className="fixed right-0 hidden h-full w-1/2 bg-gray-50 lg:block"
         />
 
-        <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-x-16 lg:grid-cols-2 lg:px-8 xl:gap-x-48">
-          <OrderSummary />
+        {isLoadingProducts ? (
+          <div className="relative mx-auto max-w-7xl py-32">
+            <Spinner />
+          </div>
+        ) : (
+          <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-x-16 lg:grid-cols-2 lg:px-8 xl:gap-x-48">
+            <OrderSummary />
 
-          {/* <Payment /> */}
-
-          <CheckoutForm />
-
-          {/* <Elements stripe={stripePromise}>
-            <PaymentForm />
-          </Elements> */}
-        </div>
+            <CheckoutForm />
+          </div>
+        )}
       </div>
     </ProductContext.Provider>
   );
