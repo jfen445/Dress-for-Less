@@ -8,11 +8,9 @@ import {
 } from "@headlessui/react";
 import { ChevronUpIcon } from "@heroicons/react/20/solid";
 import { useUserContext } from "@/context/UserContext";
-import { CartItemType, CartType, Coupon } from "../../../../common/types";
-import { getCart } from "@/api/cart";
+import { Coupon } from "../../../../common/types";
 import { getUserCoupons } from "@/api/coupon";
 import { calculateCouponDiscount } from "../../../../lib/utils/couponRules";
-import { getDress } from "../../../../sanity/sanity.query";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 import dayjs from "dayjs";
 import { ProductContext } from "..";
@@ -28,7 +26,6 @@ const OrderSummary = () => {
   const { userInfo } = useUserContext();
   const {
     products,
-    setProducts,
     setTotalPrice,
     selectedCouponIds,
     setDiscountAmount,
@@ -55,39 +52,6 @@ const OrderSummary = () => {
   }, [products, isRuralDelivery]);
 
   React.useEffect(() => {
-    const productIds = new URLSearchParams(window.location.search).getAll("id");
-
-    const getUserCart = async () => {
-      if (!userInfo?._id) return;
-
-      try {
-        const data = await getCart(userInfo._id);
-        const cartItems = data.data as unknown as CartType[];
-        const selectedItems = cartItems.filter((item) =>
-          productIds.includes(item._id ?? ""),
-        );
-
-        const dresses = await Promise.all(
-          selectedItems.map(async (item) => {
-            const dress = await getDress(item.dressId);
-            dress.dateBooked = item.dateBooked;
-            dress.cartItemId = item._id;
-            dress.size = item.size;
-            dress.deliveryType = item.deliveryType;
-            return dress as CartItemType;
-          }),
-        );
-
-        setProducts(dresses);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    getUserCart();
-  }, [setProducts, userInfo]);
-
-  React.useEffect(() => {
     if (!userInfo?._id) return;
 
     // Merge rather than overwrite: session refetches on window focus give
@@ -99,9 +63,7 @@ const OrderSummary = () => {
         const personalCoupons = data.data as Coupon[];
         setAvailableCoupons((prev) => {
           const unlockedGlobals = prev.filter(
-            (c) =>
-              c.isGlobal &&
-              !personalCoupons.some((p) => p._id === c._id),
+            (c) => c.isGlobal && !personalCoupons.some((p) => p._id === c._id),
           );
           return [...personalCoupons, ...unlockedGlobals];
         });
