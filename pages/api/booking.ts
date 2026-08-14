@@ -380,10 +380,19 @@ export default async function handler(
       isRuralDelivery,
     );
 
-    const totalPrice =
+    // Floored at zero, because a flat coupon can be worth more than the cart it
+    // is spent on: calculateCouponDiscount caps a SingleItem-scoped flat amount
+    // at its target item but returns a cart-scoped one at face value, so a $200
+    // credit against a $150 rental subtracts the full $200. Without the floor
+    // that lands in the row as totalPrice: -50 — which the customer never sees
+    // (OrderSummary already floors what it displays) but every admin total that
+    // sums this column does.
+    const totalPrice = Math.max(
+      0,
       bookingItems.reduce((sum, item) => sum + item.price, 0) +
-      shippingFee -
-      discountAmount;
+        shippingFee -
+        discountAmount,
+    );
 
     // The server, not the browser, decides what the card is charged. The
     // intent was created with a client-computed figure just to render the
@@ -657,9 +666,14 @@ export default async function handler(
       // existingBooking.discountAmount is the dollar figure already resolved
       // (flat or percentage-of-subtotal) at original checkout time — coupons
       // aren't re-fetched/re-evaluated here, so discountType is irrelevant.
-      const totalPrice =
+      // Floored for the same reason as the reserve above, and more easily hit
+      // here: an admin removing an item shrinks the subtotal while the original
+      // discountAmount stays put.
+      const totalPrice = Math.max(
+        0,
         bookingItems.reduce((sum, item) => sum + item.price, 0) -
-        (existingBooking.discountAmount ?? 0);
+          (existingBooking.discountAmount ?? 0),
+      );
 
       const updatedBooking = await BookingSchema.findByIdAndUpdate(
         bookingId,
