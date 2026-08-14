@@ -1,9 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import mongoose from "mongoose";
 import { Resend } from "resend";
 import { auckland } from "../../../lib/utils/timezone";
 import { dbConnect } from "../../../lib/db/db";
+import { BookingSchema } from "../../../lib/db/schema";
 import { getBookingsByDateRange } from "../../../lib/db/booking-dao";
 import { getDress } from "../../../sanity/sanity.query";
+import { EmailSendResult } from "../../../common/enums/EmailSendResult";
 import ReturnReminderEmail, {
   getReturnReminderSubject,
 } from "@/components/Emails/ReturnReminder";
@@ -55,14 +58,25 @@ export default async function handler(
 
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-  const results = await Promise.allSettled(
-    reminders.map(async ({ booking, item }) => {
+  // Sent one at a time, not in parallel, to stay under Resend's 2 requests per
+  // second limit — a 429 comes back as a resolved { error }, not a throw.
+  const results: EmailSendResult[] = [];
+
+  // Resend message IDs per booking, so a reminder can be looked up later to
+  // see whether it was delivered or bounced. No local timestamp to go with
+  // them: resend.emails.get(id) already reports created_at.
+  const emailIdsByBooking = new Map<string, string[]>();
+
+  for (const [i, { booking, item }] of reminders.entries()) {
+    if (i > 0) await new Promise((resolve) => setTimeout(resolve, 550));
+
+    try {
       const dress = await getDress(item.dressId);
       const recipient = booking.user?.[0];
       if (!recipient?.email)
         throw new Error(`No email for booking ${booking._id}`);
 
-      await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
         to: [recipient.email],
         subject: getReturnReminderSubject(item.deliveryType),
@@ -75,11 +89,47 @@ export default async function handler(
           deliveryType: item.deliveryType,
         }),
       });
-    }),
-  );
 
-  const failed = results.filter((r) => r.status === "rejected").length;
+      if (error) throw new Error(`${error.name}: ${error.message}`);
+
+      if (data?.id) {
+        const bookingId = booking._id.toString();
+        emailIdsByBooking.set(bookingId, [
+          ...(emailIdsByBooking.get(bookingId) ?? []),
+          data.id,
+        ]);
+      }
+
+      results.push(EmailSendResult.Sent);
+    } catch (err) {
+      console.error(
+        `Failed to send return reminder for booking ${booking._id}:`,
+        err,
+      );
+      results.push(EmailSendResult.Failed);
+    }
+  }
+
+  const failed = results.filter(
+    (result) => result === EmailSendResult.Failed,
+  ).length;
   const sent = reminders.length - failed;
+
+  // Recorded, not acted on: nothing here filters on these ids, so the cron
+  // still decides what to send purely from the date window. They accumulate,
+  // which means a booking reminded twice shows two ids rather than hiding it.
+  if (emailIdsByBooking.size > 0) {
+    await BookingSchema.bulkWrite(
+      [...emailIdsByBooking].map(([bookingId, emailIds]) => ({
+        updateOne: {
+          filter: { _id: new mongoose.Types.ObjectId(bookingId) },
+          update: {
+            $push: { returnReminderEmailIds: { $each: emailIds } },
+          },
+        },
+      })),
+    );
+  }
 
   if (failed > 0 && sent === 0)
     return res.status(500).json({ message: "Failed to send all emails" });

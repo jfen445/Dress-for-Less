@@ -141,6 +141,12 @@ export type Booking = {
   discountAmount?: number;
   orderNumber?: string;
   instructionsSentAt?: string;
+  // Resend message IDs for the instruction emails sent for this booking.
+  // instructionsSentAt is only a claim that Resend accepted the send; these
+  // are what can be looked up afterwards to see if it actually landed.
+  instructionsEmailIds?: string[];
+  // Resend message IDs for the return reminders sent about this booking.
+  returnReminderEmailIds?: string[];
   downloadedAt?: string;
 };
 
@@ -211,6 +217,9 @@ export type TryOnBooking = {
   reservedAt?: string;
   status: TryOnStatus;
   user?: UserType[];
+  // Resend message IDs for try-on reminders, from either the cron or the
+  // admin button — both send the same email to this row.
+  reminderEmailIds?: string[];
   createdAt?: string;
 };
 

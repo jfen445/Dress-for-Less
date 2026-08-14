@@ -260,13 +260,18 @@ async function sendAdminAlert({
   try {
     const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-    await resend.emails.send({
+    // Resend resolves with { error } rather than throwing. This alert is the
+    // last line of defence for a payment with no booking behind it, so a
+    // silent failure here is the one that costs the most.
+    const { error } = await resend.emails.send({
       from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [ADMIN_NOTIFICATION_EMAIL],
       subject,
       text: lines.join("\n"),
     });
+
+    if (error) throw new Error(`${error.name}: ${error.message}`);
   } catch (err) {
-    console.error("Failed to send admin alert", err);
+    console.error("Failed to send admin alert", err, { subject, lines });
   }
 }

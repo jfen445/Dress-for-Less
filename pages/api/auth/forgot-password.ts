@@ -57,12 +57,17 @@ export default async function handler(
       const url = `${baseUrl}/reset-password?token=${token}`;
 
       const resend = new Resend(process.env.RESEND_API_KEY as string);
-      await resend.emails.send({
+      // Resend resolves with { error } rather than throwing. The generic
+      // response below is deliberate and stays as it is, so the server log is
+      // the only place a failed reset email can ever surface.
+      const { error } = await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
         to: [email],
         subject: "Reset your Dress for Less password",
         react: PasswordResetEmail({ url }),
       });
+
+      if (error) throw new Error(`${error.name}: ${error.message}`);
     }
   } catch (err) {
     // Log server-side but never surface details (and still return the generic

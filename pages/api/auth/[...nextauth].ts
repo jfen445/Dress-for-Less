@@ -57,15 +57,24 @@ export const sendVerificationRequest = async (
   try {
     const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-    await resend.emails.send({
+    // Resend resolves with { error } rather than throwing, so an unverified
+    // sender domain or a 429 has to be checked for explicitly.
+    const { error } = await resend.emails.send({
       from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [identifier],
       subject: "Log into your Dress for Less account",
       text: text(url, host),
       react: MagicLinkEmail({ url, host }),
     });
+
+    if (error) throw new Error(`${error.name}: ${error.message}`);
   } catch (error) {
-    console.log({ error });
+    // Swallowed as before, so the sign-in page still reports success: NextAuth
+    // turns a throw here into an error page. That means a user whose magic
+    // link failed to send is told to check their inbox regardless, which is
+    // worth revisiting — the swallow is pre-existing behaviour, not a
+    // deliberate consequence of checking the error above.
+    console.error("Failed to send magic link email", error);
   }
 };
 

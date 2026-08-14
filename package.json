@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "migrate:bookings": "node --env-file=.env.local scripts/migrate-bookings-to-items.js",
-    "migrate:order-numbers": "node --env-file=.env.local scripts/migrate-order-numbers.js"
+    "migrate:order-numbers": "node --env-file=.env.local scripts/migrate-order-numbers.js",
+    "audit:instruction-emails": "node --env-file=.env.local scripts/audit-instruction-emails.js"
   },
   "dependencies": {
     "@emotion/react": "^11.13.0",

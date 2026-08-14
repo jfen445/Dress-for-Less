@@ -165,7 +165,9 @@ export default async function handler(
         const recipient = await findUserById(userId);
         if (recipient?.email) {
           const resend = new Resend(process.env.RESEND_API_KEY as string);
-          await resend.emails.send({
+          // Resend resolves with { error } rather than throwing, so this has
+          // to be checked or the customer is never told they have credit.
+          const { error } = await resend.emails.send({
             from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
             to: [recipient.email],
             subject: getStoreCreditSubject(),
@@ -177,10 +179,14 @@ export default async function handler(
               expiryDate,
             }),
           });
+
+          if (error) throw new Error(`${error.name}: ${error.message}`);
         }
-      } catch {
+      } catch (err) {
         // Coupon creation already succeeded; a failed notification email
-        // shouldn't roll that back or fail the request.
+        // shouldn't roll that back or fail the request. Logged so the credit
+        // can be re-sent by hand rather than sitting unclaimed.
+        console.error("Failed to send store credit email", err);
       }
     }
 

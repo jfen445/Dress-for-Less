@@ -8,6 +8,7 @@ import { findUser } from "../../../lib/db/user-dao";
 import { BookingSchema } from "../../../lib/db/schema";
 import { getDress } from "../../../sanity/sanity.query";
 import { AccountType } from "../../../common/enums/AccountType";
+import { EmailSendResult } from "../../../common/enums/EmailSendResult";
 import BookingInstructionsEmail, {
   getBookingInstructionsSubject,
 } from "@/components/Emails/BookingInstructions";
@@ -56,13 +57,28 @@ export default async function handler(
     booking.items.map((item: any) => ({ booking, item })),
   );
 
-  const results = await Promise.allSettled(
-    recipients.map(async ({ booking, item }) => {
+  // Sent one at a time, not in parallel: Resend rate-limits at 2 requests per
+  // second, and a rejected send is what stamps instructionsSentAt on a booking
+  // nobody was actually emailed.
+  const results: EmailSendResult[] = [];
+
+  // Resend message IDs per booking, keyed by booking id. A booking appears here
+  // as soon as one of its items sends, which is the same "at least one item"
+  // rule that decides whether it gets stamped.
+  const emailIdsByBooking = new Map<string, string[]>();
+
+  for (const [i, { booking, item }] of recipients.entries()) {
+    if (i > 0) await new Promise((resolve) => setTimeout(resolve, 550));
+
+    try {
       const dress = await getDress(item.dressId);
       const recipient = booking.user?.[0];
-      if (!recipient?.email) throw new Error(`No email for booking ${booking._id}`);
+      if (!recipient?.email)
+        throw new Error(`No email for booking ${booking._id}`);
 
-      await resend.emails.send({
+      // Resend resolves with { error } rather than throwing, so an unverified
+      // sender domain or a 429 looks identical to a success unless we check.
+      const { data, error } = await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
         to: [recipient.email],
         subject: getBookingInstructionsSubject(item.deliveryType),
@@ -76,25 +92,57 @@ export default async function handler(
           address: item.address,
         }),
       });
-    }),
-  );
 
-  const failed = results.filter((r) => r.status === "rejected").length;
+      if (error) throw new Error(`${error.name}: ${error.message}`);
+
+      const bookingId = booking._id.toString();
+      const emailIds = emailIdsByBooking.get(bookingId) ?? [];
+      // Recorded even if the id is somehow absent, so a send is never dropped
+      // from the sent set on account of a missing id.
+      if (data?.id) emailIds.push(data.id);
+      emailIdsByBooking.set(bookingId, emailIds);
+
+      results.push(EmailSendResult.Sent);
+    } catch (err) {
+      console.error(
+        `Failed to send booking instructions for booking ${booking._id}:`,
+        err,
+      );
+      results.push(EmailSendResult.Failed);
+    }
+  }
+
+  const failed = results.filter(
+    (result) => result === EmailSendResult.Failed,
+  ).length;
   const sent = recipients.length - failed;
 
-  // A booking counts as "emailed" if at least one of its items sent successfully.
-  const sentBookingIds = [
-    ...new Set(
-      results
-        .map((result, i) => ({ result, bookingId: recipients[i].booking._id }))
-        .filter(({ result }) => result.status === "fulfilled")
-        .map(({ bookingId }) => bookingId.toString()),
-    ),
-  ];
+  // A booking counts as "emailed" if at least one of its items sent
+  // successfully — which is exactly the bookings that made it into the map.
+  // Written per booking rather than with one updateMany, since each carries
+  // its own message ids. instructionsSentAt is overwritten to the latest send
+  // while the ids accumulate, so a re-send keeps the earlier ones lookupable.
+  const sentBookingIds = [...emailIdsByBooking.keys()];
+
   if (sentBookingIds.length > 0) {
-    await BookingSchema.updateMany(
-      { _id: { $in: sentBookingIds } },
-      { instructionsSentAt: new Date() },
+    const sentAt = new Date();
+
+    await BookingSchema.bulkWrite(
+      sentBookingIds.map((bookingId) => ({
+        updateOne: {
+          // Cast explicitly: a string _id that silently failed to match would
+          // stamp nothing at all and still report every email as sent.
+          filter: { _id: new mongoose.Types.ObjectId(bookingId) },
+          update: {
+            $set: { instructionsSentAt: sentAt },
+            $push: {
+              instructionsEmailIds: {
+                $each: emailIdsByBooking.get(bookingId) ?? [],
+              },
+            },
+          },
+        },
+      })),
     );
   }
 

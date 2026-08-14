@@ -90,10 +90,21 @@ export async function sendTryOnConfirmationEmail({
 }) {
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-  await resend.emails.send({
+  // Resend resolves with { error } rather than throwing, so this has to be
+  // checked or a failed confirmation is indistinguishable from a sent one.
+  // Logged rather than thrown: the slot is already paid for and booked, and
+  // both callers (the confirm route and admin manual creation) would turn a
+  // throw here into a failed request over an appointment that really exists.
+  const { error } = await resend.emails.send({
     from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
     to: [email],
     subject: "Your Dress for Less Try-On Confirmation",
     react: TryOnConfirmationEmail({ name, date, timeSlot, price }),
   });
+
+  if (error)
+    console.error(
+      `Failed to send try-on confirmation to ${email} for ${date} ${timeSlot}:`,
+      error,
+    );
 }
