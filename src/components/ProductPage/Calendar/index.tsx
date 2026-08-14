@@ -4,10 +4,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
-import {
-  isDeliveryAllowedForDate,
-  isPickupAllowedForDate,
-} from "../../../../lib/utils/deliveryRules";
+import { isBookingAllowedForDate } from "../../../../lib/utils/deliveryRules";
 import { isDateBlockedByExistingBooking } from "../../../../lib/utils/bookingWindow";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
@@ -92,11 +89,7 @@ const Calendar = ({
 
     // Notice-from-today: has to clear the 8pm-day-before-dispatch cutoff for
     // whichever method the shopper has selected.
-    const isAllowedForDate =
-      method === DeliveryType.Pickup
-        ? isPickupAllowedForDate(dateStr)
-        : isDeliveryAllowedForDate(dateStr);
-    if (!isAllowedForDate) {
+    if (!isBookingAllowedForDate(dateStr, method)) {
       return true;
     }
 

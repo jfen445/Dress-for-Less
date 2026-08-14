@@ -68,3 +68,19 @@ export function isPickupAllowedForDate(
 ): boolean {
   return now.isBefore(getBookingCutoff(dateStr, DeliveryType.Pickup));
 }
+
+// The notice-from-today gate for one item, dispatched on its own method. Every
+// caller that asks "can this still be booked?" goes through here — the Calendar,
+// the cart, the checkout form, and the reserve — so no path can be left behind
+// the way Pickup once was. Non-Pickup methods (including the unused
+// PickupDelivery/DeliveryPickup variants) take the Delivery cutoff, matching how
+// bookingWindow.ts falls those variants back to the Post table.
+export function isBookingAllowedForDate(
+  dateStr: string,
+  deliveryType: DeliveryType,
+  now: Dayjs = auckland.now(),
+): boolean {
+  return deliveryType === DeliveryType.Pickup
+    ? isPickupAllowedForDate(dateStr, now)
+    : isDeliveryAllowedForDate(dateStr, now);
+}

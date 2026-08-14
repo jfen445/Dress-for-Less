@@ -6,13 +6,14 @@ import { CartItemType, CartType } from "../../../common/types";
 import Link from "next/link";
 import CartItems from "../CartItems";
 import Spinner from "../Spinner";
-import { auckland } from "../../../lib/utils/timezone";
+import { isBookingAllowedForDate } from "../../../lib/utils/deliveryRules";
 import Modal from "../Modal";
 import { DialogTitle } from "@headlessui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import useNow from "@/hooks/useNow";
 import { useCartContext } from "@/context/CartContext";
 
 const Cart = () => {
@@ -22,6 +23,9 @@ const Cart = () => {
     useLocalStorage<CartType[]>("localCart");
   const { userInfo } = useUserContext();
   const { status } = useSession();
+  // One clock drives both the button and the per-item flags below, so a cart
+  // left open past a cutoff disables itself instead of waiting for a refresh.
+  const now = useNow();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
   const [selectedProductIds, setSelectedProductIds] = React.useState<string[]>(
     [],
@@ -175,26 +179,27 @@ const Cart = () => {
     }
   };
 
-  const isValidCheckout = () => {
+  // Notice-from-today, the same gate the Calendar and the reserve apply. It
+  // subsumes the past-date check this used to do, since every cutoff falls at
+  // least a day before its event date. CartItems flags the offending rows off
+  // the same predicate, so the disabled button always has a visible reason.
+  const isCheckoutBlocked = () => {
     const selectedProducts = products.filter((item) =>
       selectedProductIds.includes(item.cartItemId),
     );
 
-    const isDatesValid = selectedProducts.some((item) =>
-      isInvalidDate(item.dateBooked),
+    const hasLateDate = selectedProducts.some(
+      (item) =>
+        !isBookingAllowedForDate(item.dateBooked, item.deliveryType, now),
     );
 
     const isEmpty = selectedProductIds.length == 0;
 
-    return isDatesValid || isEmpty;
-  };
-
-  const isInvalidDate = (day: string | number | Date) => {
-    return auckland.now().isAfter(auckland.toZone(day));
+    return hasLateDate || isEmpty;
   };
 
   const isAuthenticated = status === "authenticated";
-  const checkoutDisabled = isValidCheckout();
+  const checkoutDisabled = isCheckoutBlocked();
 
   return (
     <>
@@ -264,6 +269,7 @@ const Cart = () => {
                     removeItem={removeItem}
                     selectedProducts={selectedProductIds}
                     setSelectedProducts={setSelectedProductIds}
+                    now={now}
                   />
 
                   <div className="mt-10 flex justify-center">
