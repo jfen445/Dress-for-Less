@@ -85,6 +85,15 @@ const bookingSchema = new Schema(
     discountAmount: { type: Number, required: false, default: 0 },
     orderNumber: { type: String, required: false },
     instructionsSentAt: { type: Date, required: false },
+    // Resend message IDs for the instruction emails, one per item sent, newest
+    // last. instructionsSentAt only records that Resend accepted the request;
+    // an ID is what lets resend.emails.get(id) say afterwards whether it was
+    // delivered or bounced. Empty on bookings emailed before this was stored.
+    instructionsEmailIds: { type: [String], required: false, default: [] },
+    // Resend message IDs for the return reminders, kept separate from the
+    // instruction ones: a different email about the same booking, sent by the
+    // send-return-reminders cron rather than by an admin.
+    returnReminderEmailIds: { type: [String], required: false, default: [] },
     downloadedAt: { type: Date, required: false },
   },
   { timestamps: true },
@@ -159,6 +168,10 @@ const tryOnBookingSchema = new Schema(
     // findLapsedTryOnReservations are $lt against an ISO string.
     reservedAt: { type: String, required: false },
     status: { type: String, required: true, default: "Booked" },
+    // Resend message IDs for try-on reminders. One field for both senders —
+    // the cron and the admin button send the same email to the same row, so
+    // splitting them would hide a reminder sent by the other route.
+    reminderEmailIds: { type: [String], required: false, default: [] },
   },
   { timestamps: true },
 );

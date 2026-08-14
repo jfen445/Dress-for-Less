@@ -225,12 +225,22 @@ export async function sendEmailConfirmation(booking: Booking) {
     ? [user.email]
     : [process.env.RESEND_EMAIL_ADDRESS as string];
 
-  await resend.emails.send({
+  // Resend resolves with { error } rather than throwing, so this has to be
+  // checked or a failed receipt is indistinguishable from a sent one. Logged
+  // rather than thrown: the booking is already paid and recorded, and failing
+  // confirmation over a receipt email would strand a real order.
+  const { error: receiptError } = await resend.emails.send({
     from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
     to: toEmail,
     subject: "Your Dress for Less Booking Confirmation",
     react: OrderReceiptEmail({ orderReceipt }),
   });
+
+  if (receiptError)
+    console.error(
+      `Failed to send order receipt for ${booking.orderNumber ?? booking.paymentIntent} to ${toEmail.join(", ")}:`,
+      receiptError,
+    );
 
   // Best-effort internal notification — a failure here shouldn't affect the
   // customer's own confirmation email, which has already been sent above.
@@ -241,12 +251,14 @@ export async function sendEmailConfirmation(booking: Booking) {
       ? `${user.name} booked ${dressNames} on ${formatBookingDate(primaryItem.dateBooked)} (${primaryItem.deliveryType})`
       : "You received an order";
 
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
       to: [ADMIN_NOTIFICATION_EMAIL],
       subject,
       react: OrderReceiptEmail({ orderReceipt }),
     });
+
+    if (error) throw new Error(`${error.name}: ${error.message}`);
   } catch (error) {
     console.error("Failed to send admin order notification", error);
   }

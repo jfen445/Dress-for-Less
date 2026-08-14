@@ -1,0 +1,21 @@
+{
+  "_id": "dress-e2e-1",
+  "name": "Midnight Silk Gown",
+  "description": "A floor-length silk gown, cut on the bias.",
+  "images": ["https://cdn.sanity.io/images/e2e/test/gown.jpg"],
+  "size": "M",
+  "recommendedSize": "M",
+  "length": "Maxi",
+  "stretch": "2",
+  "condition": "Excellent",
+  "notes": "",
+  "brand": "Testeria",
+  "price": "150",
+  "rrp": "900",
+  "tags": ["Wedding"],
+  "xs": 0,
+  "s": 0,
+  "m": 1,
+  "l": 1,
+  "xl": 0
+}

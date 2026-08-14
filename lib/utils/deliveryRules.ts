@@ -24,24 +24,6 @@ export function calculateShippingFee(
   return SHIPPING_FEE + (isRuralDelivery ? RURAL_SURCHARGE : 0);
 }
 
-export function isDateWithinCurrentWeekend(
-  dateStr: string,
-  now: Dayjs = auckland.now(),
-): boolean {
-  const day = now.day(); // 0 (Sun) - 6 (Sat)
-  const daysUntilSunday = day === 0 ? 0 : 7 - day;
-  const currentSunday = now
-    .add(daysUntilSunday, "day")
-    .hour(23)
-    .minute(59)
-    .second(59)
-    .millisecond(999);
-
-  const date = auckland.toZone(dateStr);
-
-  return !date.isBefore(now) && !date.isAfter(currentSunday);
-}
-
 // Cutoff for booking a given date/method is 8pm the day before that
 // method's dispatch date (the conservative `blockedFrom` from bookingWindow).
 function getBookingCutoff(dateStr: string, deliveryType: DeliveryType): Dayjs {
