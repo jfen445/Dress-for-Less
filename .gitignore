@@ -34,7 +34,11 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+# next-env.d.ts is deliberately NOT ignored. It is what pulls in
+# next/image-types/global, which declares *.png/*.jpg as modules — without it
+# `tsc --noEmit` fails on every `import logo from "../../public/dfl-logo.png"`.
+# Next regenerates it on dev/build, so it exists locally either way; CI only
+# runs tsc, so it has to come from the repo.
 
 pages/preview/
 
