@@ -572,13 +572,23 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
       return toReturn;
     }
 
+    // Every value is wrapped in quotes, so a quote inside one has to be doubled
+    // (RFC 4180) or it terminates the field early — customer instructions like
+    // `put "Amy Emery" as the name` used to break NZ Post's importer. Newlines
+    // are legal inside a quoted field but not every importer accepts them, so
+    // collapse them to spaces.
+    const escapeField = (value: unknown): string =>
+      `"${String(value ?? "")
+        .replace(/"/g, '""')
+        .replace(/\r?\n/g, " ")}"`;
+
     // Extract keys (headers) and rows (values)
     const headers = Object.keys(flattenObject(array[0]));
     const csv = [
       headers.join(","), // Header row
       ...array.map((item: Record<string, any>) => {
         const flatItem = flattenObject(item);
-        return headers.map((header) => `"${flatItem[header] || ""}"`).join(",");
+        return headers.map((header) => escapeField(flatItem[header])).join(",");
       }),
     ].join("\r\n");
 
@@ -600,21 +610,47 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const getCarrierProductCode = (city?: string): string =>
     city?.trim().toLowerCase() === "auckland" ? "CPOLP" : "CPOLTPA4";
 
+  // One row per booking, not per dress: a three-dress order ships as one parcel
+  // and needs one label. This mirrors the "Create label" button, which already
+  // posts one consignment per booking (pages/api/admin/labels.ts).
+  //
+  // Address and instructions live on the item, so a booking's items can in
+  // principle disagree. We take the address from the first item that has one —
+  // skipping Pickup items, which carry none — and join every distinct
+  // instruction so nothing a customer wrote is dropped on the floor.
   const extractObj = (lineItems: BookingLineItem[]) => {
-    return lineItems?.map(({ booking, item }) => ({
-      OrderNumber: booking.orderNumber ?? "",
-      Name: booking.user ? booking.user[0].name : "",
-      Email: booking.user ? booking.user[0].email : "",
-      Company: item.address?.company ?? "",
-      Building: item.address?.apartment ?? "",
-      Street: item.address?.address ?? "",
-      Suburb: item.address?.suburb ?? "",
-      City: item.address?.city ?? "",
-      Postcode: item.address?.postCode ?? "",
-      Country: item.address?.country ?? "",
-      Instructions: item.instructions ?? "",
-      CarrierProductCode: getCarrierProductCode(item.address?.city),
-    }));
+    const byBooking = new Map<string, BookingLineItem[]>();
+    lineItems?.forEach((li) => {
+      const id = String(li.booking._id);
+      byBooking.set(id, [...(byBooking.get(id) ?? []), li]);
+    });
+
+    return [...byBooking.values()].map((items) => {
+      const booking = items[0].booking;
+      const address = items.find((li) => li.item.address)?.item.address;
+      const instructions = [
+        ...new Set(
+          items
+            .map((li) => li.item.instructions?.trim())
+            .filter((text): text is string => Boolean(text)),
+        ),
+      ].join("; ");
+
+      return {
+        OrderNumber: booking.orderNumber ?? "",
+        Name: booking.user ? booking.user[0].name : "",
+        Email: booking.user ? booking.user[0].email : "",
+        Company: address?.company ?? "",
+        Building: address?.apartment ?? "",
+        Street: address?.address ?? "",
+        Suburb: address?.suburb ?? "",
+        City: address?.city ?? "",
+        Postcode: address?.postCode ?? "",
+        Country: address?.country ?? "",
+        Instructions: instructions,
+        CarrierProductCode: getCarrierProductCode(address?.city),
+      };
+    });
   };
 
   const Dropdown = ({
