@@ -91,5 +91,7 @@ export async function findAllUsers() {
   return UserSchema.find(
     {},
     "__id name email mobileNumber instagramHandle photo role",
-  );
+  )
+    .collation({ locale: "en", strength: 2 })
+    .sort({ name: 1 });
 }

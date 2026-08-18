@@ -126,10 +126,6 @@ const EditBookingModal = ({
 }: IEditBookingModal) => {
   const { allDresses } = useGlobalContext();
   const [users, setUsers] = React.useState<UserType[]>([]);
-  const sortedUsers = React.useMemo(
-    () => [...users].sort((a, b) => a.name.localeCompare(b.name)),
-    [users],
-  );
   const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
     "existing",
   );
@@ -490,7 +486,7 @@ const EditBookingModal = ({
               required
             >
               <option value="">Select a customer…</option>
-              {sortedUsers.map((u) => (
+              {users.map((u) => (
                 <option key={u._id ?? u.email} value={u._id ?? ""}>
                   {u.name} - {u.email}
                 </option>
