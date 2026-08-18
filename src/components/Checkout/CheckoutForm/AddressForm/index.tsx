@@ -149,9 +149,7 @@ const AddressForm = () => {
             required
             disabled={!isAddressVerified}
             value={suburb}
-            onChange={(e) =>
-              setSuburb((e.target as HTMLInputElement).value)
-            }
+            onChange={(e) => setSuburb((e.target as HTMLInputElement).value)}
           />
         </div>
       </div>
@@ -211,9 +209,7 @@ const AddressForm = () => {
             required
             disabled={!isAddressVerified}
             value={postCode}
-            onChange={(e) =>
-              setPostCode((e.target as HTMLInputElement).value)
-            }
+            onChange={(e) => setPostCode((e.target as HTMLInputElement).value)}
           />
         </div>
       </div>
@@ -234,6 +230,9 @@ const AddressForm = () => {
             className="block border border-rose-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:border-black disabled:opacity-50"
           />
         </div>
+        <p className="mt-1 text-xs text-gray-500">
+          Passed on to the delivery driver.
+        </p>
       </div>
     </div>
   );
