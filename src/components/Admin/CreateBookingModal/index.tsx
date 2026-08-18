@@ -134,10 +134,6 @@ const CreateBookingModal = ({
     [allDresses],
   );
   const [users, setUsers] = React.useState<UserType[]>([]);
-  const sortedUsers = React.useMemo(
-    () => [...users].sort((a, b) => a.name.localeCompare(b.name)),
-    [users],
-  );
   const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
     "existing",
   );
@@ -180,7 +176,11 @@ const CreateBookingModal = ({
       if (prev.length !== 1 || prev[0].dressId) return prev;
       const availableSizes = getAvailableSizes(sortedDresses[0]);
       return [
-        { ...prev[0], dressId: sortedDresses[0]._id, size: availableSizes[0] ?? "" },
+        {
+          ...prev[0],
+          dressId: sortedDresses[0]._id,
+          size: availableSizes[0] ?? "",
+        },
       ];
     });
   }, [sortedDresses]);
@@ -251,7 +251,9 @@ const CreateBookingModal = ({
   };
 
   const removeItem = (id: string) => {
-    setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.id !== id) : prev));
+    setItems((prev) =>
+      prev.length > 1 ? prev.filter((i) => i.id !== id) : prev,
+    );
   };
 
   const handleAddressChange = (field: keyof Address, value: string) => {
@@ -275,7 +277,8 @@ const CreateBookingModal = ({
     );
     if (itemsInvalid || customerInvalid) {
       setToast({
-        message: "Please fill in all required fields including a date for each dress",
+        message:
+          "Please fill in all required fields including a date for each dress",
         variant: ToastVariant.WARNING,
         show: true,
       });
@@ -496,7 +499,7 @@ const CreateBookingModal = ({
                 required
               >
                 <option value="">Select a customer…</option>
-                {sortedUsers.map((u) => (
+                {users.map((u) => (
                   <option key={u._id ?? u.email} value={u._id ?? ""}>
                     {u.name} - {u.email}
                   </option>
@@ -617,7 +620,10 @@ const CreateBookingModal = ({
               const dress = sortedDresses.find((d) => d._id === item.dressId);
               if (!dress) return null;
               return (
-                <div key={item.id} className="flex justify-between text-gray-600">
+                <div
+                  key={item.id}
+                  className="flex justify-between text-gray-600"
+                >
                   <span>{dress.name}</span>
                   <span>${dressPrice(item.dressId).toFixed(2)}</span>
                 </div>
