@@ -10,15 +10,22 @@ import * as data from "./data";
 // a journey could quietly pass while the app talked to something we never
 // modelled — which is the standing risk of stubbing at the network boundary.
 
-export type StubResult = { status?: number; json?: unknown };
-export type Stub =
-  | unknown
-  | ((ctx: { url: URL; body: any; route: Route }) => unknown | StubResult);
+export type StubResult = {
+  status?: number;
+  json?: unknown;
+  // For the responses whose *headers* are the point — the sign-in callback,
+  // whose job is to plant the session cookie.
+  headers?: Record<string, string>;
+};
+export type StubContext = { url: URL; body: any; route: Route };
+// `unknown` swallows the function arm for inference purposes, so a stub written
+// as a function has to annotate its argument — hence StubContext being exported.
+export type Stub = unknown | ((ctx: StubContext) => unknown | StubResult);
 
 const isResult = (value: unknown): value is StubResult =>
   typeof value === "object" &&
   value !== null &&
-  ("status" in value || "json" in value) &&
+  ("status" in value || "json" in value || "headers" in value) &&
   !Array.isArray(value);
 
 // 1x1 transparent PNG, so dress imagery resolves without leaving the machine.
@@ -29,7 +36,10 @@ const PNG = Buffer.from(
 
 export class Api {
   private stubs = new Map<string, Stub>();
-  readonly calls: { method: string; path: string; body: any }[] = [];
+  // The full URL is kept alongside the path because some of what the app sends
+  // rides in the query string rather than the body — the checkout's price, for
+  // one, which is the amount Stripe is about to be told to charge.
+  readonly calls: { method: string; path: string; url: URL; body: any }[] = [];
   readonly unstubbed: string[] = [];
   readonly externalRequests: string[] = [];
 
@@ -76,9 +86,10 @@ function defaults(api: Api) {
     .set("GET /api/booking", [])
     .set("GET /api/blockouts", [])
     .set("GET /api/coupons", [])
-    // Checkout.
+    // Checkout. The intent is created with POST — the price rides in the query
+    // string — so a GET stub here would never be hit.
     .set("POST /api/booking", { message: "Booking reserved" })
-    .set("GET /api/payment/intent", {
+    .set("POST /api/payment/intent", {
       clientSecret: "pi_e2e_secret_placeholder",
     })
     .set("GET /api/address/search", { addresses: [] })
@@ -87,6 +98,18 @@ function defaults(api: Api) {
     .set("GET /api/tryOnBooking", { takenSlots: [], availableSlots: [] })
     .set("POST /api/tryOnBooking", { message: "Try-on slot reserved" });
 
+  return api;
+}
+
+/**
+ * The two answers that make the app treat the visitor as a signed-in customer:
+ * NextAuth's session, and the custom MongoDB user record UserContext reads on
+ * top of it. Both are needed — a session with no user record leaves userInfo
+ * null, which reads as "signed out" everywhere the cart and checkout look.
+ */
+export function signedIn(api: Api, over: Record<string, unknown> = {}) {
+  api.set("GET /api/auth/session", data.session());
+  api.set("GET /api/user", data.user(over));
   return api;
 }
 
@@ -106,6 +129,26 @@ async function install(page: Page, api: Api) {
     route.fulfill({ status: 200, contentType: "image/png", body: PNG }),
   );
 
+  // Sanity's query API, which the browser talks to directly on the checkout
+  // page (getDress per cart line) rather than through /api/**. cdn.sanity.io is
+  // excluded because that host serves imagery, handled just above.
+  await page.route(
+    (url) =>
+      url.hostname.endsWith("sanity.io") && url.hostname !== "cdn.sanity.io",
+    (route) => {
+      const url = new URL(route.request().url());
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          result: data.sanityResultFor(url),
+          ms: 0,
+          query: url.searchParams.get("query") ?? "",
+        }),
+      });
+    },
+  );
+
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -118,7 +161,7 @@ async function install(page: Page, api: Api) {
     } catch {
       body = request.postData();
     }
-    api.calls.push({ method, path: url.pathname, body });
+    api.calls.push({ method, path: url.pathname, url, body });
 
     if (!api.has(key)) {
       api.unstubbed.push(key);
@@ -137,6 +180,7 @@ async function install(page: Page, api: Api) {
       return route.fulfill({
         status: value.status ?? 200,
         contentType: "application/json",
+        headers: value.headers,
         body: JSON.stringify(value.json ?? {}),
       });
     }
@@ -193,7 +237,16 @@ export const test = base.extend<{ api: Api }>({
         api.externalRequests.filter((r) => !r.includes("js.stripe.com")),
         "the app tried to reach an external service",
       ).toEqual([]);
-      expect(pageErrors, "the page threw an uncaught error").toEqual([]);
+      expect(
+        // js.stripe.com is blocked by the line above, and the checkout page
+        // calls loadStripe() at module scope, so its rejection is a property of
+        // this harness rather than a fault in the app. It is filtered by exact
+        // message so any *other* uncaught error still fails the test. What
+        // happens once Stripe.js is present is covered by
+        // tests/components/CheckoutPaymentForm.test.tsx.
+        pageErrors.filter((error) => !error.includes("Failed to load Stripe.js")),
+        "the page threw an uncaught error",
+      ).toEqual([]);
     },
     { auto: true },
   ],

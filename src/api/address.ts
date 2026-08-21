@@ -10,6 +10,7 @@ export type AddressDetail = {
   addressId?: string;
   dpid: string;
   streetNumber?: string;
+  streetAlpha?: string;
   street?: string;
   streetType?: string;
   suburb?: string;
