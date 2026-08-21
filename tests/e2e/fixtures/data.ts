@@ -51,11 +51,16 @@ export const dressList = (count = 8) =>
         }),
   );
 
+// A complete profile on purpose: the cart refuses to link to checkout until
+// name, email, instagram handle and mobile are all present (Cart's isUserValid),
+// so a user missing them can only ever reach the "Profile Incomplete" modal.
 export const user = (over: Record<string, unknown> = {}) => ({
   _id: USER_ID,
   email: CUSTOMER_EMAIL,
   name: "Ada Lovelace",
   role: "user",
+  mobileNumber: "0210000000",
+  instagramHandle: "@ada",
   ...over,
 });
 
@@ -92,6 +97,74 @@ export const bookingAvailability = (over: Record<string, unknown> = {}) => {
     ...calculateBookingWindow(dateBooked, DeliveryType.Delivery),
     ...over,
   };
+};
+
+// ------------------------------------------------------------ NZ Post address
+//
+// Checkout's address field only unlocks suburb/city/postcode once a suggestion
+// has been *selected*, so both halves of the NZ Post proxy have to be modelled:
+// the search that offers the suggestion, and the lookup that resolves it.
+
+export const ADDRESS_ID = "nzpost-address-1";
+export const ADDRESS_TEXT = "12 Queen Street";
+export const ADDRESS_FULL = "12 Queen Street, Auckland Central, Auckland 1010";
+
+export const addressSuggestion = (over: Record<string, unknown> = {}) => ({
+  fullAddress: ADDRESS_FULL,
+  addressId: ADDRESS_ID,
+  dpid: "1234567",
+  ...over,
+});
+
+export const addressDetail = (over: Record<string, unknown> = {}) => ({
+  addressId: ADDRESS_ID,
+  dpid: "1234567",
+  streetNumber: "12",
+  street: "Queen",
+  streetType: "Street",
+  suburb: "Auckland Central",
+  city: "Auckland",
+  postcode: "1010",
+  country: "New Zealand",
+  isRuralDelivery: false,
+  ...over,
+});
+
+// ------------------------------------------------------------------- NextAuth
+//
+// signIn() reads the provider list before it posts anything, and bails to the
+// hosted sign-in page when the provider it was asked for isn't in it — so a
+// credentials journey that doesn't stub this never reaches its own form.
+export const providers = () => ({
+  credentials: {
+    id: "credentials",
+    name: "Credentials",
+    type: "credentials",
+    signinUrl: "/api/auth/signin/credentials",
+    callbackUrl: "/api/auth/callback/credentials",
+  },
+});
+
+// ---------------------------------------------------------------- Sanity GROQ
+//
+// Not every Sanity call goes through /api/**: the checkout page resolves each
+// cart line by calling getDress() on the Sanity client directly from the
+// browser. This answers those the same way tests/e2e/sanity-intercept.cjs
+// answers the server's — from this same fixture, so the dress a customer sees
+// on the product page and the one they see on checkout cannot disagree.
+export const sanityResultFor = (url: URL) => {
+  const query = url.searchParams.get("query") ?? "";
+
+  if (query.includes('_type == "faq"')) return [];
+
+  if (query.includes("_id == $id")) {
+    const requested = (url.searchParams.get("$id") ?? "").replace(/^"|"$/g, "");
+    return dress({ _id: requested || DRESS_ID });
+  }
+
+  if (query.includes('_type == "dress"')) return dressList();
+
+  return [];
 };
 
 export const coupon = (over: Record<string, unknown> = {}) => ({

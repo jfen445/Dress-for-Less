@@ -1,11 +1,18 @@
-import { data, expect, test } from "./fixtures/app";
+import { data, expect, signedIn, test } from "./fixtures/app";
 import { pickCalendarDay } from "./fixtures/calendar";
 
 const productPage = `/dresses/products/${data.DRESS_ID}`;
 
+// Delivery is the product page's default, so a delivery booking picks a size
+// and a date and nothing else. Pickup has to be chosen first — and choosing it
+// clears the date, so the order here is not incidental.
 async function pickSizeAndDate(page: any) {
   await page.getByLabel("Select a size").selectOption("M");
   await pickCalendarDay(page, data.bookableDate());
+}
+
+async function pickUpInstead(page: any) {
+  await page.getByRole("button", { name: "Pick Up (Auckland)" }).click();
 }
 
 const localCart = (page: any) =>
@@ -33,12 +40,11 @@ test("a guest adding to cart is sent to sign in, and keeps nothing locally", asy
   expect(api.called("POST", "/api/cart")).toHaveLength(0);
 });
 
-test("a signed-in customer's cart goes straight to the database", async ({
+test("a signed-in customer's delivery booking goes straight to the database", async ({
   page,
   api,
 }) => {
-  api.set("GET /api/auth/session", data.session());
-  api.set("GET /api/user", data.user());
+  signedIn(api);
 
   await page.goto(productPage);
   await pickSizeAndDate(page);
@@ -53,7 +59,50 @@ test("a signed-in customer's cart goes straight to the database", async ({
     size: "M",
     dateBooked: data.bookableDate(),
     userId: data.USER_ID,
+    deliveryType: "Delivery",
   });
+});
+
+test("a pick-up booking is carried into the cart as a pick-up", async ({
+  page,
+  api,
+}) => {
+  // The method chosen here decides both cutoffs and shipping for the rest of
+  // the order, so it has to survive the trip to the cart intact.
+  signedIn(api);
+
+  await page.goto(productPage);
+  await pickUpInstead(page);
+  await pickSizeAndDate(page);
+  await page.getByRole("button", { name: "Add to cart" }).click();
+
+  await expect.poll(() => api.called("POST", "/api/cart").length).toBe(1);
+
+  expect(api.called("POST", "/api/cart")[0].body.cartItem).toMatchObject({
+    dressId: data.DRESS_ID,
+    size: "M",
+    dateBooked: data.bookableDate(),
+    deliveryType: "Pickup",
+  });
+});
+
+test("switching method after picking a date makes them pick again", async ({
+  page,
+  api,
+}) => {
+  // The two methods have different cutoffs and different blocked windows, so a
+  // date chosen under one is not automatically bookable under the other.
+  // Clearing it is what stops a delivery date being booked as a pickup.
+  signedIn(api);
+
+  await page.goto(productPage);
+  await pickSizeAndDate(page);
+  await expect(page.getByRole("button", { name: "Add to cart" })).toBeEnabled();
+
+  await pickUpInstead(page);
+
+  await expect(page.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  expect(api.called("POST", "/api/cart")).toHaveLength(0);
 });
 
 test("a guest cart is migrated to the account on sign-in", async ({
@@ -67,8 +116,7 @@ test("a guest cart is migrated to the account on sign-in", async ({
     { dressId: data.DRESS_ID, dateBooked: data.bookableDate(), size: "M", deliveryType: "Delivery" },
   );
 
-  api.set("GET /api/auth/session", data.session());
-  api.set("GET /api/user", data.user());
+  signedIn(api);
   api.set("GET /api/cart", [data.cartItem()]);
 
   await page.reload();
@@ -84,8 +132,7 @@ test("a guest cart is migrated to the account on sign-in", async ({
 });
 
 test("the cart lists what is in it, and offers checkout", async ({ page, api }) => {
-  api.set("GET /api/auth/session", data.session());
-  api.set("GET /api/user", data.user());
+  signedIn(api);
   api.set("GET /api/cart", [data.cartItem()]);
 
   await page.goto("/cart");
@@ -96,8 +143,7 @@ test("the cart lists what is in it, and offers checkout", async ({ page, api }) 
 });
 
 test("an empty cart says so instead of offering checkout", async ({ page, api }) => {
-  api.set("GET /api/auth/session", data.session());
-  api.set("GET /api/user", data.user());
+  signedIn(api);
   api.set("GET /api/cart", []);
 
   await page.goto("/cart");

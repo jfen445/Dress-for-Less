@@ -5,12 +5,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev      # Start development server (localhost:3000)
-npm run build    # Production build
-npm run lint     # ESLint via next lint
+npm run dev       # Start development server (localhost:3000)
+npm run build     # Production build
+npm run lint      # ESLint via next lint
+npm run typecheck # tsc --noEmit
+npm test          # Vitest: unit, route and component tests
+npm run test:e2e  # Playwright: browser journeys (starts its own dev server on :3100)
 ```
 
-There are no tests in this project.
+### Tests
+
+Both suites run fully offline and need no secrets — see `tests/`.
+
+- **Vitest** (`vitest.config.mts`, two projects: `unit` in node, `dom` in jsdom). Mongoose
+  is faked at the **DAO seam** (`tests/fakes/`) so API-route handlers run for real
+  through `node-mocks-http`; Stripe, Sanity, Resend and NZ Post are module-mocked. The
+  suite exists to prove the money path — reserve-then-charge ordering, coupon claims
+  handed back on every failure path, promote-vs-cancel, webhook routing, confirm
+  idempotency — plus the pure date/pricing rules and `authorize`'s password check.
+  It deliberately cannot prove *simultaneity*: `claimCoupon`'s guarded
+  `findOneAndUpdate` and the try-on unique index are MongoDB behaviours, and the fakes
+  stand in for them.
+- **Playwright** (`playwright.config.ts`, `tests/e2e/`) drives the customer journeys:
+  browsing, the calendar's two gates, add-to-cart for both delivery methods, password
+  sign-in, and checkout through to the payment step. Every `/api/**` call is answered
+  from a stub table (`tests/e2e/fixtures/app.ts`) whose catch-all **fails the test** on
+  any path it doesn't model; the dev server's own `getStaticProps` Sanity calls are
+  answered by a Node-level preload (`tests/e2e/sanity-intercept.cjs`). js.stripe.com is
+  never loaded — the payment step itself is covered by an RTL test of `PaymentForm` —
+  and pages behind `middleware.ts` (`/account`, `/admin`) need the real signed session
+  cookie minted by `tests/e2e/fixtures/auth.ts`.
+
+Guards are mutation-checked, not just green: break the production code a test protects
+and confirm that test (and only it) fails. A route test that has never been seen to fail
+is decorative.
 
 ## Architecture
 

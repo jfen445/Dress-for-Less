@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { NEXTAUTH_SECRET } from "./tests/e2e/fixtures/auth";
 
 // The suite is fully offline: every /api/** call is intercepted with page.route
 // (see tests/e2e/fixtures), and js.stripe.com is blocked, so no test depends on
@@ -33,7 +34,9 @@ export default defineConfig({
       NEXT_PUBLIC_SANITY_PROJECT_ID: "e2e",
       NEXT_PUBLIC_SANITY_DATASET: "test",
       NEXTAUTH_URL: `http://127.0.0.1:${PORT}`,
-      NEXTAUTH_SECRET: "e2e-test-secret-not-a-real-secret",
+      // Shared with the tests, which mint session cookies the middleware has to
+      // accept — see tests/e2e/fixtures/auth.ts.
+      NEXTAUTH_SECRET,
       NEXT_PUBLIC_COMING_SOON: "false",
       // Real environment variables beat .env.local in Next, so these deliberately
       // point the server at nothing: the API routes are all intercepted in the
