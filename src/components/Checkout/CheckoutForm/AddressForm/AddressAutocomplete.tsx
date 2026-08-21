@@ -8,7 +8,8 @@ import {
 import { searchAddresses, AddressSuggestion } from "@/api/address";
 
 const SEARCH_DEBOUNCE_MS = 350;
-const MIN_QUERY_LENGTH = 3;
+// NZ Post rejects prefixes under 4 characters (excluding surrounding spaces).
+const MIN_QUERY_LENGTH = 4;
 
 interface AddressAutocompleteProps {
   value: string;

@@ -35,8 +35,13 @@ const AddressForm = () => {
 
       // Suburb/city/postcode already have their own fields — only the
       // street line (number + street + type) belongs in the address input.
+      // NZ Post returns an alpha-suffixed number (e.g. "26B") as separate
+      // streetNumber/streetAlpha fields, so they're joined with no space.
+      const streetNumber = detail.streetNumber
+        ? `${detail.streetNumber}${detail.streetAlpha ?? ""}`
+        : undefined;
       const streetLine =
-        [detail.streetNumber, detail.street, detail.streetType]
+        [streetNumber, detail.street, detail.streetType]
           .filter(Boolean)
           .join(" ") || suggestion.fullAddress;
 

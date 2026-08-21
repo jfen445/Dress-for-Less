@@ -20,7 +20,8 @@ export default async function handler(
   const countParam = parseInt((req.query.count as string) ?? "8", 10);
   const count = Math.min(Number.isNaN(countParam) ? 8 : countParam, 10);
 
-  if (q.trim().length < 3) {
+  // NZ Post rejects prefixes under 4 characters (excluding surrounding spaces).
+  if (q.trim().length < 4) {
     return res.status(200).json({ addresses: [] });
   }
 

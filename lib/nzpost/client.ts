@@ -15,6 +15,7 @@ export type NZPostAddressDetail = {
   addressId?: string;
   dpid: string;
   streetNumber?: string;
+  streetAlpha?: string;
   street?: string;
   streetType?: string;
   suburb?: string;
@@ -31,7 +32,8 @@ export type NZPostAddressDetail = {
 
 type NZPostSearchResponse = {
   success: boolean;
-  addresses: { full_address: string; address_id: string; dpid: string }[];
+  addresses?: { full_address: string; address_id: string; dpid: string }[];
+  errors?: { code: string; message: string; details?: string }[];
   message_id: string;
 };
 
@@ -39,6 +41,7 @@ type NZPostDetailResponse = {
   success: boolean;
   address: {
     street_number?: string | number;
+    street_alpha?: string;
     street?: string;
     street_type?: string;
     suburb?: string;
@@ -66,6 +69,7 @@ function mapDetail(
       detail.street_number !== undefined
         ? String(detail.street_number)
         : undefined,
+    streetAlpha: detail.street_alpha,
     street: detail.street,
     streetType: detail.street_type,
     suburb: detail.suburb,
@@ -90,6 +94,12 @@ export async function searchAddresses(
 ): Promise<NZPostAddressSuggestion[]> {
   const url = `${NZPOST_ADDRESS_BASE}?q=${encodeURIComponent(query)}&count=${count}`;
   const data = await nzPostFetch<NZPostSearchResponse>(url);
+
+  // NZ Post responds 200 with success: false (e.g. prefix too short) rather
+  // than an HTTP error — that's an unsuccessful search, not an API failure.
+  if (!data.success || !data.addresses) {
+    return [];
+  }
 
   return data.addresses.map((a) => ({
     fullAddress: a.full_address,
