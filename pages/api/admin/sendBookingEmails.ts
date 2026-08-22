@@ -13,6 +13,9 @@ import BookingInstructionsEmail, {
   getBookingInstructionsSubject,
 } from "@/components/Emails/BookingInstructions";
 
+// Increase timeout for batch send out
+export const config = { maxDuration: 60 };
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -150,11 +153,9 @@ export default async function handler(
     return res.status(500).json({ message: "Failed to send all emails" });
 
   if (failed > 0)
-    return res
-      .status(207)
-      .json({ message: `${sent} sent, ${failed} failed` });
+    return res.status(207).json({ message: `${sent} sent, ${failed} failed` });
 
-  return res
-    .status(200)
-    .json({ message: `${sent} email${sent !== 1 ? "s" : ""} sent successfully` });
+  return res.status(200).json({
+    message: `${sent} email${sent !== 1 ? "s" : ""} sent successfully`,
+  });
 }
