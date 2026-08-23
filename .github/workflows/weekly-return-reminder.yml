@@ -3,7 +3,8 @@ name: Daily Return Reminder
 on:
   schedule:
     # 9am NZST daily (UTC+12). Runs at 10am during NZDT (UTC+13) — one hour drift is acceptable.
-    # The endpoint itself no-ops on Auckland Sat/Sun, so a daily trigger is simplest.
+    # Runs every day: Pickup reminders fire daily, Delivery reminders no-op on
+    # Auckland Sat/Sun (bundled into Monday instead), so a daily trigger covers both.
     - cron: "0 21 * * *"
   workflow_dispatch: # allow manual trigger for testing
 

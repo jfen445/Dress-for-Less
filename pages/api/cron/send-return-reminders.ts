@@ -7,6 +7,7 @@ import { BookingSchema } from "../../../lib/db/schema";
 import { getBookingsByDateRange } from "../../../lib/db/booking-dao";
 import { getDress } from "../../../sanity/sanity.query";
 import { EmailSendResult } from "../../../common/enums/EmailSendResult";
+import { DeliveryType } from "../../../common/enums/DeliveryType";
 import ReturnReminderEmail, {
   getReturnReminderSubject,
 } from "@/components/Emails/ReturnReminder";
@@ -25,30 +26,49 @@ export default async function handler(
 
   const now = auckland.now();
   const dayOfWeek = now.day(); // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+  const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
 
-  // Mon-Thu bookings get their reminder the next day; Fri/Sat/Sun bookings
-  // all wait until Monday. So only Mon-Fri cron runs have bookings to chase.
-  let startDate: string;
-  let endDate: string;
+  // send pick up reminders daily
+  const pickupWindow = { startDate: yesterday, endDate: yesterday };
 
-  if (dayOfWeek === 1) {
-    startDate = now.subtract(3, "day").format("YYYY-MM-DD");
-    endDate = now.subtract(1, "day").format("YYYY-MM-DD");
-  } else if (dayOfWeek >= 2 && dayOfWeek <= 5) {
-    startDate = now.subtract(1, "day").format("YYYY-MM-DD");
-    endDate = startDate;
-  } else {
-    return res.status(200).json({ message: "No bookings to remind" });
-  }
+  // Delivery returns go through NZ Post, which is shut weekends: Mon-Thu
+  // bookings get their reminder the next day, Fri/Sat/Sun bookings all wait
+  // until Monday, and there's nothing to chase on Saturday/Sunday itself.
+  const deliveryWindow =
+    dayOfWeek === 1
+      ? {
+          startDate: now.subtract(3, "day").format("YYYY-MM-DD"),
+          endDate: yesterday,
+        }
+      : dayOfWeek >= 2 && dayOfWeek <= 5
+        ? { startDate: yesterday, endDate: yesterday }
+        : null;
+
+  const queryStart = deliveryWindow
+    ? deliveryWindow.startDate
+    : pickupWindow.startDate;
 
   await dbConnect();
 
-  const bookings = await getBookingsByDateRange(startDate, endDate);
+  const bookings = await getBookingsByDateRange(queryStart, yesterday);
+
+  const isInWindow = (
+    dateBooked: string,
+    window: { startDate: string; endDate: string } | null,
+  ) =>
+    window !== null &&
+    dateBooked >= window.startDate &&
+    dateBooked <= window.endDate;
 
   const reminders = bookings.flatMap((booking) =>
     booking.items
-      .filter(
-        (item: any) => item.dateBooked >= startDate && item.dateBooked <= endDate,
+      .filter((item: any) =>
+        isInWindow(
+          item.dateBooked,
+          item.deliveryType === DeliveryType.Pickup
+            ? pickupWindow
+            : deliveryWindow,
+        ),
       )
       .map((item: any) => ({ booking, item })),
   );
