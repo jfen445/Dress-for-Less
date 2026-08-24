@@ -60,7 +60,7 @@ const CartItems = ({
   const sumPrices = () => {
     return products
       .filter((product) => selectedProducts.includes(product.cartItemId))
-      .reduce((n, { price }) => n + parseInt(price), 0)
+      .reduce((n, { price }) => n + price, 0)
       .toFixed(2);
   };
 

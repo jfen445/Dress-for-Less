@@ -29,30 +29,34 @@ const dress = {
       type: "string",
       validation: (rule) => rule.required(),
     }),
-    {
+    defineField({
       name: "description",
       title: "Description",
       type: "string",
       description: "Give a description for the dress",
-    },
-    {
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: "price",
       title: "Price",
       type: "number",
       description: "Price for the dress",
-    },
-    {
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: "rrp",
       title: "RRP",
       type: "number",
       description: "Retail price for the dress",
-    },
-    {
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: "brand",
       title: "Brand",
       type: "string",
-    },
-    {
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: "images",
       title: "Images",
       type: "array",
@@ -60,7 +64,8 @@ const dress = {
       options: {
         layout: "grid",
       },
-    },
+      validation: (rule) => rule.required().min(1),
+    }),
     {
       name: "xs",
       title: "XS",
@@ -116,7 +121,7 @@ const dress = {
         layout: "grid",
       },
     },
-    {
+    defineField({
       name: "length",
       title: "Length",
       type: "string",
@@ -128,8 +133,9 @@ const dress = {
           { title: "Midi", value: "Midi" },
         ],
       },
-    },
-    {
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: "stretch",
       title: "Stretch",
       type: "string",
@@ -141,7 +147,8 @@ const dress = {
           { title: "3", value: "3" },
         ],
       },
-    },
+      validation: (rule) => rule.required(),
+    }),
     {
       name: "condition",
       title: "Condition",
@@ -152,7 +159,7 @@ const dress = {
       title: "Notes",
       type: "string",
     },
-    {
+    defineField({
       name: "tags",
       type: "array",
       title: "Tags for item",
@@ -200,7 +207,8 @@ const dress = {
         ],
         layout: "grid",
       },
-    },
+      validation: (rule) => rule.required().min(1),
+    }),
   ],
 };
 

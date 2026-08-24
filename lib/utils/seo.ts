@@ -10,7 +10,8 @@ export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function truncate(text: string, maxLen: number): string {
+export function truncate(text: string | undefined, maxLen: number): string {
+  if (!text) return "";
   if (text.length <= maxLen) return text;
   return `${text.slice(0, maxLen - 1).trimEnd()}…`;
 }
@@ -20,12 +21,12 @@ interface JsonLdDress {
   description: string;
   images: string[];
   brand: string;
-  price: string;
-  xs: string;
-  s: string;
-  m: string;
-  l: string;
-  xl: string;
+  price: number;
+  xs?: number;
+  s?: number;
+  m?: number;
+  l?: number;
+  xl?: number;
 }
 
 export function buildProductJsonLd(dress: JsonLdDress, url: string) {
@@ -45,7 +46,7 @@ export function buildProductJsonLd(dress: JsonLdDress, url: string) {
     offers: {
       "@type": "Offer",
       url,
-      price: dress.price,
+      price: String(dress.price),
       priceCurrency: "NZD",
       availability: inStock
         ? "https://schema.org/InStock"

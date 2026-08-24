@@ -10,11 +10,13 @@ const faq = {
       name: "question",
       title: "Question",
       type: "string",
+      validation: (rule: any) => rule.required(),
     },
     {
       name: "answer",
       title: "Answer",
       type: "string",
+      validation: (rule: any) => rule.required(),
     },
     {
       name: "section",

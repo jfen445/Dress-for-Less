@@ -33,26 +33,29 @@ export type UserType = {
   role: "admin" | "user";
 };
 
+// Mirrors the Sanity `dress` schema's validation (common/schemas/dress.ts):
+// every field here is `rule.required()` there except the per-size stock
+// counts, which a dress legitimately may not carry all of.
 export type DressType = {
   _id: string;
   name: string;
   description: string;
   size: string;
   images: string[];
-  tags: { _type: string; label: string; _key: string }[];
-  price: string;
+  tags: string[];
+  price: number;
   length: string;
   brand: string;
-  rrp: string;
+  rrp: number;
   stretch: string;
   condition?: string;
   recommendedSize?: string[];
   notes?: string;
-  xs: string;
-  s: string;
-  m: string;
-  l: string;
-  xl: string;
+  xs?: number;
+  s?: number;
+  m?: number;
+  l?: number;
+  xl?: number;
   _updatedAt: string;
 };
 
@@ -81,11 +84,11 @@ export type CartItemType = {
   description: string;
   size: string;
   images: string[];
-  tags: { _type: string; label: string; _key: string }[];
-  price: string;
+  tags: string[];
+  price: number;
   length: string;
   brand: string;
-  rrp: string;
+  rrp: number;
   stretch: string;
   dateBooked: string;
   cartItemId: string;
@@ -168,11 +171,11 @@ export type BookingAvailability = {
 };
 
 export type Sizes = {
-  xs?: string;
-  s?: string;
-  m?: string;
-  l?: string;
-  xl?: string;
+  xs?: number;
+  s?: number;
+  m?: number;
+  l?: number;
+  xl?: number;
 };
 
 export type BlockOut = {
@@ -196,7 +199,7 @@ export type Faq = {
   _id?: string;
   question: string;
   answer: string;
-  section?: string;
+  section: string;
   order?: number;
 };
 

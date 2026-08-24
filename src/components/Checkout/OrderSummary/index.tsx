@@ -75,7 +75,7 @@ const OrderSummary = () => {
     const selected = availableCoupons.filter((c) =>
       selectedCouponIds.includes(c._id ?? ""),
     );
-    const itemPrices = products.map(({ price }) => parseInt(price));
+    const itemPrices = products.map(({ price }) => price);
     return calculateCouponDiscount(selected, itemPrices);
   };
 
@@ -90,7 +90,7 @@ const OrderSummary = () => {
   };
 
   const sumPrices = (): string => {
-    return products.reduce((n, { price }) => n + parseInt(price), 0).toFixed(2);
+    return products.reduce((n, { price }) => n + price, 0).toFixed(2);
   };
 
   const sumTotalPrices = () => {

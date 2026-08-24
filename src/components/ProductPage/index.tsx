@@ -58,7 +58,7 @@ const Product = ({ dress }: ProductProps) => {
   }, [dress]);
 
   const images = React.useMemo<ImageType[]>(() => {
-    return dress.images.reduce(function (
+    return (dress.images ?? []).reduce(function (
       acc: ImageType[], // Set the accumulator type to an array of ImageType
       cur: string, // Assuming cur is a string, the image source
     ): ImageType[] {
