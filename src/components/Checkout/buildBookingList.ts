@@ -33,7 +33,7 @@ export function buildBooking(
       ruralDeliveryNumber: address?.ruralDeliveryNumber,
     },
     size: item.size,
-    price: parseInt(item.price),
+    price: item.price,
     instructions: instructions ?? "",
   }));
 

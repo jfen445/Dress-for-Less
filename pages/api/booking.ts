@@ -161,7 +161,13 @@ export default async function handler(
         if (!dress) {
           return res.status(404).json({ message: "Dress not found" });
         }
-        dressPriceById.set(item.dressId, parseInt(dress.price));
+        const price = Number(dress.price);
+        if (!Number.isFinite(price)) {
+          return res
+            .status(500)
+            .json({ message: "Dress is missing a price" });
+        }
+        dressPriceById.set(item.dressId, price);
       }
     }
     const priceForItem = (item: (typeof items)[number]) =>

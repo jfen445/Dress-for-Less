@@ -286,7 +286,7 @@ const Filters = () => {
         // Check categories and colors (tags array in the dress object)
         if (selectedFilters.category) {
           if (
-            !selectedFilters.category.some((tag) => filteredTags.includes(tag))
+            !selectedFilters.category.some((tag) => filteredTags?.includes(tag))
           ) {
             return false;
           }
@@ -294,7 +294,7 @@ const Filters = () => {
 
         if (selectedFilters.color) {
           if (
-            !selectedFilters.color.some((tag) => filteredTags.includes(tag))
+            !selectedFilters.color.some((tag) => filteredTags?.includes(tag))
           ) {
             return false;
           }

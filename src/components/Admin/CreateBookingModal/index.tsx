@@ -30,9 +30,7 @@ const emptyAddress = (): Address => ({
 const getAvailableSizes = (dress?: DressType): string[] =>
   SIZES.filter((s) => {
     if (!dress) return false;
-    const stock = parseInt(
-      (dress[s.toLowerCase() as keyof DressType] as string) ?? "0",
-    );
+    const stock = dress[s.toLowerCase() as keyof Sizes] ?? 0;
     return stock > 0;
   });
 
@@ -187,7 +185,7 @@ const CreateBookingModal = ({
 
   const dressPrice = (dressId: string) => {
     const dress = sortedDresses.find((d) => d._id === dressId);
-    return dress ? parseInt(dress.price) : 0;
+    return dress ? dress.price : 0;
   };
 
   const availableDeliveryTypes: DeliveryType[] =
