@@ -12,6 +12,8 @@ import ReturnReminderEmail, {
   getReturnReminderSubject,
 } from "@/components/Emails/ReturnReminder";
 
+export const config = { maxDuration: 300 };
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,

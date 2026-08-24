@@ -11,6 +11,8 @@ import TryOnReminderEmail, {
   getTryOnReminderSubject,
 } from "@/components/Emails/TryOnReminder";
 
+export const config = { maxDuration: 60 };
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -54,7 +56,8 @@ export default async function handler(
     if (i > 0) await new Promise((resolve) => setTimeout(resolve, 550));
 
     try {
-      if (!booking.email) throw new Error(`No email for booking ${booking._id}`);
+      if (!booking.email)
+        throw new Error(`No email for booking ${booking._id}`);
 
       const { data, error } = await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
@@ -105,11 +108,9 @@ export default async function handler(
     return res.status(500).json({ message: "Failed to send all emails" });
 
   if (failed > 0)
-    return res
-      .status(207)
-      .json({ message: `${sent} sent, ${failed} failed` });
+    return res.status(207).json({ message: `${sent} sent, ${failed} failed` });
 
-  return res
-    .status(200)
-    .json({ message: `${sent} email${sent !== 1 ? "s" : ""} sent successfully` });
+  return res.status(200).json({
+    message: `${sent} email${sent !== 1 ? "s" : ""} sent successfully`,
+  });
 }
