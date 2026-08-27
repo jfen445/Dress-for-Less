@@ -14,13 +14,16 @@ import NavigationContextProvider from "@/context/NavigationContext";
 import GlobalContextProvider from "@/context/GlobalContext";
 import ComingSoon from "@/components/ComingSoon";
 import { CartProvider } from "@/context/CartContext";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 export default function App({ Component, pageProps }: AppProps) {
   const isComingSoon = process.env.NEXT_PUBLIC_COMING_SOON;
   const router = useRouter();
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
     <SessionProvider session={pageProps.session}>
+      {gaId && <GoogleAnalytics gaId={gaId} />}
       <GlobalContextProvider
         initialDresses={pageProps.dresses}
         initialFaq={pageProps.faq}
@@ -29,7 +32,10 @@ export default function App({ Component, pageProps }: AppProps) {
           <CartProvider>
             <div className="min-h-screen bg-white">
               <Head>
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <meta
+                  name="viewport"
+                  content="width=device-width, initial-scale=1"
+                />
                 <link rel="icon" href="/favicon.ico" />
               </Head>
               <Seo
