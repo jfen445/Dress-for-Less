@@ -18,26 +18,94 @@ async function pickUpInstead(page: any) {
 const localCart = (page: any) =>
   page.evaluate(() => JSON.parse(localStorage.getItem("localCart") ?? "null"));
 
-test("a guest adding to cart is sent to sign in, and keeps nothing locally", async ({
+test("a guest fills a local cart without being sent to sign in", async ({
   page,
   api,
 }) => {
-  // Pinning what actually happens today, which is NOT what CLAUDE.md describes.
-  //
-  // addDressToCart calls getUser(session?.user.email ?? "") before anything
-  // else (ProductPage/index.tsx:88). With no session that request is a 401, and
-  // the axios interceptor in src/api/client.ts turns any 401 into
-  // window.location.href = "/login" — so the guest is navigated away before the
-  // localStorage branch below it can run. The guest cart is unreachable from
-  // this page. See the note in the accompanying report.
   await page.goto(productPage);
   await pickSizeAndDate(page);
   await page.getByRole("button", { name: "Add to cart" }).click();
 
-  await page.waitForURL("**/login", { timeout: 10_000 });
+  await expect
+    .poll(async () => (await localCart(page)) ?? [])
+    .toMatchObject([
+      {
+        dressId: data.DRESS_ID,
+        size: "M",
+        dateBooked: data.bookableDate(),
+        deliveryType: "Delivery",
+      },
+    ]);
 
-  expect(await localCart(page)).toBeNull();
+  // The item stays local: no account exists to attach it to yet.
   expect(api.called("POST", "/api/cart")).toHaveLength(0);
+  expect(page.url()).toContain(productPage);
+
+  // The specific reason this used to fail. /api/user answers 401 without a
+  // session, and the API client turns any 401 into a redirect to /login — so
+  // asking for an account a guest hasn't got is what navigated them away
+  // before the local cart could be written.
+  expect(api.called("GET", "/api/user")).toHaveLength(0);
+});
+
+test("a guest's second identical item is refused rather than duplicated", async ({
+  page,
+}) => {
+  await page.goto(productPage);
+  await pickSizeAndDate(page);
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await expect.poll(async () => (await localCart(page))?.length ?? 0).toBe(1);
+
+  await page.reload();
+  await pickSizeAndDate(page);
+  await page.getByRole("button", { name: "Add to cart" }).click();
+
+  await expect(page.getByText("Item already in cart")).toBeVisible();
+  expect((await localCart(page)).length).toBe(1);
+});
+
+test("a guest can see what they added", async ({ page }) => {
+  await page.goto(productPage);
+  await pickSizeAndDate(page);
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await expect.poll(async () => (await localCart(page))?.length ?? 0).toBe(1);
+
+  // The cart page resolves each line's dress by id, which needs no session.
+  await page.goto("/cart");
+
+  await expect(
+    page.getByRole("heading", { name: "Shopping Cart" }),
+  ).toBeVisible();
+  await expect(page.getByText(data.dress().name).first()).toBeVisible();
+});
+
+test("a guest's cart follows them into their account", async ({ page, api }) => {
+  // The whole point of the local cart: shop first, sign in later, lose nothing.
+  await page.goto(productPage);
+  await pickSizeAndDate(page);
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await expect.poll(async () => (await localCart(page))?.length ?? 0).toBe(1);
+
+  signedIn(api);
+  api.set("GET /api/cart", [data.cartItem()]);
+  await page.goto("/cart");
+
+  await expect
+    .poll(() => api.called("POST", "/api/syncCart").length)
+    .toBeGreaterThan(0);
+
+  // Stamped with the new owner, because syncCart refuses items belonging to
+  // anyone but the caller.
+  expect(api.called("POST", "/api/syncCart")[0].body.cart).toMatchObject([
+    {
+      dressId: data.DRESS_ID,
+      size: "M",
+      dateBooked: data.bookableDate(),
+      userId: data.USER_ID,
+    },
+  ]);
+
+  await expect.poll(async () => (await localCart(page)) ?? []).toEqual([]);
 });
 
 test("a signed-in customer's delivery booking goes straight to the database", async ({

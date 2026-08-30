@@ -101,7 +101,7 @@ Nested in `pages/_app.tsx` (outer → inner): `SessionProvider` → `GlobalConte
 
 - **GlobalContext** (`src/context/GlobalContext.tsx`) — fetches the FAQ on mount, and provides `getDressById`, the cached one-dress-at-a-time lookup described under *Dress catalogue*. It used to hold the entire catalogue; it deliberately no longer does
 - **DressContext** (`src/context/DressContext.tsx`) — mounted by `/dresses` only. Owns that page's query (read from the URL) and its cache of already-fetched pages
-- **UserContext** (`src/context/UserContext.tsx`) — reads the NextAuth session, fetches the custom user record from MongoDB, and syncs any guest `localCart` (from `localStorage`) to the DB on login
+- **UserContext** (`src/context/UserContext.tsx`) — reads the NextAuth session and fetches the custom user record from MongoDB. It does *not* sync the guest cart; `CartContext` does
 - **CartContext** (`src/context/CartContext.tsx`) — tracks cart item count; falls back to `localStorage` for unauthenticated users
 - **NavigationContext** — controls mobile nav open/close state
 
@@ -199,7 +199,27 @@ via the external-request assertion rather than passing quietly.
 
 ### Guest cart
 
-Unauthenticated users' cart items are stored in `localStorage` under the key `localCart` via `src/hooks/useLocalStorage.ts`. On login, `UserContext` calls `syncCart` to migrate these items to the DB, then clears local storage.
+**Signing in is not a prerequisite for filling a cart.** A guest browses, adds, and views
+their cart entirely client-side; the items follow them into their account when they sign
+in.
+
+Items are stored in `localStorage` under the key `localCart` via
+`src/hooks/useLocalStorage.ts`, with no `userId` — there isn't one yet. `CartContext`
+(not `UserContext`) stamps ownership on and calls `syncCart` the moment a `userInfo`
+appears, then clears local storage. Local storage is cleared **only after the server has
+the items**, so a failed sync leaves the guest cart intact to retry rather than dropping
+it. `pages/api/syncCart.ts` is idempotent per item (it checks `getCartItem` before
+inserting) and refuses any item whose `userId` isn't the caller's.
+
+This did not work for a long time, and the reason is worth keeping in mind whenever a
+guest-reachable path calls an authenticated endpoint: `addDressToCart` looked up the
+user's account *before* deciding whether there was a session. `/api/user` answers 401
+without one, and the axios interceptor in `src/api/client.ts` turns **any** 401 into
+`window.location.href = "/login"` — so a guest was navigated off the page before the
+`localStorage` branch below could run. The branch was there; nothing could reach it. The
+guest path now returns before any authenticated call is made, and
+`tests/e2e/cart.spec.ts` asserts that `/api/user` is never called for a guest, which is
+the actual invariant rather than a restatement of the symptom.
 
 ### Checkout flow
 
