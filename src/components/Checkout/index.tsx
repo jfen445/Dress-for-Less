@@ -8,7 +8,7 @@ import Spinner from "../Spinner";
 import { useUserContext } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import { getCart } from "@/api/cart";
-import { getDress } from "../../../sanity/sanity.query";
+import { useGlobalContext } from "@/context/GlobalContext";
 
 export type ValidatedAddress = {
   addressText: string;
@@ -49,6 +49,7 @@ const Checkout = () => {
     React.useState<ValidatedAddress | null>(null);
 
   const { userInfo } = useUserContext();
+  const { getDressById } = useGlobalContext();
   const { status } = useSession();
   const [isLoadingProducts, setIsLoadingProducts] =
     React.useState<boolean>(true);
@@ -81,16 +82,26 @@ const Checkout = () => {
 
         const dresses = await Promise.all(
           selectedItems.map(async (item) => {
-            const dress = await getDress(item.dressId);
-            dress.dateBooked = item.dateBooked;
-            dress.cartItemId = item._id;
-            dress.size = item.size;
-            dress.deliveryType = item.deliveryType;
-            return dress as CartItemType;
+            const dress = await getDressById(item.dressId);
+            if (!dress) return null;
+
+            // Copied, never mutated in place: getDressById hands back the one
+            // cached record for this dress, so writing the line's date and size
+            // onto it would leak them into every other line sharing that dress.
+            return {
+              ...dress,
+              dateBooked: item.dateBooked,
+              cartItemId: item._id,
+              size: item.size,
+              deliveryType: item.deliveryType,
+            } as CartItemType;
           }),
         );
 
-        if (!cancelled) setProducts(dresses);
+        if (!cancelled)
+          setProducts(
+            dresses.filter((dress): dress is CartItemType => Boolean(dress)),
+          );
       } catch (err) {
         console.error(err);
       } finally {
@@ -103,7 +114,7 @@ const Checkout = () => {
     return () => {
       cancelled = true;
     };
-  }, [userInfo, status]);
+  }, [userInfo, status, getDressById]);
 
   return (
     <ProductContext.Provider

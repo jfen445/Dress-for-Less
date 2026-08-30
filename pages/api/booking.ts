@@ -32,7 +32,7 @@ import {
   releaseCouponClaims,
 } from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
-import { getDress } from "../../sanity/sanity.query";
+import { getDressPricing } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
 import {
@@ -154,21 +154,21 @@ export default async function handler(
     // to rent any dress for the Stripe minimum. Every downstream figure —
     // subtotal, coupon coverage, persisted price, and the amount the card is
     // actually charged — is derived from this map.
+    const distinctDressIds = [...new Set(items.map((item) => item.dressId))];
+    const pricedDresses = await Promise.all(
+      distinctDressIds.map((dressId) => getDressPricing(dressId)),
+    );
+
     const dressPriceById = new Map<string, number>();
-    for (const item of items) {
-      if (!dressPriceById.has(item.dressId)) {
-        const dress = await getDress(item.dressId);
-        if (!dress) {
-          return res.status(404).json({ message: "Dress not found" });
-        }
-        const price = Number(dress.price);
-        if (!Number.isFinite(price)) {
-          return res
-            .status(500)
-            .json({ message: "Dress is missing a price" });
-        }
-        dressPriceById.set(item.dressId, price);
+    for (const [index, dress] of pricedDresses.entries()) {
+      if (!dress) {
+        return res.status(404).json({ message: "Dress not found" });
       }
+      const price = Number(dress.price);
+      if (!Number.isFinite(price)) {
+        return res.status(500).json({ message: "Dress is missing a price" });
+      }
+      dressPriceById.set(distinctDressIds[index], price);
     }
     const priceForItem = (item: (typeof items)[number]) =>
       dressPriceById.get(item.dressId)!;
@@ -619,7 +619,7 @@ export default async function handler(
 
       const bookingItems = [];
       for (const item of itemsPayload) {
-        const dress = await getDress(item.dressId);
+        const dress = await getDressPricing(item.dressId);
         if (!dress) return res.status(404).json({ message: "Dress not found" });
 
         const blocked = await checkBlockOut(

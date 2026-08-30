@@ -1,79 +1,69 @@
 // 📌 context/GlobalContext.tsx
 import React from "react";
 import { DressType, Faq } from "../../common/types";
-import { getAllDresses } from "@/api/dress";
+import { getDressById as fetchDressById } from "@/api/dress";
 import { getAllFaq } from "@/api/faq";
 
 interface GlobalProps {
-  allDresses: DressType[];
+  // Resolves one dress, from cache when it has been asked for before. This is
+  // how the cart, checkout and the receipt find their dresses — a handful of
+  // known ids never justified downloading the catalogue to look them up, which
+  // is exactly what this context used to do on every route in the app.
+  //
+  // Deliberately separate from the /dresses page cache: that one holds the
+  // trimmed listing projection, and these callers read description, length,
+  // stretch and rrp, which it does not carry. Sharing the two would hand them a
+  // record with silently missing fields rather than an error.
+  getDressById: (id: string) => Promise<DressType | undefined>;
   faq: Faq[];
-  getDressWithId: (id: string) => DressType;
-  getHomeScreenDresses: (count?: number) => DressType[];
-  getFavouriteDresses: () => DressType[];
-}
-
-interface GlobalContextProviderProps extends React.PropsWithChildren {
-  initialDresses?: DressType[];
-  initialFaq?: Faq[];
 }
 
 const globalContext = React.createContext<GlobalProps>({} as GlobalProps);
 
-const GlobalContextProvider = ({
-  children,
-  initialDresses,
-  initialFaq,
-}: GlobalContextProviderProps) => {
-  const [allDresses, setAllDresses] = React.useState<DressType[]>(
-    initialDresses ?? []
+const GlobalContextProvider = ({ children }: React.PropsWithChildren) => {
+  const [faq, setFaq] = React.useState<Faq[]>([]);
+
+  const dressById = React.useRef(new Map<string, DressType>());
+  // Two cart lines for the same dress mount together; without this they would
+  // each fire their own request for it.
+  const inFlight = React.useRef(
+    new Map<string, Promise<DressType | undefined>>(),
   );
-  const [faq, setFaq] = React.useState<Faq[]>(initialFaq ?? []);
 
-  React.useEffect(() => {
-    async function fetchData() {
-      await getAllDresses()
-        .then((data) => {
-          const dressData = data.data as unknown as DressType[];
-          setAllDresses(dressData);
-        })
-        .catch((error) => console.error(error.data));
+  const getDressById = React.useCallback(async (id: string) => {
+    const cached = dressById.current.get(id);
+    if (cached) return cached;
 
-      await getAllFaq()
-        .then((data) => {
-          const faqData = data.data as unknown as Faq[];
-          setFaq(faqData);
-        })
-        .catch((error) => console.error(error.data));
-    }
+    const pending = inFlight.current.get(id);
+    if (pending) return pending;
 
-    fetchData();
+    const request = fetchDressById(id)
+      .then(({ data }) => {
+        const dress = data as unknown as DressType;
+        dressById.current.set(id, dress);
+        return dress;
+      })
+      .catch((error) => {
+        console.error(error);
+        return undefined;
+      })
+      .finally(() => {
+        inFlight.current.delete(id);
+      });
+
+    inFlight.current.set(id, request);
+    return request;
   }, []);
 
-  const getDressWithId = React.useCallback((id: string) => {
-    return allDresses.filter((dress) => dress._id == id)[0];
-  }, [allDresses]);
-
-  const getHomeScreenDresses = (count: number = 7) => {
-    const shuffled = [...allDresses].sort(() => Math.random() - 0.5); // Shuffle the array
-    return shuffled.slice(0, count); // Get the first 'count' elements
-  };
-
-  const getFavouriteDresses = (count: number = 3) => {
-    const withImages = allDresses.filter((dress) => dress.images?.length > 0);
-    const shuffled = [...withImages].sort(() => Math.random() - 0.5); // Shuffle the array
-    return shuffled.slice(0, count); // Get the first 'count' elements
-  };
+  React.useEffect(() => {
+    // A few dozen short documents, and /faq has no getStaticProps of its own.
+    getAllFaq()
+      .then((data) => setFaq(data.data as unknown as Faq[]))
+      .catch((error) => console.error(error));
+  }, []);
 
   return (
-    <globalContext.Provider
-      value={{
-        allDresses,
-        faq,
-        getDressWithId,
-        getHomeScreenDresses,
-        getFavouriteDresses,
-      }}
-    >
+    <globalContext.Provider value={{ getDressById, faq }}>
       {children}
     </globalContext.Provider>
   );

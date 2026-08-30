@@ -2,7 +2,7 @@ import React from "react";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import Calendar from "@/components/ProductPage/Calendar";
-import { useGlobalContext } from "@/context/GlobalContext";
+import useAllDresses from "@/hooks/useAllDresses";
 import { getAllAdminUsers } from "@/api/admin";
 import { updateBooking } from "@/api/booking";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
@@ -122,7 +122,7 @@ const EditBookingModal = ({
   onEdited,
   onError,
 }: IEditBookingModal) => {
-  const { allDresses } = useGlobalContext();
+  const { allDresses } = useAllDresses();
   const [users, setUsers] = React.useState<UserType[]>([]);
   const [customerMode, setCustomerMode] = React.useState<"existing" | "new">(
     "existing",

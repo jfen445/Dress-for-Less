@@ -1,7 +1,6 @@
 "use client";
 
 import { useNavigationContext } from "@/context/NavigationContext";
-import { useGlobalContext } from "@/context/GlobalContext";
 import { useUserContext } from "@/context/UserContext";
 import { useDressSearch } from "@/hooks/useDressSearch";
 import SearchResultsList from "@/components/Search/SearchResultsList";
@@ -129,11 +128,10 @@ function classNames(...classes: string[]) {
 
 const MobileNav = () => {
   const { mobileNavOpen, setMobileNavOpen } = useNavigationContext();
-  const { allDresses } = useGlobalContext();
   const { userInfo } = useUserContext();
   const { data: session } = useSession();
   const { searchQuery, setSearchQuery, searchResults } =
-    useDressSearch(allDresses);
+    useDressSearch();
 
   return (
     <Transition.Root show={mobileNavOpen} as={Fragment}>

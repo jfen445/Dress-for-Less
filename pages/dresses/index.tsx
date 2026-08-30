@@ -2,16 +2,19 @@ import * as React from "react";
 import { GetStaticProps } from "next";
 import DressGrid from "@/components/DressPage/DressGrid";
 import Filters from "@/components/DressPage/Filters";
-import DressContextProvider from "@/context/DressContext";
+import DressContextProvider, {
+  type DressPageResult,
+} from "@/context/DressContext";
 import Seo from "@/components/Seo";
-import { getDressesForListing } from "../../sanity/sanity.query";
+import { getDressPage } from "../../sanity/sanity.query";
+import { parseDressQuery } from "../../lib/dresses/dressQuery";
 import { DressType } from "../../common/types";
 
 interface DressPageProps {
-  dresses: DressType[];
+  initialPage: DressPageResult;
 }
 
-const DressPage = ({ dresses }: DressPageProps) => {
+const DressPage = ({ initialPage }: DressPageProps) => {
   return (
     <>
       <Seo
@@ -21,7 +24,7 @@ const DressPage = ({ dresses }: DressPageProps) => {
       />
       <div className="bg-white">
         <main>
-          <DressContextProvider initialDresses={dresses}>
+          <DressContextProvider initialPage={initialPage}>
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
               {/* Filters */}
               <Filters />
@@ -44,14 +47,19 @@ const DressPage = ({ dresses }: DressPageProps) => {
 export default DressPage;
 
 export const getStaticProps: GetStaticProps<DressPageProps> = async () => {
-  // Trimmed listing projection (not the full getAllDressesFromSanity), since
-  // Filters/DressGrid only ever read name/brand/price/first image/tags/sizes —
-  // the full catalogue's description/notes/all-images bloat this page's data
-  // payload for no display benefit here.
-  const dresses = (await getDressesForListing()) as DressType[];
+  // Page one of the default query only. getStaticProps has no access to query
+  // params on a static page, so every filtered or deeper URL is fetched
+  // client-side from /api/sanity/listing instead — which is also what makes
+  // this page cheap: it used to ship the entire catalogue to render 30 cards.
+  const page = await getDressPage(parseDressQuery({}));
 
   return {
-    props: { dresses },
+    props: {
+      initialPage: {
+        items: (page.items ?? []) as DressType[],
+        total: page.total ?? 0,
+      },
+    },
     revalidate: 1800,
   };
 };

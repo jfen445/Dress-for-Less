@@ -2,7 +2,7 @@ import React from "react";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import Calendar from "@/components/ProductPage/Calendar";
-import { useGlobalContext } from "@/context/GlobalContext";
+import useAllDresses from "@/hooks/useAllDresses";
 import { getAllAdminUsers, createAdminBooking } from "@/api/admin";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { UserType, Address, Sizes, DressType } from "../../../../common/types";
@@ -126,7 +126,7 @@ const CreateBookingModal = ({
   onCreated,
   defaultDeliveryType = DeliveryType.Delivery,
 }: ICreateBookingModal) => {
-  const { allDresses } = useGlobalContext();
+  const { allDresses } = useAllDresses();
   const sortedDresses = React.useMemo(
     () => [...(allDresses ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
     [allDresses],

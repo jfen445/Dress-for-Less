@@ -36,6 +36,10 @@ const PNG = Buffer.from(
 
 export class Api {
   private stubs = new Map<string, Stub>();
+  // Dynamic routes can't be keyed exactly — /api/sanity/dress/[id] is a
+  // different path per dress. Prefix stubs are only consulted when no exact
+  // stub matches, so the catch-all still fails on anything unmodelled.
+  private prefixStubs = new Map<string, Stub>();
   // The full URL is kept alongside the path because some of what the app sends
   // rides in the query string rather than the body — the checkout's price, for
   // one, which is the amount Stripe is about to be told to charge.
@@ -49,12 +53,25 @@ export class Api {
     return this;
   }
 
+  /** `setPrefix("GET /api/sanity/dress/", ...)` for dynamic routes. */
+  setPrefix(keyPrefix: string, stub: Stub) {
+    this.prefixStubs.set(keyPrefix, stub);
+    return this;
+  }
+
+  private matchPrefix(key: string) {
+    for (const [prefix, stub] of this.prefixStubs) {
+      if (key.startsWith(prefix)) return stub;
+    }
+    return undefined;
+  }
+
   get(key: string) {
-    return this.stubs.get(key);
+    return this.stubs.get(key) ?? this.matchPrefix(key);
   }
 
   has(key: string) {
-    return this.stubs.has(key);
+    return this.stubs.has(key) || this.matchPrefix(key) !== undefined;
   }
 
   called(method: string, path: string) {
@@ -71,9 +88,18 @@ function defaults(api: Api) {
     .set("GET /api/auth/providers", {})
     .set("GET /api/auth/_log", {})
     .set("POST /api/auth/_log", {})
-    // GlobalContext, on every page.
-    .set("GET /api/sanity/dresses", data.dressList())
+    // The whole catalogue. Only /admin asks for this now; a customer-facing
+    // page hitting it is a regression, which catalogue-fetch.spec.ts asserts.
+    .set("GET /api/sanity/catalogue", data.dressList())
     .set("GET /api/sanity/faq", [])
+    // The paged listing, the id cache, and nav search.
+    .set("GET /api/sanity/listing", ({ url }: StubContext) =>
+      data.dressPage(url),
+    )
+    .set("GET /api/sanity/search", data.dressList().slice(0, 8))
+    .setPrefix("GET /api/sanity/dress/", ({ url }: StubContext) =>
+      data.dress({ _id: decodeURIComponent(url.pathname.split("/").pop()!) }),
+    )
     // UserContext / CartContext.
     // What the real route returns to a caller with no session (pages/api/user.ts
     // answers 401 before it ever looks at the email). Signed-in tests override it.
@@ -129,25 +155,12 @@ async function install(page: Page, api: Api) {
     route.fulfill({ status: 200, contentType: "image/png", body: PNG }),
   );
 
-  // Sanity's query API, which the browser talks to directly on the checkout
-  // page (getDress per cart line) rather than through /api/**. cdn.sanity.io is
-  // excluded because that host serves imagery, handled just above.
-  await page.route(
-    (url) =>
-      url.hostname.endsWith("sanity.io") && url.hostname !== "cdn.sanity.io",
-    (route) => {
-      const url = new URL(route.request().url());
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          result: data.sanityResultFor(url),
-          ms: 0,
-          query: url.searchParams.get("query") ?? "",
-        }),
-      });
-    },
-  );
+  // Sanity's query API is deliberately *not* stubbed for the browser. Checkout
+  // used to call getDress() directly from the client, once per cart line; it
+  // goes through /api/sanity/dress/[id] now, and nothing else in the app talks
+  // to Sanity from a browser. Leaving it unstubbed means a reintroduction is
+  // caught by the external-request assertion below rather than passing quietly.
+  // (cdn.sanity.io is separate — it serves imagery, handled just above.)
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();

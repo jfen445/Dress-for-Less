@@ -26,12 +26,21 @@ Both suites run fully offline and need no secrets — see `tests/`.
   It deliberately cannot prove *simultaneity*: `claimCoupon`'s guarded
   `findOneAndUpdate` and the try-on unique index are MongoDB behaviours, and the fakes
   stand in for them.
+  The catalogue query builder is tested the same way: `tests/unit/lib/dresses/` covers
+  the pure rules, and `tests/unit/sanity/` asserts the **GROQ text** they assemble, with
+  the client replaced by a spy. That is its limit — it proves what is asked for, never
+  what Sanity answers.
 - **Playwright** (`playwright.config.ts`, `tests/e2e/`) drives the customer journeys:
   browsing, the calendar's two gates, add-to-cart for both delivery methods, password
-  sign-in, and checkout through to the payment step. Every `/api/**` call is answered
+  sign-in, checkout through to the payment step, and the `/dresses` listing's filter,
+  sort, pagination and caching behaviour. Every `/api/**` call is answered
   from a stub table (`tests/e2e/fixtures/app.ts`) whose catch-all **fails the test** on
-  any path it doesn't model; the dev server's own `getStaticProps` Sanity calls are
-  answered by a Node-level preload (`tests/e2e/sanity-intercept.cjs`). js.stripe.com is
+  any path it doesn't model (`setPrefix` covers dynamic routes like
+  `/api/sanity/dress/[id]`); the dev server's own `getStaticProps` Sanity calls are
+  answered by a Node-level preload (`tests/e2e/sanity-intercept.cjs`). Both Sanity stubs
+  dispatch on *substrings of the GROQ text*, so a new query that matches no arm falls
+  through to `[]` — which on the product page is a silent 404, not a visible failure.
+  Add an arm to both. js.stripe.com is
   never loaded — the payment step itself is covered by an RTL test of `PaymentForm` —
   and pages behind `middleware.ts` (`/account`, `/admin`) need the real signed session
   cookie minted by `tests/e2e/fixtures/auth.ts`.
@@ -39,6 +48,17 @@ Both suites run fully offline and need no secrets — see `tests/`.
 Guards are mutation-checked, not just green: break the production code a test protects
 and confirm that test (and only it) fails. A route test that has never been seen to fail
 is decorative.
+
+Two things make a Playwright mutation check pass when it should not, so when one
+unexpectedly survives, suspect the test before trusting the code:
+
+- **A stale dev-server bundle.** The config reuses a running server, and the first run
+  after editing a source file can be served from the previous compile. Run the mutated
+  spec twice.
+- **Asserting on server-rendered paint.** `/dresses` always renders page one server-side,
+  so waiting for a dress name to appear succeeds *before* the app has read the URL's
+  query params. Wait on state that can only exist afterwards — the pager's
+  `aria-current="page"` — or the click races hydration and the mutation is invisible.
 
 ## Architecture
 
@@ -70,15 +90,112 @@ Key routes:
 - `pages/api/booking/release.ts` — hands an unpaid reservation back when payment fails
 - `pages/api/cart.ts` — cart operations; `pages/api/syncCart.ts` merges a guest cart into a logged-in user's cart on login
 - `pages/api/admin/bookings.ts` — admin-only booking management
+- `pages/api/sanity/listing.ts` — one page of the catalogue, filtered and sorted in GROQ
+- `pages/api/sanity/dress/[id].ts` — one dress, full projection
+- `pages/api/sanity/search.ts` — typeahead search
+- `pages/api/sanity/catalogue.ts` — every dress at once. `/admin` only — see below for why the distinction matters
 
 ### Context providers
 
 Nested in `pages/_app.tsx` (outer → inner): `SessionProvider` → `GlobalContextProvider` → `UserContextProvider` → `CartProvider` → `NavigationContextProvider`.
 
-- **GlobalContext** (`src/context/GlobalContext.tsx`) — fetches all dresses and FAQ from the API on mount; provides `getDressWithId`, `getHomeScreenDresses`, `getFavouriteDresses`
+- **GlobalContext** (`src/context/GlobalContext.tsx`) — fetches the FAQ on mount, and provides `getDressById`, the cached one-dress-at-a-time lookup described under *Dress catalogue*. It used to hold the entire catalogue; it deliberately no longer does
+- **DressContext** (`src/context/DressContext.tsx`) — mounted by `/dresses` only. Owns that page's query (read from the URL) and its cache of already-fetched pages
 - **UserContext** (`src/context/UserContext.tsx`) — reads the NextAuth session, fetches the custom user record from MongoDB, and syncs any guest `localCart` (from `localStorage`) to the DB on login
 - **CartContext** (`src/context/CartContext.tsx`) — tracks cart item count; falls back to `localStorage` for unauthenticated users
 - **NavigationContext** — controls mobile nav open/close state
+
+### Dress catalogue
+
+The catalogue is ~600 dresses. **Nothing customer-facing loads more than it renders.**
+
+It used to. `GlobalContext` fetched every dress on mount — the full projection, carrying
+`description`, `notes` and *every* image URL — on every route in the app, including
+`/cart`, `/login` and `/checkout`. `/dresses` additionally shipped the whole catalogue in
+`__NEXT_DATA__` and then threw it away, because its filters read `GlobalContext` rather
+than the page's own props. Sanity itself was never the cost: both paths sit behind ISR or
+`s-maxage=3600`. The cost was payload, on every visit to every page.
+
+Three access patterns replaced it, and the split is deliberate:
+
+- **A page at a time** — `getDressPage` (`sanity/sanity.query.ts`), behind
+  `/api/sanity/listing`. Returns the slice *and* the count from one fetch: asking
+  separately lets the two disagree, which shows up as a pager offering a page that
+  renders empty.
+- **One dress by id** — `getDressById` (`GlobalContext`), backed by
+  `/api/sanity/dress/[id]`. Used by the cart, checkout and the receipt. Caches by id and
+  dedupes in-flight requests, so two cart lines for the same dress cost one request.
+- **All of them** — `getCatalogue`, behind `/api/sanity/catalogue`, reached only through
+  `src/hooks/useAllDresses.ts`. `/admin` genuinely needs every dress in one table. The
+  hook keeps its cache at module scope rather than in a context, so the admin components
+  that mount together share one request without mounting fetch-everything machinery on
+  every route in the app to serve one route behind `middleware.ts`.
+
+**The two caches must not be merged.** The page cache holds the trimmed listing
+projection; the id cache holds full documents. `Cart` builds its rows from `description`,
+`length`, `stretch` and `rrp`, none of which the listing projection carries — so feeding
+it a listing row produces silent `undefined`s rather than an error. For the same reason
+`getDressById`'s callers **copy** what it returns before annotating it: it hands back the
+one cached record per dress, so writing a cart line's size onto it leaks into every other
+line sharing that dress.
+
+`getDressPricing` exists for the same reason in the other direction: the server-side
+callers that only need `.price` and the size counts (`pages/api/booking.ts`,
+`lib/utils/checkBookingAvailability.ts`) no longer pull descriptions and image lists to
+read two numbers. The call sites that attach a dress to an *email* still use `getDress`.
+
+### The /dresses listing
+
+**The URL is the only source of truth** for filter, sort and page —
+`?filter=…&filter=…&sort=…&page=…`, with defaults omitted so `/dresses` stays `/dresses`
+and existing links like `/dresses?filter=customer_faves` keep their exact shape.
+
+Page one with no params is `getStaticProps` + ISR; anything else is fetched client-side
+and cached in `DressContext` for the life of the tab. `lib/dresses/dressQuery.ts` turns
+query params into the pieces of a GROQ query and is free of any Sanity client, so the
+rules deciding *which* dresses a page contains are testable without a network.
+
+- **Offset pagination needs a total order.** Every sort ends in `_id asc`; without a
+  tiebreaker a slice can repeat a dress on one page and skip it on another. `"Most
+  Popular"` used to be `case "Most Popular": break;` — a literal no-op — and no dress
+  query had an `order()` clause at all.
+- **Whatever reaches the query text is whitelisted.** Tag filters ride as bound
+  parameters. Size filters cannot — they name document fields — so the clause is built
+  from `SIZE_VALUES` rather than from the caller's strings. Slice bounds and order
+  clauses are interpolated from validated integers and a fixed map.
+- **Filter values are one flat `?filter=` list**, sorted into category/colour/size by
+  whitelist membership. Emitting them in whitelist order rather than URL order makes the
+  cache key canonical, so `?filter=red&filter=ball` and `?filter=ball&filter=red` are one
+  entry.
+- **Changing a filter or sort returns to page one**, since page 5 of the unfiltered
+  catalogue usually does not exist once a filter is applied.
+- Deriving all three from the URL is also what fixed three older bugs at once: the chosen
+  sort was dropped on every filter change, `updateSortOption` read a module constant
+  instead of state, and a one-shot `filtersLoaded` latch meant back/forward changed the
+  address bar and nothing else.
+- Cards are `next/link`. As plain `<a href>` every click was a full page reload, which
+  discarded both caches and the current page — the cache only pays off with soft
+  navigation.
+
+**Known limitation:** filtered and deep-paged URLs server-render page one and correct
+themselves on the client, so a crawler sees page one's dresses for `/dresses?page=2`.
+Page one itself is fully static. Moving the whole page to `getServerSideProps` would fix
+that and cost the ISR cache.
+
+The home page hero and favourites draw from **moving windows** (`getHeroPool` at a random
+offset, chosen per ISR regeneration). The previous `getDressesForListing(40)` had no
+`order()` and no offset, so it was the same 40 dresses forever — it only looked varied
+because the full-catalogue fetch replaced the pool client-side. Removing that fetch
+without this would have degraded the hero invisibly.
+
+Nav search (`src/hooks/useDressSearch.ts`) is a debounced GROQ `match` query. Note this
+makes it token-prefix based: "gow" finds "gown", "own" no longer does — the in-memory
+substring test it replaced cannot be pushed into a query.
+
+`tests/e2e/catalogue-fetch.spec.ts` guards the whole property: no customer-facing route
+may fetch the catalogue. The e2e fixture also deliberately **does not stub browser→Sanity
+calls**, so reintroducing one (checkout used to make one per cart line) fails the suite
+via the external-request assertion rather than passing quietly.
 
 ### Guest cart
 

@@ -40,7 +40,6 @@ export type DressType = {
   _id: string;
   name: string;
   description: string;
-  size: string;
   images: string[];
   tags: string[];
   price: number;

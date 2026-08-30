@@ -24,7 +24,7 @@ const OrderSuccess = ({
   const params = useParams<{ payment_intent: string }>();
   const router = useRouter();
   const { refreshCart } = useCartContext();
-  const { getDressWithId } = useGlobalContext();
+  const { getDressById } = useGlobalContext();
   const { userInfo } = useUserContext();
   const [booking, setBooking] = React.useState<Booking | null>(null);
   const [deliveryCost, setDeliveryCost] = React.useState<number>(0);
@@ -82,7 +82,7 @@ const OrderSuccess = ({
       return Promise.all(
         items.map(async (item) => {
           try {
-            return { item, dress: await getDressWithId(item.dressId) };
+            return { item, dress: await getDressById(item.dressId) };
           } catch (error) {
             console.error(
               `Error fetching dress with ID ${item.dressId}:`,
@@ -98,7 +98,7 @@ const OrderSuccess = ({
       setLineItems(results as unknown as LineItem[]);
       setIsLoading(false);
     });
-  }, [booking, getDressWithId, refreshCart]);
+  }, [booking, getDressById, refreshCart]);
 
   const firstItem = booking?.items[0];
 

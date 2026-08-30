@@ -1,6 +1,6 @@
 import React from "react";
 import dayjs from "dayjs";
-import { useGlobalContext } from "@/context/GlobalContext";
+import useAllDresses from "@/hooks/useAllDresses";
 import { getBlockOuts, createBlockOut, deleteBlockOut } from "@/api/admin";
 import { BlockOut } from "../../../../common/types";
 import Button from "@/components/Button";
@@ -11,7 +11,7 @@ import { sizedImageUrl } from "../../../../sanity/lib/image";
 const SIZES = ["XS", "S", "M", "L", "XL"];
 
 const AdminBlockOuts = () => {
-  const { allDresses } = useGlobalContext();
+  const { allDresses } = useAllDresses();
   const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [toast, setToast] = React.useState<ToastType>({ message: "", variant: ToastVariant.WARNING, show: false });

@@ -1,22 +1,30 @@
 "use client";
 
-import { JSX, useState } from "react";
+import { JSX } from "react";
 import HeroSection from "./HeroSection";
 import FeaturedSection from "./FeaturedSection";
 import FavouritesSection from "./FavouritesSection";
-import { sanityFetch } from "../../../sanity/sanity.client";
+import { DressType } from "../../../common/types";
 
-const HomePage: () => JSX.Element = () => {
+interface HomePageProps {
+  heroPool: DressType[];
+  favourites: DressType[];
+}
+
+const HomePage: (props: HomePageProps) => JSX.Element = ({
+  heroPool,
+  favourites,
+}) => {
   return (
     <div>
-      <HeroSection />
+      <HeroSection pool={heroPool} />
 
       <main>
         {/* Featured section */}
         <FeaturedSection />
 
         {/* Favorites section */}
-        <FavouritesSection />
+        <FavouritesSection dresses={favourites} />
 
         {/* CTA section */}
         {/* <SaleSection /> */}

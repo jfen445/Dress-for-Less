@@ -18,7 +18,7 @@ import { useCartContext } from "@/context/CartContext";
 
 const Cart = () => {
   const { refreshCart } = useCartContext();
-  const { getDressWithId, allDresses } = useGlobalContext();
+  const { getDressById } = useGlobalContext();
   const { getItems, setItems, clearItems } =
     useLocalStorage<CartType[]>("localCart");
   const { userInfo } = useUserContext();
@@ -51,10 +51,19 @@ const Cart = () => {
   const getUserCart = React.useCallback(async () => {
     setIsLoading(true);
 
-    const buildCartProducts = (cartItems: CartType[]) => {
-      const items = cartItems
-        .map((item) => {
-          const dress = getDressWithId(item.dressId);
+    const buildCartProducts = async (cartItems: CartType[]) => {
+      // One request per distinct dress, deduped and cached by getDressById —
+      // a cart is a few lines, so this is cheaper than the whole catalogue by
+      // orders of magnitude.
+      const resolved = await Promise.all(
+        cartItems.map(async (item) => ({
+          item,
+          dress: await getDressById(item.dressId),
+        })),
+      );
+
+      const items = resolved
+        .map(({ item, dress }) => {
           if (!dress) return null;
 
           const cartItemId =
@@ -106,7 +115,7 @@ const Cart = () => {
           return;
         }
 
-        buildCartProducts(cartItems);
+        await buildCartProducts(cartItems);
         return;
       }
 
@@ -119,7 +128,7 @@ const Cart = () => {
         return;
       }
 
-      buildCartProducts(cartItems);
+      await buildCartProducts(cartItems);
     } catch (error) {
       setProducts([]);
       setSelectedProductIds([]);
@@ -127,14 +136,15 @@ const Cart = () => {
       setIsLoading(false);
       console.error(error);
     }
-  }, [getDressWithId, userInfo, getItems]);
+  }, [getDressById, userInfo, getItems]);
 
   React.useEffect(() => {
     if (status === "loading") return;
     if (status === "authenticated" && !userInfo) return;
-    if (allDresses.length === 0) return;
+    // No catalogue to wait for any more: each line resolves its own dress, and
+    // isLoading covers the gap.
     getUserCart().catch(() => setErr(true));
-  }, [getUserCart, status, userInfo, allDresses.length]);
+  }, [getUserCart, status, userInfo]);
 
   const removeItem = async (cartItemId: CartItemType) => {
     if (status === "unauthenticated") {
