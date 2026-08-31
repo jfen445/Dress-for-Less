@@ -448,7 +448,15 @@ export const blockoutDao = {
 
 export const sanityQuery = {
   getDress: async (dressId: string) => db.dresses.get(dressId) ?? null,
-  getAllDressesFromSanity: async () => Array.from(db.dresses.values()),
+  getCatalogue: async () => Array.from(db.dresses.values()),
+  // Narrowed deliberately, mirroring the real projection: a caller that reads
+  // a display field off this should fail here rather than in production.
+  getDressPricing: async (dressId: string) => {
+    const dress = db.dresses.get(dressId);
+    if (!dress) return null;
+    const { _id, price, xs, s, m, l, xl } = dress;
+    return { _id, price, xs, s, m, l, xl };
+  },
 };
 
 export const resolveRuralDeliveryStatus = vi.fn(

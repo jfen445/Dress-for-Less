@@ -56,6 +56,28 @@ function resultFor(url) {
     return { ...dress, _id: requested || dress._id };
   }
 
+  // getDressPage asks for the slice and the count in one object projection.
+  // The slice is honoured so a broken pager can't pass; filtering is not
+  // emulated, since that is Sanity's job and is proven at the clause level in
+  // tests/unit/lib/dresses/dressQuery.test.ts instead.
+  if (query.includes('"total": count(')) {
+    return { items: sliceOf(query, listing()), total: LISTING_SIZE };
+  }
+
+  if (query.includes("match $pattern")) return sliceOf(query, listing());
+
+  if (query.trimStart().startsWith("count(")) return LISTING_SIZE;
+
+  // The hero pool, distinguishable because it is the one dress projection with
+  // no price — it needs an id and one image and nothing else. Its slice must be
+  // honoured too: the point of the hero query is that the window moves.
+  if (
+    query.includes("[images[0].asset->url]") &&
+    !query.includes("price")
+  ) {
+    return sliceOf(query, listing());
+  }
+
   // The home page's hero indexes dresses[0..6] unguarded, so a listing has to
   // return at least seven or the page throws while rendering.
   if (query.includes('_type == "dress"')) return listing();
@@ -63,7 +85,22 @@ function resultFor(url) {
   return [];
 }
 
-const LISTING_SIZE = 8;
+// Applies a GROQ [start...end] slice from the query text to a fixture array,
+// wrapping so an offset past the end still yields dresses rather than nothing.
+function sliceOf(query, items) {
+  const match = query.match(/\[(\d+)\.\.\.(\d+)\]/);
+  if (!match) return items;
+
+  const start = Number(match[1]) % items.length;
+  const end = start + (Number(match[2]) - Number(match[1]));
+
+  return Array.from({ length: Math.min(end - start, items.length) }, (_, i) =>
+    items[(start + i) % items.length],
+  );
+}
+
+// Bigger than one page (30), so pagination is exercised rather than assumed.
+const LISTING_SIZE = 40;
 
 // Each entry needs its own image URL: the hero picks seven dresses with
 // *distinct* first images (getDressesWithUniqueImages), so a listing that

@@ -1,7 +1,7 @@
 import React from "react";
 import Spinner from "@/components/Spinner";
 import Input from "@/components/Input";
-import { useGlobalContext } from "@/context/GlobalContext";
+import useAllDresses from "@/hooks/useAllDresses";
 import { useAdminBooking } from "@/context/AdminBookingContext";
 import { getBlockOuts } from "@/api/admin";
 import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
@@ -13,7 +13,7 @@ import { sizedImageUrl } from "../../../../sanity/lib/image";
 const PAGE_SIZE = 32;
 
 const AdminDresses = () => {
-  const { allDresses } = useGlobalContext();
+  const { allDresses } = useAllDresses();
   const {
     dressStatuses: statusesByDress,
     fetchDressStatuses,

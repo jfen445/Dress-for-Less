@@ -743,7 +743,6 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     }
   };
 
-
   const renderBookingRow = (bookingList: Booking[], isUpcoming: boolean) => {
     return (
       <>
@@ -765,7 +764,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                 <td className="px-3 py-5 text-sm">
                   <div className="flex items-center">
                     <img
-                      src={sizedImageUrl(primaryItem?.dress?.images[0], { width: 88 })}
+                      src={sizedImageUrl(primaryItem?.dress?.images[0], {
+                        width: 88,
+                      })}
                       alt={primaryItem?.dress?.name ?? ""}
                       className="h-11 w-11 rounded-full cursor-pointer"
                       onClick={(e) => {
@@ -787,7 +788,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                       {additionalItems.map((item: any) => (
                         <div key={item._id} className="flex items-center">
                           <img
-                            src={sizedImageUrl(item.dress?.images?.[0], { width: 88 })}
+                            src={sizedImageUrl(item.dress?.images?.[0], {
+                              width: 88,
+                            })}
                             alt={item.dress?.name ?? ""}
                             className="h-11 w-11 rounded-full cursor-pointer"
                           />
@@ -859,7 +862,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                     <label className="flex cursor-pointer items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={currentBooking.status === BookingStatus.Returned}
+                        checked={
+                          currentBooking.status === BookingStatus.Returned
+                        }
                         onChange={(e) => {
                           if (e.target.checked) {
                             updateCurrentBooking(
@@ -917,7 +922,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                           className={`flex space-x-6 ${index > 0 ? "border-t border-gray-200 pt-6" : ""}`}
                         >
                           <img
-                            src={sizedImageUrl(item.dress?.images?.[0], { width: 320 })}
+                            src={sizedImageUrl(item.dress?.images?.[0], {
+                              width: 320,
+                            })}
                             alt={item.dress?.name ?? ""}
                             className="h-40 w-40 rounded-lg object-cover cursor-zoom-in transition-transform hover:scale-105"
                             onClick={(e) => {
@@ -1195,7 +1202,9 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
                               >
                                 {dress.image && (
                                   <img
-                                    src={sizedImageUrl(dress.image, { width: 64 })}
+                                    src={sizedImageUrl(dress.image, {
+                                      width: 64,
+                                    })}
                                     alt={dress.name}
                                     className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
                                   />
@@ -1256,11 +1265,11 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
             <Button onClick={() => setCreateModalOpen(true)}>
               New booking
             </Button>
-            {deliveryType?.includes(DeliveryType.Delivery) && (
+            {/* {deliveryType?.includes(DeliveryType.Delivery) && (
               <Button onClick={() => setCreateLabelModalOpen(true)}>
                 Create label
               </Button>
-            )}
+            )} */}
             <Button onClick={() => setDownloadModalOpen(true)}>Download</Button>
           </div>
         </div>

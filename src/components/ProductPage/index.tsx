@@ -82,63 +82,84 @@ const Product = ({ dress }: ProductProps) => {
     if (isAddedToCart) setIsAddedToCart(false);
   }, [selectedDate, size, deliveryType, isAddedToCart]);
 
-  const addDressToCart = async () => {
-    setIsLoading(true);
+  // A guest's item carries no userId — CartContext stamps one on when it syncs
+  // the local cart into the account at sign-in.
+  const buildCartItem = (userId?: string): CartType => ({
+    dressId: dress._id,
+    userId,
+    dateBooked: selectedDate,
+    size: size,
+    deliveryType: deliveryType,
+  });
 
-    const user = await getUser(session?.user.email ?? "")
-      .then((res) => {
-        if (res === undefined) return null;
-        const r = res.data as unknown as UserType;
-        return r;
-      })
-      .catch((err) => console.error(err));
+  const addDressToLocalCart = () => {
+    const localCart = getItems() || ([] as CartType[]);
+    const cartItem = buildCartItem();
 
-    if (!user) {
+    const itemAlreadyInCart = localCart.some(
+      (item) =>
+        item.dressId === cartItem.dressId &&
+        item.dateBooked === cartItem.dateBooked &&
+        item.size === cartItem.size,
+    );
+
+    if (itemAlreadyInCart) {
       setToast({
-        message: "An error occurred while adding to cart",
-        variant: ToastVariant.ERROR,
+        message: "Item already in cart",
+        variant: ToastVariant.WARNING,
         show: true,
       });
-      setIsLoading(false);
       return;
     }
 
-    const cartItem: CartType = {
-      dressId: dress._id,
-      userId: user?._id,
-      dateBooked: selectedDate,
-      size: size,
-      deliveryType: deliveryType,
-    };
+    setItems([...localCart, cartItem]);
+    setToast({
+      message: "Added to cart",
+      variant: ToastVariant.SUCCESS,
+      show: true,
+    });
+    refreshCart();
+    setIsAddedToCart(true);
+  };
 
-    if (!session || !user) {
-      const localCart = getItems() || ([] as CartType[]);
+  const addDressToCart = async () => {
+    setIsLoading(true);
 
-      const itemAlreadyInCart = localCart.some(
-        (item) =>
-          item.dressId === cartItem.dressId &&
-          item.dateBooked === cartItem.dateBooked &&
-          item.size === cartItem.size,
-      );
-
-      if (itemAlreadyInCart) {
-        setToast({
-          message: "Item already in cart",
-          variant: ToastVariant.WARNING,
-          show: true,
-        });
-      } else {
-        setItems([...localCart, cartItem]);
-        setToast({
-          message: "Added to cart",
-          variant: ToastVariant.SUCCESS,
-          show: true,
-        });
-        refreshCart();
-        setIsAddedToCart(true);
+    try {
+      // Signing in is not a prerequisite for filling a cart. This branch has to
+      // come first, and has to avoid calling getUser at all: a caller with no
+      // session gets a 401 from /api/user, and the API client turns any 401
+      // into window.location.href = "/login" (src/api/client.ts). That redirect
+      // fired before the code below could run, which is what made the guest
+      // cart unreachable — the branch existed, nothing could reach it.
+      if (!session?.user?.email) {
+        addDressToLocalCart();
+        return;
       }
-    } else {
-      await addToCart(cartItem)
+
+      const user = await getUser(session.user.email)
+        .then((res) => {
+          if (res === undefined) return null;
+          return res.data as unknown as UserType;
+        })
+        .catch((err) => {
+          console.error(err);
+          return null;
+        });
+
+      // Signed in, but their account record didn't load. Falling back to the
+      // local cart would strand the item in a browser they are signed out of,
+      // so say so instead.
+      if (!user?._id) {
+        setToast({
+          message: "An error occurred while adding to cart",
+          variant: ToastVariant.ERROR,
+          show: true,
+        });
+        return;
+      }
+
+      await addToCart(buildCartItem(user._id))
         .then((data) => {
           setToast({
             message: data?.data.message,
@@ -157,9 +178,9 @@ const Product = ({ dress }: ProductProps) => {
         .finally(() => {
           setIsAddedToCart(true);
         });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const Dropdown = () => {

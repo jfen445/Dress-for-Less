@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 // module scope. The Sanity client throws on construction without a projectId,
 // and the DAO would pull in mongoose — neither is needed to test the ordering,
 // so both are stubbed away at the same seam layer 3 uses.
-vi.mock("../../../../sanity/sanity.query", () => ({ getDress: vi.fn() }));
+vi.mock("../../../../sanity/sanity.query", () => ({ getDressPricing: vi.fn() }));
 vi.mock("../../../../lib/db/booking-dao", () => ({
   getBookingAvailabilityByDress: vi.fn(),
 }));

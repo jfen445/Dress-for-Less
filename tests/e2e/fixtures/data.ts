@@ -51,6 +51,32 @@ export const dressList = (count = 8) =>
         }),
   );
 
+/**
+ * One page of the catalogue, shaped like /api/sanity/listing's response.
+ *
+ * It honours page and pageSize, because a stub that returned the same rows for
+ * every page would let a broken pager pass. It deliberately does *not* emulate
+ * GROQ filtering or ordering: which dresses a filter selects is Sanity's job,
+ * and the clause that asks for them is proven in the unit tests instead. Doing
+ * it here would only re-implement the thing under test, badly.
+ */
+export const dressPage = (url: URL, catalogueSize = 40) => {
+  const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
+  const pageSize = Math.max(
+    1,
+    Number(url.searchParams.get("pageSize") ?? 30) || 30,
+  );
+  const all = dressList(catalogueSize);
+  const start = (page - 1) * pageSize;
+
+  return {
+    items: all.slice(start, start + pageSize),
+    total: all.length,
+    page,
+    pageSize,
+  };
+};
+
 // A complete profile on purpose: the cart refuses to link to checkout until
 // name, email, instagram handle and mobile are all present (Cart's isUserValid),
 // so a user missing them can only ever reach the "Profile Incomplete" modal.
@@ -145,27 +171,6 @@ export const providers = () => ({
   },
 });
 
-// ---------------------------------------------------------------- Sanity GROQ
-//
-// Not every Sanity call goes through /api/**: the checkout page resolves each
-// cart line by calling getDress() on the Sanity client directly from the
-// browser. This answers those the same way tests/e2e/sanity-intercept.cjs
-// answers the server's — from this same fixture, so the dress a customer sees
-// on the product page and the one they see on checkout cannot disagree.
-export const sanityResultFor = (url: URL) => {
-  const query = url.searchParams.get("query") ?? "";
-
-  if (query.includes('_type == "faq"')) return [];
-
-  if (query.includes("_id == $id")) {
-    const requested = (url.searchParams.get("$id") ?? "").replace(/^"|"$/g, "");
-    return dress({ _id: requested || DRESS_ID });
-  }
-
-  if (query.includes('_type == "dress"')) return dressList();
-
-  return [];
-};
 
 export const coupon = (over: Record<string, unknown> = {}) => ({
   _id: "coupon-e2e-1",

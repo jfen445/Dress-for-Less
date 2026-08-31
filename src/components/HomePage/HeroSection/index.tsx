@@ -2,7 +2,6 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Marquee from "react-fast-marquee";
-import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 
@@ -35,14 +34,29 @@ const getDressesWithUniqueImages = (
   return result;
 };
 
-const HeroSection = () => {
-  const { allDresses, getHomeScreenDresses } = useGlobalContext();
+// Unbiased, unlike sorting by Math.random() - 0.5, which is what this used to
+// do. Matches the shuffle drawNextSlot already uses below.
+const shuffled = <T,>(source: T[]): T[] => {
+  const items = [...source];
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+};
+
+interface HeroSectionProps {
+  /** A window of the catalogue — id and one image each — from getStaticProps. */
+  pool: DressType[];
+}
+
+const HeroSection = ({ pool }: HeroSectionProps) => {
   // Deterministic (unshuffled) on the first render so server and client agree —
-  // getHomeScreenDresses() shuffles with Math.random(), which would otherwise
-  // pick a different order server-side vs client-side and trigger a hydration
+  // the shuffle below uses Math.random(), which would otherwise pick a
+  // different order server-side vs client-side and trigger a hydration
   // mismatch. The effect below applies the actual random shuffle post-mount.
   const [dresses, setDresses] = React.useState<DressType[]>(
-    getDressesWithUniqueImages(allDresses, HERO_IMAGE_COUNT),
+    getDressesWithUniqueImages(pool, HERO_IMAGE_COUNT),
   );
 
   // Extra unique-image dresses beyond the 7 currently on screen, used as a
@@ -70,11 +84,8 @@ const HeroSection = () => {
   React.useEffect(() => {
     // Shuffle the full list first, then dedupe — slicing to 7 before
     // deduping would waste unique images sitting later in the shuffle.
-    const shuffled = getDressesWithUniqueImages(
-      getHomeScreenDresses(allDresses.length),
-      allDresses.length,
-    );
-    poolRef.current = shuffled;
+    const rotation = getDressesWithUniqueImages(shuffled(pool), pool.length);
+    poolRef.current = rotation;
     nextPoolIndexRef.current = HERO_IMAGE_COUNT;
     slotQueueRef.current = [];
     // Only replace the visible images the first time real data arrives —
@@ -82,19 +93,19 @@ const HeroSection = () => {
     // freshly-shuffled set reads as a glitch. After that, slots only change
     // one at a time via the rotation interval below.
     setDresses((prev) =>
-      prev.length === 0 ? shuffled.slice(0, HERO_IMAGE_COUNT) : prev,
+      prev.length === 0 ? rotation.slice(0, HERO_IMAGE_COUNT) : prev,
     );
-  }, [allDresses, getHomeScreenDresses]);
+  }, [pool]);
 
   React.useEffect(() => {
     const id = setInterval(() => {
-      const pool = poolRef.current;
+      const rotation = poolRef.current;
       // Not enough spare dresses to rotate into without repeating one
       // that's already visible in another slot.
-      if (pool.length <= HERO_IMAGE_COUNT) return;
+      if (rotation.length <= HERO_IMAGE_COUNT) return;
 
       const slot = drawNextSlot();
-      const nextDress = pool[nextPoolIndexRef.current % pool.length];
+      const nextDress = rotation[nextPoolIndexRef.current % rotation.length];
       nextPoolIndexRef.current += 1;
 
       setDresses((prev) => {

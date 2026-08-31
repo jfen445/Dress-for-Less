@@ -25,7 +25,6 @@ import { Fragment, useState, useRef, useEffect, useCallback } from "react";
 import { navigationSections } from "@/model/navigation";
 import { Navigation } from "../../../common/types/navigation";
 import { useCartContext } from "@/context/CartContext";
-import { useGlobalContext } from "@/context/GlobalContext";
 import { useDressSearch } from "@/hooks/useDressSearch";
 import SearchResultsList from "@/components/Search/SearchResultsList";
 import { usePathname } from "next/navigation";
@@ -90,7 +89,6 @@ function classNames(...classes: string[]) {
 const NavigationBar = () => {
   const { userInfo, getUserProfileImage } = useUserContext();
   const { cartCount } = useCartContext();
-  const { allDresses } = useGlobalContext();
   const { data: session } = useSession();
   const { setMobileNavOpen } = useNavigationContext();
   const pathname = usePathname();
@@ -100,7 +98,7 @@ const NavigationBar = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { searchQuery, setSearchQuery, searchResults } =
-    useDressSearch(allDresses);
+    useDressSearch();
 
   const closeSearch = useCallback(() => {
     setIsSearchOpen(false);

@@ -41,18 +41,39 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     setCartCount(cart.length);
   }, [userInfo, getItems]);
 
+  // Guests fill `localCart` in the browser (ProductPage). This carries it into
+  // their account the moment one exists, which is the other half of letting
+  // people shop before they sign in.
+  const isSyncing = React.useRef(false);
+
   useEffect(() => {
     const cartItems = getItems();
+    const hasLocalCart = cartItems != null && cartItems.length > 0;
 
-    if (userInfo?._id && cartItems && cartItems.length > 0) {
-      const updatedCart = cartItems.map((item) => ({ ...item, userId: userInfo._id }));
-      syncCart(updatedCart)
-        .then(() => clearItems())
-        .then(() => refreshCart())
-        .catch(console.error);
-    } else {
+    if (!userInfo?._id || !hasLocalCart) {
       refreshCart();
+      return;
     }
+
+    // userInfo can settle more than once on a page load. syncCart is idempotent
+    // per item server-side, but there is no reason to send it twice.
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+
+    // The items were stored with no userId, and syncCart refuses any item whose
+    // userId isn't the caller's, so ownership is stamped on here.
+    const owned = cartItems.map((item) => ({ ...item, userId: userInfo._id }));
+
+    syncCart(owned)
+      // Cleared only once the server has them: a failed sync should leave the
+      // guest cart intact to retry, not drop it on the floor.
+      .then(() => clearItems())
+      .catch(console.error)
+      .finally(() => {
+        isSyncing.current = false;
+        // Runs on failure too, or the badge keeps showing the guest count.
+        refreshCart();
+      });
   }, [userInfo, getItems, clearItems, refreshCart]);
 
   return (

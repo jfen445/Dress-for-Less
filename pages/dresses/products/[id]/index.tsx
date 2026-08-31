@@ -55,7 +55,12 @@ export const getStaticProps: GetStaticProps<ProductPageProps> = async ({
   const dress = (await getDress(id)) as DressType | null;
 
   if (!dress) {
-    return { notFound: true };
+    // A notFound without `revalidate` is cached until the next deploy, so a
+    // transient miss (Sanity blip, a dress briefly unpublished) would pin a real
+    // product page at 404 indefinitely — silently, since a cached 404 logs
+    // nothing. Longer than a minute so crawlers hitting junk ids don't re-query
+    // Sanity on every pass.
+    return { notFound: true, revalidate: 300 };
   }
 
   return {

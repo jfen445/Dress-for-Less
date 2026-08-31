@@ -5,7 +5,7 @@ import {
   checkDuplicateBooking,
 } from "../../../lib/db/booking-dao";
 import { createUser, findUser } from "../../../lib/db/user-dao";
-import { getDress } from "../../../sanity/sanity.query";
+import { getDress, getDressPricing } from "../../../sanity/sanity.query";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import { AccountType } from "../../../common/enums/AccountType";
@@ -115,7 +115,7 @@ export default async function handler(
 
     const bookingItems = [];
     for (const item of itemsPayload) {
-      const dress = await getDress(item.dressId);
+      const dress = await getDressPricing(item.dressId);
       if (!dress) return res.status(404).json({ message: "Dress not found" });
 
       const blocked = await checkBlockOut(

@@ -1,4 +1,4 @@
-import { getDress } from "../../sanity/sanity.query";
+import { getDressPricing } from "../../sanity/sanity.query";
 import { getBookingAvailabilityByDress } from "../db/booking-dao";
 import { isDateBlockedByExistingBooking } from "./bookingWindow";
 import { DeliveryType } from "../../common/enums/DeliveryType";
@@ -47,7 +47,7 @@ export async function isBookingAvailable(
   // lost to a checkout that started fractionally earlier.
   outranking?: ReservationRank,
 ): Promise<boolean> {
-  const dress = await getDress(dressId);
+  const dress = await getDressPricing(dressId);
   if (!dress) return false;
 
   const stock = Number(dress[size.toLowerCase()] ?? 0);

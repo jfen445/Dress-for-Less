@@ -24,10 +24,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <SessionProvider session={pageProps.session}>
       {gaId && <GoogleAnalytics gaId={gaId} />}
-      <GlobalContextProvider
-        initialDresses={pageProps.dresses}
-        initialFaq={pageProps.faq}
-      >
+      <GlobalContextProvider>
         <UserContextProvider>
           <CartProvider>
             <div className="min-h-screen bg-white">

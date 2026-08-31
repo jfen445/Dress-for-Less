@@ -1,23 +1,34 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useGlobalContext } from "@/context/GlobalContext";
 import { DressType } from "../../../../common/types";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 
-const FavouritesSection = () => {
-  const { allDresses, getFavouriteDresses } = useGlobalContext();
+const SHOWN = 3;
+
+interface FavouritesSectionProps {
+  /** A sample of the catalogue from getStaticProps; three are shown. */
+  dresses: DressType[];
+}
+
+const FavouritesSection = ({ dresses: sample }: FavouritesSectionProps) => {
   // Deterministic (unshuffled) on the first render so server and client agree —
-  // getFavouriteDresses() shuffles with Math.random(), which would otherwise
-  // pick a different order server-side vs client-side and trigger a hydration
-  // mismatch. The effect below applies the actual random shuffle post-mount.
+  // the shuffle below uses Math.random(), which would otherwise pick a
+  // different order server-side vs client-side and trigger a hydration
+  // mismatch. The effect applies the actual random pick post-mount.
   const [dresses, setDresses] = React.useState<DressType[]>(
-    allDresses.slice(0, 3),
+    sample.slice(0, SHOWN),
   );
 
   React.useEffect(() => {
-    setDresses(getFavouriteDresses());
-  }, [allDresses, getFavouriteDresses]);
+    const withImages = sample.filter((dress) => dress.images?.length > 0);
+    // Fisher-Yates, unlike the biased sort-by-random this replaces.
+    for (let i = withImages.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [withImages[i], withImages[j]] = [withImages[j], withImages[i]];
+    }
+    setDresses(withImages.slice(0, SHOWN));
+  }, [sample]);
 
   return (
     <>
