@@ -7,4 +7,9 @@ Disallow: /account
 Disallow: /order-history
 Disallow: /api
 
+# Seconds between requests. Advisory only — Google ignores it, Bing and others
+# honour it. Added after a crawl of the ~600 sitemap product URLs ran image
+# optimisation to 46k requests in a day (2026-08-21).
+Crawl-delay: 10
+
 Sitemap: https://www.dressforlessnz.com/sitemap.xml
