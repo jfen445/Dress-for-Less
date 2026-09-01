@@ -43,3 +43,4 @@ yarn-error.log*
 pages/preview/
 
 dress-import.csv
+.env*
