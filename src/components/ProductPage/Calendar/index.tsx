@@ -178,7 +178,13 @@ const Calendar = ({
           key={`${selectedSize}-${deliveryType}-${blockOuts.map((b) => b._id).join(",")}`}
           onChange={(e) => selectDate(e)}
           shouldDisableDate={(date) => getDisabledDates(date)}
-          minDate={auckland.now().startOf("day")}
+          // Admins can back-date a booking (recording one taken over the phone,
+          // or fixing a past entry); customers can't book yesterday.
+          minDate={
+            isAdmin
+              ? auckland.now().subtract(1, "year").startOf("day")
+              : auckland.now().startOf("day")
+          }
           maxDate={auckland.now().add(1, "year")}
           timezone={AUCKLAND_TZ}
           slotProps={{
