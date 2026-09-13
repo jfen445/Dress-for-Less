@@ -16,6 +16,7 @@ export type FakeBookingItem = {
   dressId: string;
   size: string;
   dateBooked: string;
+  endDate?: string;
   deliveryType: string;
   blockedFrom: string;
   blockedUntil: string;

@@ -170,6 +170,17 @@ describe("POST /api/booking — the reserve", () => {
     expect(row.totalPrice).toBe(DRESS_PRICE + SHIPPING);
   });
 
+  it("ignores an endDate in the payload", async () => {
+    // Extended rentals are admin-only. There is no per-day price, so honouring
+    // a client-supplied range would sell a month at the one-day rate and hold
+    // the dress out of sale for the whole of it.
+    await reserve({ items: [item({ endDate: "2026-08-10" })] });
+
+    const row = bookingFor(PAYMENT_INTENT)!;
+    expect(row.items[0].endDate).toBe(EVENT_DATE);
+    expect(row.items[0].blockedUntil).toBe("2026-07-15");
+  });
+
   it("refuses an unauthenticated caller", async () => {
     getServerSession.mockResolvedValue(null);
 

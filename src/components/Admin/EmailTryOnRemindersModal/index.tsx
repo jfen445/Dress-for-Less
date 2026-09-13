@@ -75,7 +75,8 @@ const EmailTryOnRemindersModal = ({
         Send try-on reminders
       </h2>
       <p className="text-sm text-gray-500 mb-4">
-        Select the try-on appointments to send a reminder email to.
+        Select the try-on appointments to send a reminder email to. Showing this
+        week and next.
       </p>
 
       <div className="overflow-y-auto max-h-[55vh] border border-gray-200 rounded-md">

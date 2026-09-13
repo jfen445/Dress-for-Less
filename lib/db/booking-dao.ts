@@ -1,4 +1,4 @@
-import { PipelineStage } from "mongoose";
+import { PipelineStage, Types } from "mongoose";
 import { BookingSchema } from "./schema";
 import { auckland } from "../utils/timezone";
 
@@ -19,14 +19,28 @@ const BOOKING_PROJECTION =
 // excludePaymentIntent lets a checkout ignore its own in-flight reservation, so
 // that re-reserving after a declined card doesn't report the customer's own
 // hold back to them as a conflict.
+//
+// excludeBookingId does the same job for an admin editing an existing booking,
+// and it cannot be done with excludePaymentIntent: every admin-created booking
+// shares the literal "ADMIN_MANUAL", so excluding by payment intent would drop
+// every other admin booking on the dress from the count as well.
 export async function getBookingAvailabilityByDress(
   dressId: String,
   excludePaymentIntent?: string,
+  excludeBookingId?: string,
 ) {
   const pipeline: PipelineStage[] = [];
 
   if (excludePaymentIntent) {
     pipeline.push({ $match: { paymentIntent: { $ne: excludePaymentIntent } } });
+  }
+
+  // An unparseable id excludes nothing rather than throwing: over-counting
+  // blocks a date we might have sold, under-counting sells one twice.
+  if (excludeBookingId && Types.ObjectId.isValid(excludeBookingId)) {
+    pipeline.push({
+      $match: { _id: { $ne: new Types.ObjectId(excludeBookingId) } },
+    });
   }
 
   pipeline.push(
@@ -35,12 +49,15 @@ export async function getBookingAvailabilityByDress(
     {
       $project: {
         _id: 0,
+        bookingId: "$_id",
+        orderNumber: 1,
         paymentIntent: 1,
         paymentSuccess: 1,
         reservedAt: 1,
         dressId: "$items.dressId",
         size: "$items.size",
         dateBooked: "$items.dateBooked",
+        endDate: "$items.endDate",
         blockedFrom: "$items.blockedFrom",
         blockedUntil: "$items.blockedUntil",
       },
@@ -201,7 +218,19 @@ export async function getBookingsByDateRange(startDate: string, endDate: string)
     {
       $match: {
         paymentSuccess: true,
-        items: { $elemMatch: { dateBooked: { $gte: startDate, $lte: endDate } } },
+        // Deliberately over-broad, as it already was: one date range stands in
+        // for the per-method windows the caller applies afterwards. The $or
+        // adds extended bookings, whose return falls due after endDate while
+        // dateBooked sits weeks earlier — matching on dateBooked alone would
+        // never load them, so their reminder would silently never send.
+        items: {
+          $elemMatch: {
+            $or: [
+              { dateBooked: { $gte: startDate, $lte: endDate } },
+              { endDate: { $gte: startDate, $lte: endDate } },
+            ],
+          },
+        },
       },
     },
     {

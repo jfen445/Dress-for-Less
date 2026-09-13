@@ -1,9 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "../../../lib/db/db";
-import {
-  getAllBookings,
-  checkDuplicateBooking,
-} from "../../../lib/db/booking-dao";
+import { getAllBookings } from "../../../lib/db/booking-dao";
 import { createUser, findUser } from "../../../lib/db/user-dao";
 import { getDress, getDressPricing } from "../../../sanity/sanity.query";
 import { getServerSession } from "next-auth/next";
@@ -12,9 +9,29 @@ import { AccountType } from "../../../common/enums/AccountType";
 import { BookingSchema } from "../../../lib/db/schema";
 import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { checkBlockOut } from "../../../lib/db/blockout-dao";
-import { calculateBookingWindow } from "../../../lib/utils/bookingWindow";
+import {
+  MAX_RENTAL_DAYS,
+  calculateBookingWindow,
+  rentalSpanDays,
+} from "../../../lib/utils/bookingWindow";
+import { findBlockingBookings } from "../../../lib/utils/checkBookingAvailability";
 import { getNextOrderNumber } from "../../../lib/utils/orderNumber";
 import { sendEmailConfirmation } from "../payment/paymentConfirm";
+
+// Manual admin override - defaults to sanity pricing
+const hasPriceOverride = (value: unknown) =>
+  value !== undefined && value !== null && value !== "";
+
+const isValidPrice = (value: unknown) =>
+  Number.isFinite(Number(value)) && Number(value) >= 0;
+
+const describeConflict = (row: any) => ({
+  orderNumber: row.orderNumber,
+  dateBooked: row.dateBooked,
+  endDate: row.endDate ?? row.dateBooked,
+  blockedFrom: row.blockedFrom,
+  blockedUntil: row.blockedUntil,
+});
 
 export default async function handler(
   req: NextApiRequest,
@@ -98,6 +115,28 @@ export default async function handler(
       seen.add(key);
     }
 
+    // Checked before the customer row is created below, so a bad date or price
+    // can't leave an orphaned user behind when the request then fails.
+    for (const item of itemsPayload) {
+      const endDate = item.endDate || item.dateBooked;
+
+      if (endDate < item.dateBooked) {
+        return res.status(400).json({
+          message: "The return date must be on or after the rental date",
+        });
+      }
+      if (rentalSpanDays(item.dateBooked, endDate) > MAX_RENTAL_DAYS) {
+        return res.status(400).json({
+          message: `A rental cannot run longer than ${MAX_RENTAL_DAYS} days`,
+        });
+      }
+      if (hasPriceOverride(item.price) && !isValidPrice(item.price)) {
+        return res
+          .status(400)
+          .json({ message: "Price must be a number of zero or more" });
+      }
+    }
+
     let userId = bodyUserId;
     if (!userId && newUser) {
       const result = await createUser({
@@ -113,40 +152,59 @@ export default async function handler(
           : result._id.toString();
     }
 
-    const bookingItems = [];
+    const bookingItems: any[] = [];
     for (const item of itemsPayload) {
       const dress = await getDressPricing(item.dressId);
       if (!dress) return res.status(404).json({ message: "Dress not found" });
+
+      const endDate = item.endDate || item.dateBooked;
 
       const blocked = await checkBlockOut(
         item.dressId,
         item.size,
         item.dateBooked,
+        endDate,
       );
       if (blocked)
         return res
           .status(409)
           .json({ message: "This date is blocked out for the selected size" });
 
-      const duplicate = await checkDuplicateBooking(
+      // Counts the whole span against per-size stock, where this used to test
+      // the start date for an exact match only — which neither noticed a
+      // booking overlapping on a different date nor allowed a second unit of a
+      // dress with stock to spare.
+      const { available, blocking } = await findBlockingBookings(
         item.dressId,
         item.size,
         item.dateBooked,
+        endDate,
+        deliveryType,
+        // The lines already accepted from this same request aren't written
+        // yet, so without them two overlapping lines would each be checked
+        // against a world not containing the other, and both would pass.
+        { alsoConsider: bookingItems },
       );
-      if (duplicate.length > 0)
-        return res
-          .status(409)
-          .json({ message: "This date is already fully booked" });
+      if (!available)
+        return res.status(409).json({
+          message:
+            "This dress is already booked for one or more of those dates",
+          conflicts: blocking.map(describeConflict),
+        });
 
-      const price = parseInt(dress.price);
+      const price = hasPriceOverride(item.price)
+        ? Number(item.price)
+        : parseInt(dress.price);
       const { blockedFrom, blockedUntil } = calculateBookingWindow(
         item.dateBooked,
+        endDate,
         deliveryType,
       );
 
       bookingItems.push({
         dressId: item.dressId,
         dateBooked: item.dateBooked,
+        endDate,
         blockedFrom,
         blockedUntil,
         deliveryType,
@@ -180,9 +238,15 @@ export default async function handler(
     try {
       await sendEmailConfirmation(booking.toObject());
     } catch (err) {
-      console.error("Failed to send admin-created booking confirmation email", err);
+      console.error(
+        "Failed to send admin-created booking confirmation email",
+        err,
+      );
     }
 
     res.status(201).json({ message: "Booking created", booking });
+  } else {
+    res.setHeader("Allow", "GET, POST");
+    res.status(405).end();
   }
 }

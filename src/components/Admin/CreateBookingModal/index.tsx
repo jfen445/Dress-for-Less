@@ -44,6 +44,12 @@ type BookingLineItem = {
   dressId: string;
   size: string;
   dateBooked: string;
+  // Blank means a normal one-day booking; the server reads it as the rental
+  // date. Set to run the rental on past its first day.
+  endDate: string;
+  // Blank means "use the catalogue price". Extended rentals have no per-day
+  // rule, so the admin quotes them by hand.
+  price: string;
   notes: string;
 };
 
@@ -52,8 +58,23 @@ const emptyLineItem = (id: string): BookingLineItem => ({
   dressId: "",
   size: "",
   dateBooked: "",
+  endDate: "",
+  price: "",
   notes: "",
 });
+
+// A readable summary of what the server said is in the way, so a refusal names
+// the booking to shorten rather than only reporting that something clashed.
+const describeConflicts = (conflicts: any[]) =>
+  conflicts
+    .map((c) => {
+      const span =
+        c.endDate && c.endDate !== c.dateBooked
+          ? `${c.dateBooked} to ${c.endDate}`
+          : c.dateBooked;
+      return c.orderNumber ? `#${c.orderNumber} (${span})` : span;
+    })
+    .join(", ");
 
 const inputCls =
   "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
@@ -196,8 +217,16 @@ const CreateBookingModal = ({
         : Object.values(DeliveryType);
 
   const needsAddress = deliveryType !== DeliveryType.Pickup;
+
+  // The entered figure wins when there is one, matching what the server does.
+  const effectivePrice = (item: BookingLineItem) => {
+    if (item.price.trim() === "") return dressPrice(item.dressId);
+    const entered = Number(item.price);
+    return Number.isFinite(entered) && entered >= 0 ? entered : 0;
+  };
+
   const dressesTotal = items.reduce(
-    (sum, item) => sum + dressPrice(item.dressId),
+    (sum, item) => sum + effectivePrice(item),
     0,
   );
   const deliveryFee = DELIVERY_FEES[deliveryType];
@@ -226,11 +255,18 @@ const CreateBookingModal = ({
   const handleDressChange = (id: string, dressId: string) => {
     const dress = sortedDresses.find((d) => d._id === dressId);
     const availableSizes = getAvailableSizes(dress);
-    updateItem(id, { dressId, size: availableSizes[0] ?? "", dateBooked: "" });
+    // Both dates and the quoted price belong to the old dress.
+    updateItem(id, {
+      dressId,
+      size: availableSizes[0] ?? "",
+      dateBooked: "",
+      endDate: "",
+      price: "",
+    });
   };
 
   const handleSizeChange = (id: string, size: string) => {
-    updateItem(id, { size, dateBooked: "" });
+    updateItem(id, { size, dateBooked: "", endDate: "" });
   };
 
   const addItem = () => {
@@ -243,6 +279,8 @@ const CreateBookingModal = ({
         dressId: dress?._id ?? "",
         size: availableSizes[0] ?? "",
         dateBooked: "",
+        endDate: "",
+        price: "",
         notes: "",
       },
     ]);
@@ -285,10 +323,14 @@ const CreateBookingModal = ({
     setIsSubmitting(true);
     try {
       await createAdminBooking({
-        items: items.map(({ dressId, size, dateBooked, notes }) => ({
+        items: items.map(({ dressId, size, dateBooked, endDate, price, notes }) => ({
           dressId,
           size,
           dateBooked,
+          // Omitted rather than sent blank, so the server's own fallback to
+          // dateBooked is the single place the default lives.
+          ...(endDate && endDate !== dateBooked ? { endDate } : {}),
+          ...(price.trim() === "" ? {} : { price: Number(price) }),
           notes,
         })),
         ...(customerMode === "existing"
@@ -310,7 +352,11 @@ const CreateBookingModal = ({
       setOpen(false);
       resetForm();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to create booking";
+      const data = err?.response?.data;
+      const detail = describeConflicts(data?.conflicts ?? []);
+      const msg =
+        (data?.message ?? "Failed to create booking") +
+        (detail ? ` Conflicts with ${detail}.` : "");
       setToast({ message: msg, variant: ToastVariant.WARNING, show: true });
     } finally {
       setIsSubmitting(false);
@@ -399,16 +445,19 @@ const CreateBookingModal = ({
                     <div>
                       <label className={`${labelCls} mb-0`}>Rental date</label>
                       <Calendar
-                        setSelectedDate={(date) =>
-                          updateItem(item.id, {
-                            dateBooked:
-                              typeof date === "function"
-                                ? (date as (prev: string) => string)(
-                                    item.dateBooked,
-                                  )
-                                : date,
-                          })
-                        }
+                        setSelectedDate={(date) => {
+                          const next =
+                            typeof date === "function"
+                              ? (date as (prev: string) => string)(
+                                  item.dateBooked,
+                                )
+                              : date;
+                          // A return date chosen against the old start may sit
+                          // before the new one, or behind a booking that only
+                          // the old span cleared. Cheaper to re-pick than to
+                          // reason about which.
+                          updateItem(item.id, { dateBooked: next, endDate: "" });
+                        }}
                         sizes={sizes}
                         selectedSize={item.size}
                         dressId={item.dressId}
@@ -431,6 +480,66 @@ const CreateBookingModal = ({
                       )}
                     </div>
                   )}
+
+                  {item.dressId && item.size && item.dateBooked && (
+                    <div>
+                      <label className={`${labelCls} mb-0`}>
+                        Return date{" "}
+                        <span className="text-gray-400 font-normal">
+                          (optional — leave blank for a single-day rental)
+                        </span>
+                      </label>
+                      <Calendar
+                        setSelectedDate={(date) =>
+                          updateItem(item.id, {
+                            endDate:
+                              typeof date === "function"
+                                ? (date as (prev: string) => string)(
+                                    item.endDate,
+                                  )
+                                : date,
+                          })
+                        }
+                        sizes={sizes}
+                        selectedSize={item.size}
+                        dressId={item.dressId}
+                        isAdmin={true}
+                        deliveryType={deliveryType}
+                        rangeStart={item.dateBooked}
+                      />
+                      {item.endDate && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Returns:{" "}
+                          {new Date(item.endDate).toLocaleDateString("en-NZ", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className={labelCls}>
+                      Price{" "}
+                      <span className="text-gray-400 font-normal">
+                        (optional — blank uses the catalogue price)
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.price}
+                      placeholder={dressPrice(item.dressId).toFixed(2)}
+                      onChange={(e) =>
+                        updateItem(item.id, { price: e.target.value })
+                      }
+                      className={inputCls}
+                    />
+                  </div>
 
                   <div>
                     <label className={labelCls}>
@@ -622,8 +731,16 @@ const CreateBookingModal = ({
                   key={item.id}
                   className="flex justify-between text-gray-600"
                 >
-                  <span>{dress.name}</span>
-                  <span>${dressPrice(item.dressId).toFixed(2)}</span>
+                  <span>
+                    {dress.name}
+                    {item.endDate && item.endDate !== item.dateBooked && (
+                      <span className="text-gray-400">
+                        {" "}
+                        ({item.dateBooked} → {item.endDate})
+                      </span>
+                    )}
+                  </span>
+                  <span>${effectivePrice(item).toFixed(2)}</span>
                 </div>
               );
             })}

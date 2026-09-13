@@ -48,9 +48,8 @@ const AdminTryOns = () => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<TryOnBookingRow | null>(
-    null,
-  );
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<TryOnBookingRow | null>(null);
   const [toast, setToast] = React.useState<ToastType>({
     message: "",
     variant: ToastVariant.WARNING,
@@ -93,7 +92,7 @@ const AdminTryOns = () => {
     );
   };
 
-  const { thisWeekBookings, upcomingBookings, pastBookings } =
+  const { thisWeekBookings, upcomingBookings, pastBookings, reminderBookings } =
     React.useMemo(() => {
       const now = dayjs();
       const currentSunday = (
@@ -104,6 +103,7 @@ const AdminTryOns = () => {
         .second(59)
         .millisecond(999);
       const monday = previousMonday();
+      const nextSunday = currentSunday.add(7, "day");
 
       const sorted = [...bookings].sort((a, b) =>
         dayjs(a.date).diff(dayjs(b.date)),
@@ -121,10 +121,16 @@ const AdminTryOns = () => {
         .filter((b) => dayjs(b.date).isBefore(monday))
         .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
 
+      const reminders = sorted.filter(
+        (b) =>
+          !dayjs(b.date).isBefore(monday) && !dayjs(b.date).isAfter(nextSunday),
+      );
+
       return {
         thisWeekBookings: thisWeek,
         upcomingBookings: upcoming,
         pastBookings: past,
+        reminderBookings: reminders,
       };
     }, [bookings]);
 
@@ -217,7 +223,7 @@ const AdminTryOns = () => {
       <EmailTryOnRemindersModal
         isOpen={emailModalOpen}
         setOpen={setEmailModalOpen}
-        bookings={thisWeekBookings}
+        bookings={reminderBookings}
         onSent={(message) =>
           setToast({ message, variant: ToastVariant.SUCCESS, show: true })
         }

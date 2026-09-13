@@ -27,7 +27,7 @@ export function calculateShippingFee(
 // Cutoff for booking a given date/method is 8pm the day before that
 // method's dispatch date (the conservative `blockedFrom` from bookingWindow).
 function getBookingCutoff(dateStr: string, deliveryType: DeliveryType): Dayjs {
-  const { blockedFrom } = calculateBookingWindow(dateStr, deliveryType);
+  const { blockedFrom } = calculateBookingWindow(dateStr, dateStr, deliveryType);
   return auckland
     .toZone(blockedFrom)
     .subtract(1, "day")

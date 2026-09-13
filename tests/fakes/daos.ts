@@ -29,8 +29,28 @@ function matchesFilter(doc: any, filter: Record<string, any>): boolean {
 
 // Narrow on purpose: only the calls the routes under test actually make on
 // BookingSchema. Anything else should fail loudly rather than quietly no-op.
-export const BookingSchema = {
-  async updateOne(
+//
+// A class rather than a bare object because the admin create path builds its
+// row with `new BookingSchema(...)` and saves it, where the reserve upserts.
+// Both have to land in the same store, or an availability check would be
+// reading a different world than the write landed in.
+export class BookingSchema {
+  constructor(doc: Record<string, unknown>) {
+    Object.assign(this, doc);
+  }
+
+  async save() {
+    const self = this as any;
+    self._id = self._id ?? nextId();
+    db.bookings.push({ ...self } as FakeBooking);
+    return this;
+  }
+
+  toObject() {
+    return { ...(this as any) };
+  }
+
+  static async updateOne(
     filter: Record<string, any>,
     update: Partial<FakeBooking>,
     options?: { upsert?: boolean },
@@ -49,29 +69,41 @@ export const BookingSchema = {
     const inserted = { ...(update as FakeBooking) };
     db.bookings.push({ ...inserted, _id: inserted._id ?? nextId() });
     return { matchedCount: 0, modifiedCount: 0, upsertedCount: 1 };
-  },
+  }
 
-  async deleteOne(filter: Record<string, any>) {
+  static async deleteOne(filter: Record<string, any>) {
     const index = db.bookings.findIndex((b) => matchesFilter(b, filter));
     if (index === -1) return { deletedCount: 0 };
 
     db.bookings.splice(index, 1);
     return { deletedCount: 1 };
-  },
+  }
 
-  async updateMany(filter: Record<string, any>, update: Record<string, any>) {
+  static async updateMany(filter: Record<string, any>, update: Record<string, any>) {
     const matched = db.bookings.filter((b) => matchesFilter(b, filter));
     const set = update.$set ?? update;
 
     for (const booking of matched) Object.assign(booking, set);
 
     return { matchedCount: matched.length, modifiedCount: matched.length };
-  },
+  }
 
-  async findById(id: string) {
+  static async findById(id: string) {
     return db.bookings.find((b) => b._id === id) ?? null;
-  },
-};
+  }
+
+  static async findByIdAndUpdate(
+    id: string,
+    update: Record<string, any>,
+    _options?: Record<string, unknown>,
+  ) {
+    const booking = db.bookings.find((b) => b._id === id);
+    if (!booking) return null;
+
+    Object.assign(booking, update);
+    return booking;
+  }
+}
 
 export const UserSchema = {
   findById(id: string) {
@@ -216,24 +248,32 @@ export const resendModule = { Resend: ResendConstructor };
 // -------------------------------------------------------- lib/db/booking-dao
 
 // Item-level rows, matching the $unwind/$project the real aggregate returns.
+// bookingId is projected rather than _id for the same reason it is in the real
+// pipeline: after the unwind it is one booking id repeated once per item.
 async function getBookingAvailabilityByDress(
   dressId: string,
   excludePaymentIntent?: string,
+  excludeBookingId?: string,
 ) {
   return db.bookings
     .filter(
-      (b) => !excludePaymentIntent || b.paymentIntent !== excludePaymentIntent,
+      (b) =>
+        (!excludePaymentIntent || b.paymentIntent !== excludePaymentIntent) &&
+        (!excludeBookingId || b._id !== excludeBookingId),
     )
     .flatMap((b) =>
       b.items
         .filter((item) => item.dressId === dressId)
         .map((item) => ({
+          bookingId: b._id,
+          orderNumber: b.orderNumber,
           paymentIntent: b.paymentIntent,
           paymentSuccess: b.paymentSuccess,
           reservedAt: b.reservedAt,
           dressId: item.dressId,
           size: item.size,
           dateBooked: item.dateBooked,
+          endDate: item.endDate,
           blockedFrom: item.blockedFrom,
           blockedUntil: item.blockedUntil,
         })),
@@ -314,7 +354,29 @@ async function removeBookingItem(bookingId: string, itemId: string) {
   return db.bookings.find((b) => b._id === bookingId) ?? null;
 }
 
+// Mirrors the real $elemMatch: paid rows only, matched on EITHER date, with
+// the user joined on as the aggregate's $lookup does. Deliberately over-broad in
+// the same way the real query is — the caller re-filters per item, and that is
+// where due-ness is actually decided.
+async function getBookingsByDateRange(startDate: string, endDate: string) {
+  return db.bookings
+    .filter(
+      (b) =>
+        b.paymentSuccess === true &&
+        b.items.some(
+          (item) =>
+            (item.dateBooked >= startDate && item.dateBooked <= endDate) ||
+            (item.endDate != null &&
+              item.endDate >= startDate &&
+              item.endDate <= endDate),
+        ),
+    )
+    .map((b) => ({ ...b, user: db.users.filter((u) => u._id === b.userId) }));
+}
+
 export const bookingDao = {
+  getAllBookings: async () => db.bookings,
+  getBookingsByDateRange,
   getBookingAvailabilityByDress,
   checkDuplicateBooking,
   findOwnBookingHolds,
@@ -440,9 +502,20 @@ export const userDao = {
 };
 
 export const blockoutDao = {
-  checkBlockOut: async (dressId: string, size: string, date: string) =>
+  // The fake stores block-outs as single dates rather than ranges, so the
+  // overlap test is "does the block-out fall inside the candidate's span".
+  checkBlockOut: async (
+    dressId: string,
+    size: string,
+    date: string,
+    endDate: string = date,
+  ) =>
     db.blockouts.some(
-      (b) => b.dressId === dressId && b.size === size && b.date === date,
+      (b) =>
+        b.dressId === dressId &&
+        b.size === size &&
+        b.date >= date &&
+        b.date <= endDate,
     ),
 };
 

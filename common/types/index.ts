@@ -113,6 +113,8 @@ export type BookingItem = {
   _id?: string;
   dressId: string;
   dateBooked: string;
+  // Absent on a normal booking. Always read as `endDate ?? dateBooked`.
+  endDate?: string;
   blockedFrom: string;
   blockedUntil: string;
   deliveryType: DeliveryType;
@@ -161,10 +163,15 @@ export type BookingLineItem = {
 };
 
 export type BookingAvailability = {
-  _id?: string;
+  // The id of the BOOKING this item came from, not the item's own. It carries
+  // its own name because the aggregation unwinds items, so a bare _id would be
+  // one booking id repeated once per item — which is what made the Calendar's
+  // excludeBookingId filter silently match nothing.
+  bookingId?: string;
   dressId: string;
   size: String;
   dateBooked: string;
+  endDate?: string;
   blockedFrom: string;
   blockedUntil: string;
 };
@@ -257,6 +264,9 @@ export type OrderReceipt = {
   dressId: string;
   name: string;
   dateBooked: string;
+  // Present only on an extended rental; the templates show a return date when
+  // it differs from dateBooked and are byte-identical otherwise.
+  endDate?: string;
   blockedFrom: string;
   blockedUntil: string;
   price: number;

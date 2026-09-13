@@ -70,22 +70,35 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
 
       const primaryDate = (booking: Booking) => booking.items[0]?.dateBooked;
       const dateOf = (booking: Booking) => auckland.toZone(primaryDate(booking));
+      // An extended rental is "this week" for as long as it is out, so the
+      // buckets test the whole span rather than only the day it began —
+      // otherwise a rental that started three weeks ago and is still in a
+      // customer's wardrobe sits in the archive table.
+      const endOf = (booking: Booking) =>
+        auckland.toZone(booking.items[0]?.endDate ?? primaryDate(booking));
 
       const sortedBookings = (data.data as unknown as Booking[]).sort(
         (a, b) => dateOf(a).diff(dateOf(b)),
       );
 
-      const thisWeek = sortedBookings.filter((booking) => {
-        const date = dateOf(booking);
-        return date.isBefore(currentSunday) && date.isAfter(previousMonday);
-      });
+      // Evaluated in order, so the three stay mutually exclusive and a booking
+      // spanning a boundary is only ever listed once.
+      const overlapsThisWeek = (booking: Booking) =>
+        dateOf(booking).isBefore(currentSunday) &&
+        endOf(booking).isAfter(previousMonday);
 
-      const allBookings = sortedBookings.filter((booking) =>
-        dateOf(booking).isAfter(currentSunday),
+      const thisWeek = sortedBookings.filter(overlapsThisWeek);
+
+      const allBookings = sortedBookings.filter(
+        (booking) =>
+          !overlapsThisWeek(booking) && dateOf(booking).isAfter(currentSunday),
       );
 
       const pastBookings = sortedBookings
-        .filter((booking) => dateOf(booking).isBefore(previousMonday))
+        .filter(
+          (booking) =>
+            !overlapsThisWeek(booking) && endOf(booking).isBefore(previousMonday),
+        )
         .sort((a, b) => dateOf(b).diff(dateOf(a)));
       setPastBookings(pastBookings);
 

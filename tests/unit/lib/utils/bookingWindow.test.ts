@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  MAX_RENTAL_DAYS,
   calculateBookingWindow,
   isDateBlockedByExistingBooking,
+  rentalSpanDays,
 } from "../../../../lib/utils/bookingWindow";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 
@@ -29,7 +31,7 @@ describe("calculateBookingWindow — Delivery", () => {
   ])(
     "%s (%s) blocks %s → %s",
     (date, _weekday, blockedFrom, blockedUntil) => {
-      expect(calculateBookingWindow(date, DeliveryType.Delivery)).toEqual({
+      expect(calculateBookingWindow(date, date, DeliveryType.Delivery)).toEqual({
         blockedFrom,
         blockedUntil,
       });
@@ -37,10 +39,10 @@ describe("calculateBookingWindow — Delivery", () => {
   );
 
   it("falls the unused Pickup/Delivery variants back to the Post table", () => {
-    const post = calculateBookingWindow(THU, DeliveryType.Delivery);
+    const post = calculateBookingWindow(THU, THU, DeliveryType.Delivery);
 
-    expect(calculateBookingWindow(THU, DeliveryType.PickupDelivery)).toEqual(post);
-    expect(calculateBookingWindow(THU, DeliveryType.DeliveryPickup)).toEqual(post);
+    expect(calculateBookingWindow(THU, THU, DeliveryType.PickupDelivery)).toEqual(post);
+    expect(calculateBookingWindow(THU, THU, DeliveryType.DeliveryPickup)).toEqual(post);
   });
 });
 
@@ -48,6 +50,7 @@ describe("calculateBookingWindow — Pickup", () => {
   it("is constant regardless of weekday: day before, ready 3 days after", () => {
     for (const date of [MON, TUE, WED, THU, FRI, SAT, SUN]) {
       const { blockedFrom, blockedUntil } = calculateBookingWindow(
+        date,
         date,
         DeliveryType.Pickup,
       );
@@ -62,17 +65,17 @@ describe("calculateBookingWindow — Pickup", () => {
   it("stores the conservative (day-before) dispatch, not the same-day option", () => {
     // The stored window has to overstate rather than understate how long the
     // dress is tied up — the optimistic figure is only ever used for candidates.
-    expect(calculateBookingWindow(THU, DeliveryType.Pickup).blockedFrom).toBe(WED);
+    expect(calculateBookingWindow(THU, THU, DeliveryType.Pickup).blockedFrom).toBe(WED);
   });
 });
 
 describe("isDateBlockedByExistingBooking", () => {
   // Mon delivery: unavailable 2026-05-28 through 2026-06-05.
-  const existing = calculateBookingWindow(MON, DeliveryType.Delivery);
+  const existing = calculateBookingWindow(MON, MON, DeliveryType.Delivery);
 
   it("blocks a candidate whose window overlaps", () => {
     expect(
-      isDateBlockedByExistingBooking(THU, DeliveryType.Pickup, existing),
+      isDateBlockedByExistingBooking(THU, THU, DeliveryType.Pickup, existing),
     ).toBe(true);
   });
 
@@ -81,13 +84,13 @@ describe("isDateBlockedByExistingBooking", () => {
     // 06-05 — equal to blockedUntil, which the window treats as clear.
     expect(existing.blockedUntil).toBe(FRI);
     expect(
-      isDateBlockedByExistingBooking(FRI, DeliveryType.Pickup, existing),
+      isDateBlockedByExistingBooking(FRI, FRI, DeliveryType.Pickup, existing),
     ).toBe(false);
   });
 
   it("blocks one day earlier than that boundary", () => {
     expect(
-      isDateBlockedByExistingBooking(THU, DeliveryType.Pickup, existing),
+      isDateBlockedByExistingBooking(THU, THU, DeliveryType.Pickup, existing),
     ).toBe(true);
   });
 
@@ -95,10 +98,10 @@ describe("isDateBlockedByExistingBooking", () => {
     // Pickup ready-again is +3 days; 2026-05-25 + 3 = 2026-05-28 = blockedFrom.
     expect(existing.blockedFrom).toBe("2026-05-28");
     expect(
-      isDateBlockedByExistingBooking("2026-05-25", DeliveryType.Pickup, existing),
+      isDateBlockedByExistingBooking("2026-05-25", "2026-05-25", DeliveryType.Pickup, existing),
     ).toBe(false);
     expect(
-      isDateBlockedByExistingBooking("2026-05-26", DeliveryType.Pickup, existing),
+      isDateBlockedByExistingBooking("2026-05-26", "2026-05-26", DeliveryType.Pickup, existing),
     ).toBe(true);
   });
 
@@ -107,9 +110,118 @@ describe("isDateBlockedByExistingBooking", () => {
     // *available* as a candidate would, if stored, have started blocking a day
     // earlier. Collapse the two figures and this test fails.
     expect(
-      isDateBlockedByExistingBooking(FRI, DeliveryType.Pickup, existing),
+      isDateBlockedByExistingBooking(FRI, FRI, DeliveryType.Pickup, existing),
     ).toBe(false);
-    expect(calculateBookingWindow(FRI, DeliveryType.Pickup).blockedFrom).toBe(THU);
+    expect(calculateBookingWindow(FRI, FRI, DeliveryType.Pickup).blockedFrom).toBe(THU);
     expect(THU < existing.blockedUntil).toBe(true);
+  });
+});
+
+const addDays = (date: string, days: number) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+
+describe("calculateBookingWindow — extended ranges", () => {
+  // The single-date table above now runs through the range signature as
+  // (d, d, type), so it doubles as the proof that a normal booking is just the
+  // degenerate case. What follows is what only a real range can show.
+
+  it("anchors dispatch on the start date and turnaround on the end date", () => {
+    // Wed dispatch is −5 (2026-05-29); Fri turnaround is +5 (2026-06-10).
+    expect(calculateBookingWindow(WED, FRI, DeliveryType.Delivery)).toEqual({
+      blockedFrom: "2026-05-29",
+      blockedUntil: "2026-06-10",
+    });
+  });
+
+  it("does not take the turnaround from the start weekday", () => {
+    // Wed's turnaround is +4 and Fri's is +5, so anchoring the offset on the
+    // start still lands on the end date — just one day early, at 2026-06-09,
+    // with the wash and pack not yet done. Naming that value is the guard.
+    const { blockedUntil } = calculateBookingWindow(WED, FRI, DeliveryType.Delivery);
+
+    expect(blockedUntil).not.toBe("2026-06-09");
+  });
+
+  it("never lets a later end date free the dress sooner", () => {
+    // The end-date picker offers a gapless run of dates, and the server's range
+    // check assumes conflicts are contiguous, only because this holds: pushing
+    // the end out can move blockedUntil later or leave it, never earlier.
+    let previous = "";
+
+    for (let offset = 0; offset < 28; offset++) {
+      const { blockedUntil } = calculateBookingWindow(
+        MON,
+        addDays(MON, offset),
+        DeliveryType.Delivery,
+      );
+
+      expect(blockedUntil >= previous).toBe(true);
+      previous = blockedUntil;
+    }
+  });
+});
+
+describe("isDateBlockedByExistingBooking — ranges", () => {
+  // Mon delivery: unavailable 2026-05-28 through 2026-06-05.
+  const existing = calculateBookingWindow(MON, MON, DeliveryType.Delivery);
+
+  it("blocks when holding the dress longer reaches into an existing window", () => {
+    // 2026-05-25 on its own is ready again exactly on blockedFrom, which counts
+    // as clear. Keeping it one day longer pushes ready-again past that boundary.
+    expect(
+      isDateBlockedByExistingBooking(
+        "2026-05-25",
+        "2026-05-25",
+        DeliveryType.Pickup,
+        existing,
+      ),
+    ).toBe(false);
+
+    expect(
+      isDateBlockedByExistingBooking(
+        "2026-05-25",
+        "2026-05-26",
+        DeliveryType.Pickup,
+        existing,
+      ),
+    ).toBe(true);
+  });
+
+  it("takes the candidate's turnaround from its end weekday, not its start", () => {
+    // Pickup cannot show this — its turnaround is a flat +3 either way. Only
+    // Delivery can, where Wed is +4 and Fri is +5. A Wed→Fri range is ready
+    // again on 2026-06-10; anchoring on the start says 06-09, which wrongly
+    // clears a booking that starts blocking that very day.
+    const blocksFrom09 = { blockedFrom: "2026-06-09", blockedUntil: "2026-06-20" };
+
+    expect(
+      isDateBlockedByExistingBooking(WED, FRI, DeliveryType.Delivery, blocksFrom09),
+    ).toBe(true);
+  });
+
+  it("stays clear for any end date once the range starts after the window", () => {
+    // Dispatch is what clears an existing booking on the near side, and that
+    // depends only on the start — so extending the end cannot reintroduce a
+    // conflict that the start already cleared.
+    for (const end of [FRI, SAT, SUN, "2026-06-30"]) {
+      expect(
+        isDateBlockedByExistingBooking(FRI, end, DeliveryType.Pickup, existing),
+      ).toBe(false);
+    }
+  });
+});
+
+describe("rentalSpanDays", () => {
+  it("counts a same-day rental as one day", () => {
+    expect(rentalSpanDays(MON, MON)).toBe(1);
+  });
+
+  it("counts both ends", () => {
+    expect(rentalSpanDays(MON, SUN)).toBe(7);
+    expect(rentalSpanDays(MON, addDays(MON, MAX_RENTAL_DAYS - 1))).toBe(
+      MAX_RENTAL_DAYS,
+    );
   });
 });

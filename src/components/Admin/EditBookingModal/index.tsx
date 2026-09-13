@@ -50,8 +50,24 @@ type EditableLineItem = {
   dressId: string;
   size: string;
   dateBooked: string;
+  // Blank means the rental ends the day it starts.
+  endDate: string;
+  // Blank means the catalogue price.
+  price: string;
   notes: string;
 };
+
+// Names which booking is in the way, so a refusal says what to shorten.
+const describeConflicts = (conflicts: any[]) =>
+  conflicts
+    .map((c) => {
+      const span =
+        c.endDate && c.endDate !== c.dateBooked
+          ? `${c.dateBooked} to ${c.endDate}`
+          : c.dateBooked;
+      return c.orderNumber ? `#${c.orderNumber} (${span})` : span;
+    })
+    .join(", ");
 
 type EditableAddressField =
   | "address"
@@ -161,6 +177,11 @@ const EditBookingModal = ({
         dressId: item.dressId ?? "",
         size: (item.size as string) ?? "",
         dateBooked: item.dateBooked ?? "",
+        // Shown blank when it matches the rental date, so an ordinary booking
+        // does not look like an extended one that happens to be a day long.
+        endDate:
+          item.endDate && item.endDate !== item.dateBooked ? item.endDate : "",
+        price: item.price != null ? String(item.price) : "",
         notes: item.notes ?? "",
       })),
     );
@@ -192,8 +213,15 @@ const EditBookingModal = ({
   };
 
   const needsAddress = deliveryType !== DeliveryType.Pickup;
+
+  const effectivePrice = (item: EditableLineItem) => {
+    if (item.price.trim() === "") return dressPrice(item.dressId);
+    const entered = Number(item.price);
+    return Number.isFinite(entered) && entered >= 0 ? entered : 0;
+  };
+
   const dressesTotal = items.reduce(
-    (sum, item) => sum + dressPrice(item.dressId),
+    (sum, item) => sum + effectivePrice(item),
     0,
   );
   const deliveryFee = DELIVERY_FEES[deliveryType];
@@ -208,11 +236,17 @@ const EditBookingModal = ({
   const handleDressChange = (id: string, dressId: string) => {
     const dress = sortedDresses.find((d) => d._id === dressId);
     const availableSizes = getAvailableSizes(dress);
-    updateItem(id, { dressId, size: availableSizes[0] ?? "", dateBooked: "" });
+    updateItem(id, {
+      dressId,
+      size: availableSizes[0] ?? "",
+      dateBooked: "",
+      endDate: "",
+      price: "",
+    });
   };
 
   const handleSizeChange = (id: string, size: string) => {
-    updateItem(id, { size, dateBooked: "" });
+    updateItem(id, { size, dateBooked: "", endDate: "" });
   };
 
   const addItem = () => {
@@ -225,6 +259,8 @@ const EditBookingModal = ({
         dressId: dress?._id ?? "",
         size: availableSizes[0] ?? "",
         dateBooked: "",
+        endDate: "",
+        price: "",
         notes: "",
       },
     ]);
@@ -261,13 +297,17 @@ const EditBookingModal = ({
     setIsSubmitting(true);
     try {
       await updateBooking(booking._id, {
-        items: items.map(({ itemId, dressId, size, dateBooked, notes }) => ({
-          itemId,
-          dressId,
-          size,
-          dateBooked,
-          notes,
-        })),
+        items: items.map(
+          ({ itemId, dressId, size, dateBooked, endDate, price, notes }) => ({
+            itemId,
+            dressId,
+            size,
+            dateBooked,
+            ...(endDate && endDate !== dateBooked ? { endDate } : {}),
+            ...(price.trim() === "" ? {} : { price: Number(price) }),
+            notes,
+          }),
+        ),
         ...(customerMode === "existing"
           ? { userId }
           : {
@@ -287,7 +327,12 @@ const EditBookingModal = ({
       onEdited();
       setOpen(false);
     } catch (err: any) {
-      onError(err?.message ?? "Failed to update booking");
+      const data = err?.response?.data;
+      const detail = describeConflicts(data?.conflicts ?? []);
+      onError(
+        (data?.message ?? err?.message ?? "Failed to update booking") +
+          (detail ? ` Conflicts with ${detail}.` : ""),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -371,16 +416,15 @@ const EditBookingModal = ({
                   <div>
                     <label className={`${labelCls} mb-0`}>Rental Date</label>
                     <Calendar
-                      setSelectedDate={(date) =>
-                        updateItem(item.id, {
-                          dateBooked:
-                            typeof date === "function"
-                              ? (date as (prev: string) => string)(
-                                  item.dateBooked,
-                                )
-                              : date,
-                        })
-                      }
+                      setSelectedDate={(date) => {
+                        const next =
+                          typeof date === "function"
+                            ? (date as (prev: string) => string)(
+                                item.dateBooked,
+                              )
+                            : date;
+                        updateItem(item.id, { dateBooked: next, endDate: "" });
+                      }}
                       sizes={sizes}
                       selectedSize={item.size}
                       dressId={item.dressId}
@@ -401,6 +445,67 @@ const EditBookingModal = ({
                     )}
                   </div>
                 )}
+
+                {item.dressId && item.size && item.dateBooked && (
+                  <div>
+                    <label className={`${labelCls} mb-0`}>
+                      Return date{" "}
+                      <span className="text-gray-400 font-normal">
+                        (optional — leave blank for a single-day rental)
+                      </span>
+                    </label>
+                    <Calendar
+                      setSelectedDate={(date) =>
+                        updateItem(item.id, {
+                          endDate:
+                            typeof date === "function"
+                              ? (date as (prev: string) => string)(item.endDate)
+                              : date,
+                        })
+                      }
+                      sizes={sizes}
+                      selectedSize={item.size}
+                      dressId={item.dressId}
+                      isAdmin={true}
+                      // Without this the booking collides with itself and no
+                      // end date is offered at all.
+                      excludeBookingId={booking?._id}
+                      deliveryType={deliveryType}
+                      rangeStart={item.dateBooked}
+                    />
+                    {item.endDate && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Returns:{" "}
+                        {new Date(item.endDate).toLocaleDateString("en-NZ", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <label className={labelCls}>
+                    Price{" "}
+                    <span className="text-gray-400 font-normal">
+                      (optional — blank uses the catalogue price)
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={item.price}
+                    placeholder={dressPrice(item.dressId).toFixed(2)}
+                    onChange={(e) =>
+                      updateItem(item.id, { price: e.target.value })
+                    }
+                    className={inputCls}
+                  />
+                </div>
 
                 <div>
                   <label className={labelCls}>
@@ -606,8 +711,16 @@ const EditBookingModal = ({
             if (!dress) return null;
             return (
               <div key={item.id} className="flex justify-between text-gray-600">
-                <span>{dress.name}</span>
-                <span>${dressPrice(item.dressId).toFixed(2)}</span>
+                <span>
+                  {dress.name}
+                  {item.endDate && item.endDate !== item.dateBooked && (
+                    <span className="text-gray-400">
+                      {" "}
+                      ({item.dateBooked} → {item.endDate})
+                    </span>
+                  )}
+                </span>
+                <span>${effectivePrice(item).toFixed(2)}</span>
               </div>
             );
           })}

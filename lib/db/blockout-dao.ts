@@ -8,11 +8,20 @@ export async function getBlockOutsByDress(dressId: string) {
   return BlockOutSchema.find({ dressId });
 }
 
-export async function checkBlockOut(dressId: string, size: string, date: string) {
+// Overlap between [date, endDate] and the block-out's own range. endDate
+// defaults to date, which reduces this to the original single-day test — an
+// extended rental has to check its whole span, or a block-out sitting in the
+// middle of it would go unnoticed.
+export async function checkBlockOut(
+  dressId: string,
+  size: string,
+  date: string,
+  endDate: string = date,
+) {
   return BlockOutSchema.findOne({
     dressId,
     size,
-    startDate: { $lte: date },
+    startDate: { $lte: endDate },
     endDate: { $gte: date },
   });
 }
