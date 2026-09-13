@@ -91,6 +91,7 @@ export default async function handler(
           dressImage: dress?.images?.[0] ?? "",
           size: item.size,
           dateBooked: item.dateBooked,
+          endDate: item.endDate,
           deliveryType: item.deliveryType,
           address: item.address,
         }),

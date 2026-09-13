@@ -26,6 +26,9 @@ export interface BookingInstructionsProps {
   dressImage: string;
   size: string;
   dateBooked: string;
+  // Set only on an extended rental, where the dress is due back later than
+  // the day of the event.
+  endDate?: string;
   deliveryType: string;
   address?: Address;
 }
@@ -45,6 +48,7 @@ const BookingInstructionsEmail = ({
   deliveryType,
   size,
   dateBooked,
+  endDate,
 }: BookingInstructionsProps) => {
   const pickup = isPickupLed(deliveryType);
   const formattedDate = new Date(dateBooked).toLocaleDateString("en-NZ", {
@@ -53,6 +57,18 @@ const BookingInstructionsEmail = ({
     month: "long",
     year: "numeric",
   });
+
+  // Rendered only when the rental actually runs past its first day, so an
+  // ordinary booking produces exactly the email it always did.
+  const formattedEndDate =
+    endDate && endDate !== dateBooked
+      ? new Date(endDate).toLocaleDateString("en-NZ", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "";
 
   return (
     <Html>
@@ -197,6 +213,13 @@ const BookingInstructionsEmail = ({
                   <br />
                   {formattedDate}
                 </Text>
+                {formattedEndDate && (
+                  <Text style={bookingDetail}>
+                    <span style={bookingDetailLabel}>Return by</span>
+                    <br />
+                    {formattedEndDate}
+                  </Text>
+                )}
                 <Text style={{ ...bookingDetail, marginBottom: 0 }}>
                   <span style={bookingDetailLabel}>Delivery</span>
                   <br />

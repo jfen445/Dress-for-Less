@@ -120,7 +120,7 @@ export const bookingAvailability = (over: Record<string, unknown> = {}) => {
     dressId: DRESS_ID,
     size: "M",
     dateBooked,
-    ...calculateBookingWindow(dateBooked, DeliveryType.Delivery),
+    ...calculateBookingWindow(dateBooked, dateBooked, DeliveryType.Delivery),
     ...over,
   };
 };

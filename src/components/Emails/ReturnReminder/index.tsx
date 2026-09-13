@@ -25,6 +25,10 @@ export interface ReturnReminderProps {
   dressImage: string;
   size: string;
   dateBooked: string;
+  // Set only on an extended rental. The body copy is relative ("due back
+  // today") and stays correct either way; this changes the label from a bare
+  // date to the span, so a reminder sent weeks after dateBooked makes sense.
+  endDate?: string;
   deliveryType: string;
 }
 
@@ -42,6 +46,7 @@ const ReturnReminderEmail = ({
   deliveryType,
   size,
   dateBooked,
+  endDate,
 }: ReturnReminderProps) => {
   const dropOff = isDropOff(deliveryType);
   const formattedDate = new Date(dateBooked).toLocaleDateString("en-NZ", {
@@ -50,6 +55,18 @@ const ReturnReminderEmail = ({
     month: "long",
     year: "numeric",
   });
+
+  // Rendered only when the rental actually runs past its first day, so an
+  // ordinary booking produces exactly the email it always did.
+  const formattedEndDate =
+    endDate && endDate !== dateBooked
+      ? new Date(endDate).toLocaleDateString("en-NZ", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "";
 
   return (
     <Html>
@@ -181,9 +198,13 @@ const ReturnReminderEmail = ({
                   {size}
                 </Text>
                 <Text style={{ ...bookingDetail, marginBottom: 0 }}>
-                  <span style={bookingDetailLabel}>Date Booked</span>
+                  <span style={bookingDetailLabel}>
+                    {formattedEndDate ? "Rental period" : "Date Booked"}
+                  </span>
                   <br />
-                  {formattedDate}
+                  {formattedEndDate
+                    ? `${formattedDate} — ${formattedEndDate}`
+                    : formattedDate}
                 </Text>
               </Column>
             </Row>

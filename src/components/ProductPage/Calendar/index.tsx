@@ -5,7 +5,11 @@ import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs, { Dayjs } from "dayjs";
 import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
 import { isBookingAllowedForDate } from "../../../../lib/utils/deliveryRules";
-import { isDateBlockedByExistingBooking } from "../../../../lib/utils/bookingWindow";
+import {
+  MAX_RENTAL_DAYS,
+  isDateBlockedByExistingBooking,
+  rentalSpanDays,
+} from "../../../../lib/utils/bookingWindow";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
 import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
@@ -19,6 +23,10 @@ interface ICanlender {
   isAdmin?: boolean;
   excludeBookingId?: string;
   deliveryType?: DeliveryType;
+  // When set, picks the END of a rental starting on that date, asking
+  // availability about the whole span through the predicate the reserve uses.
+  // Admin-only — there is no customer price for an extended rental.
+  rangeStart?: string;
 }
 
 const Calendar = ({
@@ -29,6 +37,7 @@ const Calendar = ({
   isAdmin = false,
   excludeBookingId,
   deliveryType,
+  rangeStart,
 }: ICanlender) => {
   const params = useParams<{ id: string }>();
   const resolvedId = dressIdProp ?? params?.id ?? "";
@@ -98,14 +107,14 @@ const Calendar = ({
     const sizeStock = readObject(sizes, selectedSize.toLowerCase());
 
     const relevantBookings = excludeBookingId
-      ? bookings?.filter((b) => b._id !== excludeBookingId)
+      ? bookings?.filter((b) => b.bookingId !== excludeBookingId)
       : bookings;
 
     const blockedCount =
       relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
-          isDateBlockedByExistingBooking(dateStr, method, booking),
+          isDateBlockedByExistingBooking(dateStr, dateStr, method, booking),
       ).length ?? 0;
 
     if (blockedCount >= sizeStock) {
@@ -122,18 +131,29 @@ const Calendar = ({
 
     const dateStr = date.format("YYYY-MM-DD");
 
+    // Outside range mode the candidate is a single day, which is the same
+    // thing as a span whose ends coincide — so one code path serves both.
+    const spanStart = rangeStart ?? dateStr;
+
+    if (rangeStart) {
+      if (dateStr < rangeStart) return true;
+      if (rentalSpanDays(rangeStart, dateStr) > MAX_RENTAL_DAYS) return true;
+    }
+
+    // Overlap between the span and the block-out, which collapses to the
+    // original "is this day inside it" test when the span is one day.
     const isBlockedOut = blockOuts.some(
       (b) =>
         b.size === selectedSize &&
-        dateStr >= b.startDate.slice(0, 10) &&
-        dateStr <= b.endDate.slice(0, 10),
+        spanStart <= b.endDate.slice(0, 10) &&
+        dateStr >= b.startDate.slice(0, 10),
     );
     if (isBlockedOut) return true;
 
     const sizeStock = readObject(sizes, selectedSize.toLowerCase());
 
     const relevantBookings = excludeBookingId
-      ? bookings?.filter((b) => b._id !== excludeBookingId)
+      ? bookings?.filter((b) => b.bookingId !== excludeBookingId)
       : bookings;
 
     const method = deliveryType ?? DeliveryType.Delivery;
@@ -142,7 +162,7 @@ const Calendar = ({
       relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
-          isDateBlockedByExistingBooking(dateStr, method, booking),
+          isDateBlockedByExistingBooking(spanStart, dateStr, method, booking),
       ).length ?? 0;
 
     if (blockedCount >= sizeStock) {
@@ -175,15 +195,20 @@ const Calendar = ({
     <div className="mt-10 ">
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <DateCalendar
-          key={`${selectedSize}-${deliveryType}-${blockOuts.map((b) => b._id).join(",")}`}
+          // rangeStart is in the key so choosing a different start date
+          // remounts the end picker, clearing a selection that may no longer
+          // be reachable from the new start.
+          key={`${selectedSize}-${deliveryType}-${rangeStart ?? ""}-${blockOuts.map((b) => b._id).join(",")}`}
           onChange={(e) => selectDate(e)}
           shouldDisableDate={(date) => getDisabledDates(date)}
           // Admins can back-date a booking (recording one taken over the phone,
           // or fixing a past entry); customers can't book yesterday.
           minDate={
-            isAdmin
-              ? auckland.now().subtract(1, "year").startOf("day")
-              : auckland.now().startOf("day")
+            rangeStart
+              ? auckland.toZone(rangeStart)
+              : isAdmin
+                ? auckland.now().subtract(1, "year").startOf("day")
+                : auckland.now().startOf("day")
           }
           maxDate={auckland.now().add(1, "year")}
           timezone={AUCKLAND_TZ}

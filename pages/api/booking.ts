@@ -34,8 +34,13 @@ import {
 import { AccountType } from "../../common/enums/AccountType";
 import { getDressPricing } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
-import { calculateBookingWindow } from "../../lib/utils/bookingWindow";
 import {
+  MAX_RENTAL_DAYS,
+  calculateBookingWindow,
+  rentalSpanDays,
+} from "../../lib/utils/bookingWindow";
+import {
+  findBlockingBookings,
   isBookingAvailable,
   outranksReservation,
   ReservationRank,
@@ -222,6 +227,7 @@ export default async function handler(
           item.dressId,
           item.size as string,
           item.dateBooked,
+          item.dateBooked,
           item.deliveryType,
           paymentIntent,
           outranking,
@@ -359,7 +365,12 @@ export default async function handler(
     const bookingItems: IBookingItem[] = items.map((item) => ({
       dressId: item.dressId,
       dateBooked: item.dateBooked,
-      ...calculateBookingWindow(item.dateBooked, item.deliveryType),
+      // Pinned, never read from the body. Customers cannot extend a rental:
+      // there is no per-day price, so a client-supplied range would sell a
+      // month at the one-day rate and hold the dress out of sale meanwhile.
+      // Admin-only until that pricing rule exists.
+      endDate: item.dateBooked,
+      ...calculateBookingWindow(item.dateBooked, item.dateBooked, item.deliveryType),
       deliveryType: String(item.deliveryType),
       address: item.address && {
         company: item.address?.company ?? "",
@@ -598,6 +609,24 @@ export default async function handler(
         seen.add(key);
       }
 
+      // Same range rules as the admin create path, and checked here for the
+      // same reason: before the customer row below is written, so a bad date
+      // cannot leave an orphaned user behind.
+      for (const item of itemsPayload) {
+        const itemEnd = item.endDate || item.dateBooked;
+
+        if (itemEnd < item.dateBooked) {
+          return res.status(400).json({
+            message: "The return date must be on or after the rental date",
+          });
+        }
+        if (rentalSpanDays(item.dateBooked, itemEnd) > MAX_RENTAL_DAYS) {
+          return res.status(400).json({
+            message: `A rental cannot run longer than ${MAX_RENTAL_DAYS} days`,
+          });
+        }
+      }
+
       let userId = bodyUserId;
       if (!userId && newUser) {
         const result = await createUser({
@@ -617,36 +646,59 @@ export default async function handler(
         existingBooking.items.map((item: any) => [item._id.toString(), item]),
       );
 
-      const bookingItems = [];
+      const bookingItems: any[] = [];
       for (const item of itemsPayload) {
         const dress = await getDressPricing(item.dressId);
         if (!dress) return res.status(404).json({ message: "Dress not found" });
+
+        const endDate = item.endDate || item.dateBooked;
 
         const blocked = await checkBlockOut(
           item.dressId,
           item.size,
           item.dateBooked,
+          endDate,
         );
         if (blocked)
           return res.status(409).json({
             message: "This date is blocked out for the selected size",
           });
 
-        const duplicates = await checkDuplicateBooking(
+        // excludeBookingId, not excludePaymentIntent: every admin-created
+        // booking shares "ADMIN_MANUAL", so excluding by intent would drop
+        // every other admin booking on this dress from the count too.
+        const { available, blocking } = await findBlockingBookings(
           item.dressId,
           item.size,
           item.dateBooked,
-          bookingId,
+          endDate,
+          deliveryType,
+          { excludeBookingId: bookingId, alsoConsider: bookingItems },
         );
-        if (duplicates.length > 0) {
-          return res
-            .status(409)
-            .json({ message: "This date is already fully booked" });
+        if (!available) {
+          return res.status(409).json({
+            message:
+              "This dress is already booked for one or more of those dates",
+            conflicts: blocking.map((row: any) => ({
+              orderNumber: row.orderNumber,
+              dateBooked: row.dateBooked,
+              endDate: row.endDate ?? row.dateBooked,
+              blockedFrom: row.blockedFrom,
+              blockedUntil: row.blockedUntil,
+            })),
+          });
         }
 
-        const price = parseInt(dress.price);
+        const price =
+          item.price !== undefined &&
+          item.price !== null &&
+          item.price !== "" &&
+          Number.isFinite(Number(item.price))
+            ? Number(item.price)
+            : parseInt(dress.price);
         const { blockedFrom, blockedUntil } = calculateBookingWindow(
           item.dateBooked,
+          endDate,
           deliveryType,
         );
         const existingItem = item.itemId
@@ -657,6 +709,7 @@ export default async function handler(
           _id: existingItem?._id,
           dressId: item.dressId,
           dateBooked: item.dateBooked,
+          endDate,
           blockedFrom,
           blockedUntil,
           deliveryType,

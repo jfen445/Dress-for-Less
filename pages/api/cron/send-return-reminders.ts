@@ -66,7 +66,8 @@ export default async function handler(
     booking.items
       .filter((item: any) =>
         isInWindow(
-          item.dateBooked,
+          // An extended rental falls due after its end date
+          item.endDate ?? item.dateBooked,
           item.deliveryType === DeliveryType.Pickup
             ? pickupWindow
             : deliveryWindow,
@@ -108,6 +109,7 @@ export default async function handler(
           dressImage: dress?.images?.[0] ?? "",
           size: item.size,
           dateBooked: item.dateBooked,
+          endDate: item.endDate,
           deliveryType: item.deliveryType,
         }),
       });

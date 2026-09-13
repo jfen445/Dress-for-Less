@@ -8,10 +8,14 @@ import { DeliveryType } from "../../common/enums/DeliveryType";
 // Identifies one reservation for the purpose of ordering it against others.
 export type ReservationRank = { reservedAt: string; paymentIntent: string };
 
-type BlockingRow = {
+export type BlockingRow = {
   size: string;
   blockedFrom: string;
   blockedUntil: string;
+  bookingId?: string;
+  orderNumber?: string;
+  dateBooked?: string;
+  endDate?: string;
   paymentSuccess?: boolean;
   reservedAt?: string;
   paymentIntent?: string;
@@ -36,33 +40,80 @@ export function outranksReservation(
   return (row.paymentIntent ?? "") < candidate.paymentIntent;
 }
 
-export async function isBookingAvailable(
-  dressId: string,
-  size: string,
-  dateBooked: string,
-  deliveryType: DeliveryType,
-  excludePaymentIntent?: string,
+export type AvailabilityCheck = {
+  available: boolean;
+  stock: number;
+  // The rows standing in the way, so a caller can say which booking conflicts
+  // rather than only that something does.
+  blocking: BlockingRow[];
+};
+
+export type AvailabilityOptions = {
+  excludePaymentIntent?: string;
   // When supplied, only rows that outrank this reservation are counted. The
   // reserve uses it to re-check after writing, to settle a race it may have
   // lost to a checkout that started fractionally earlier.
-  outranking?: ReservationRank,
-): Promise<boolean> {
+  outranking?: ReservationRank;
+  // Set by the admin edit path so a booking doesn't collide with itself.
+  excludeBookingId?: string;
+  // Rows that are not in the database yet — the other lines of the same admin
+  // request. Without these, two overlapping lines in one submission would each
+  // be checked against a world that does not contain the other, and both pass.
+  alsoConsider?: BlockingRow[];
+};
+
+// startDate/endDate are equal for a normal booking; an extended one moves the
+// end out, which widens the window the candidate has to fit into.
+export async function findBlockingBookings(
+  dressId: string,
+  size: string,
+  startDate: string,
+  endDate: string,
+  deliveryType: DeliveryType,
+  options: AvailabilityOptions = {},
+): Promise<AvailabilityCheck> {
+  const { excludePaymentIntent, outranking, excludeBookingId, alsoConsider } =
+    options;
+
   const dress = await getDressPricing(dressId);
-  if (!dress) return false;
+  if (!dress) return { available: false, stock: 0, blocking: [] };
 
   const stock = Number(dress[size.toLowerCase()] ?? 0);
-  if (stock <= 0) return false;
+  if (stock <= 0) return { available: false, stock: 0, blocking: [] };
 
   const existingBookings = await getBookingAvailabilityByDress(
     dressId,
     excludePaymentIntent,
+    excludeBookingId,
   );
-  const blockedCount = existingBookings.filter(
+
+  const blocking = [...existingBookings, ...(alsoConsider ?? [])].filter(
     (booking: BlockingRow) =>
       booking.size === size &&
-      isDateBlockedByExistingBooking(dateBooked, deliveryType, booking) &&
+      isDateBlockedByExistingBooking(startDate, endDate, deliveryType, booking) &&
       (!outranking || outranksReservation(booking, outranking)),
-  ).length;
+  );
 
-  return blockedCount < stock;
+  return { available: blocking.length < stock, stock, blocking };
+}
+
+export async function isBookingAvailable(
+  dressId: string,
+  size: string,
+  startDate: string,
+  endDate: string,
+  deliveryType: DeliveryType,
+  excludePaymentIntent?: string,
+  outranking?: ReservationRank,
+  excludeBookingId?: string,
+): Promise<boolean> {
+  const { available } = await findBlockingBookings(
+    dressId,
+    size,
+    startDate,
+    endDate,
+    deliveryType,
+    { excludePaymentIntent, outranking, excludeBookingId },
+  );
+  return available;
 }

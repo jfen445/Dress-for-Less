@@ -53,6 +53,7 @@ const billingAddressSchema = new Schema({
 const bookingItemSchema = new Schema({
   dressId: { type: String, required: true },
   dateBooked: { type: String, required: true },
+  endDate: { type: String, required: false },
   blockedFrom: { type: String, required: true },
   blockedUntil: { type: String, required: true },
   deliveryType: { type: String, required: true, default: "delivery" },
