@@ -56,55 +56,68 @@ export default async function handler(
 
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
-  const recipients = bookings.flatMap((booking) =>
-    booking.items.map((item: any) => ({ booking, item })),
-  );
-
   // Sent one at a time, not in parallel: Resend rate-limits at 2 requests per
   // second, and a rejected send is what stamps instructionsSentAt on a booking
   // nobody was actually emailed.
   const results: EmailSendResult[] = [];
 
-  // Resend message IDs per booking, keyed by booking id. A booking appears here
-  // as soon as one of its items sends, which is the same "at least one item"
-  // rule that decides whether it gets stamped.
+  // Resend message IDs per booking, keyed by booking id — one id per booking,
+  // since an order is one email however many dresses it holds.
   const emailIdsByBooking = new Map<string, string[]>();
 
-  for (const [i, { booking, item }] of recipients.entries()) {
+  // One email per booking, not per item: an order with three dresses gets a
+  // single message listing all three, so the customer isn't sent three
+  // near-identical instruction emails for one order.
+  for (const [i, booking] of bookings.entries()) {
     if (i > 0) await new Promise((resolve) => setTimeout(resolve, 550));
 
     try {
-      const dress = await getDress(item.dressId);
       const recipient = booking.user?.[0];
       if (!recipient?.email)
         throw new Error(`No email for booking ${booking._id}`);
+
+      // One lookup per distinct dress, so two lines of the same dress in an
+      // order cost one Sanity call.
+      const dressIds: string[] = [
+        ...new Set<string>(booking.items.map((item: any) => item.dressId)),
+      ];
+      const dresses = new Map(
+        await Promise.all(
+          dressIds.map(async (id) => [id, await getDress(id)] as const),
+        ),
+      );
+
+      const items = booking.items.map((item: any) => ({
+        dressName: dresses.get(item.dressId)?.name ?? "",
+        dressImage: dresses.get(item.dressId)?.images?.[0] ?? "",
+        size: item.size,
+        dateBooked: item.dateBooked,
+        endDate: item.endDate,
+        deliveryType: item.deliveryType,
+      }));
 
       // Resend resolves with { error } rather than throwing, so an unverified
       // sender domain or a 429 looks identical to a success unless we check.
       const { data, error } = await resend.emails.send({
         from: `Dress for Less <${process.env.RESEND_EMAIL_ADDRESS}>`,
         to: [recipient.email],
-        subject: getBookingInstructionsSubject(item.deliveryType),
+        subject: getBookingInstructionsSubject(
+          items.map((item: { deliveryType: string }) => item.deliveryType),
+        ),
         react: BookingInstructionsEmail({
           name: recipient.name ?? "",
-          dressName: dress?.name ?? "",
-          dressImage: dress?.images?.[0] ?? "",
-          size: item.size,
-          dateBooked: item.dateBooked,
-          endDate: item.endDate,
-          deliveryType: item.deliveryType,
-          address: item.address,
+          items,
         }),
       });
 
       if (error) throw new Error(`${error.name}: ${error.message}`);
 
-      const bookingId = booking._id.toString();
-      const emailIds = emailIdsByBooking.get(bookingId) ?? [];
       // Recorded even if the id is somehow absent, so a send is never dropped
       // from the sent set on account of a missing id.
-      if (data?.id) emailIds.push(data.id);
-      emailIdsByBooking.set(bookingId, emailIds);
+      emailIdsByBooking.set(
+        booking._id.toString(),
+        data?.id ? [data.id] : [],
+      );
 
       results.push(EmailSendResult.Sent);
     } catch (err) {
@@ -119,13 +132,13 @@ export default async function handler(
   const failed = results.filter(
     (result) => result === EmailSendResult.Failed,
   ).length;
-  const sent = recipients.length - failed;
+  const sent = bookings.length - failed;
 
-  // A booking counts as "emailed" if at least one of its items sent
-  // successfully — which is exactly the bookings that made it into the map.
-  // Written per booking rather than with one updateMany, since each carries
-  // its own message ids. instructionsSentAt is overwritten to the latest send
-  // while the ids accumulate, so a re-send keeps the earlier ones lookupable.
+  // Only the bookings whose email actually sent are stamped — exactly the ones
+  // that made it into the map. Written per booking rather than with one
+  // updateMany, since each carries its own message id. instructionsSentAt is
+  // overwritten to the latest send while the ids accumulate, so a re-send keeps
+  // the earlier ones lookupable.
   const sentBookingIds = [...emailIdsByBooking.keys()];
 
   if (sentBookingIds.length > 0) {
