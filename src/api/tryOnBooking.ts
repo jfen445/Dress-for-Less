@@ -15,6 +15,7 @@ export async function reserveTryOnBooking(payload: {
   timeSlot: string;
   name: string;
   phone: string;
+  notes?: string;
   paymentIntent: string;
 }) {
   return api.post(`/api/tryOnBooking`, payload);

@@ -16,6 +16,15 @@ export const TRY_ON_COUPON_AMOUNT = 10;
 
 export const TRY_ON_COUPON_VALID_DAYS = 2;
 
+export const TRY_ON_NOTES_MAX_LENGTH = 500;
+
+// One rule for both sides: the textarea's maxLength and what the route persists.
+export function normaliseTryOnNotes(notes: unknown): string {
+  return typeof notes === "string"
+    ? notes.trim().slice(0, TRY_ON_NOTES_MAX_LENGTH)
+    : "";
+}
+
 export function formatTryOnTimeSlot(timeSlot: string): string {
   const [hourStr, minuteStr] = timeSlot.split(":");
   const hour = parseInt(hourStr, 10);

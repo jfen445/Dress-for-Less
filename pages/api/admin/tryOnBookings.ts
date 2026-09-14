@@ -14,7 +14,10 @@ import {
 import { getAvailabilityForDate } from "../../../lib/db/tryon-availability-dao";
 import { TryOnBookingSchema } from "../../../lib/db/schema";
 import { TryOnStatus } from "../../../common/enums/TryOnStatus";
-import { TRY_ON_FEE } from "../../../common/constants/tryOn";
+import {
+  TRY_ON_FEE,
+  normaliseTryOnNotes,
+} from "../../../common/constants/tryOn";
 import { sendTryOnConfirmationEmail } from "../../../lib/tryOn/confirmTryOnReservation";
 
 export default async function handler(
@@ -73,6 +76,7 @@ export default async function handler(
       date,
       timeSlot,
     } = req.body;
+    const notes = normaliseTryOnNotes(req.body.notes);
 
     if (!date || !timeSlot) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -132,6 +136,7 @@ export default async function handler(
         date,
         timeSlot,
         price: TRY_ON_FEE,
+        notes,
         paymentIntent: "ADMIN_MANUAL",
         paymentSuccess: true,
         status: TryOnStatus.Booked,

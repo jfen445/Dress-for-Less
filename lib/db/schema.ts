@@ -160,6 +160,7 @@ const tryOnBookingSchema = new Schema(
     date: { type: String, required: true },
     timeSlot: { type: String, required: true },
     price: { type: Number, required: true },
+    notes: { type: String, required: false },
     paymentIntent: { type: String, required: true },
     paymentSuccess: { type: Boolean, required: true, default: false },
     // Set when the row was written by the try-on reserve step, before payment.

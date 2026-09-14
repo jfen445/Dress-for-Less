@@ -20,6 +20,7 @@ import { getClientSecret } from "@/api/payment";
 import { PaymentKind } from "../../../common/enums/PaymentKind";
 import {
   TRY_ON_FEE,
+  TRY_ON_NOTES_MAX_LENGTH,
   formatTryOnTimeSlot,
 } from "../../../common/constants/tryOn";
 
@@ -88,6 +89,7 @@ const TryOn = () => {
 
   const [selectedDate, setSelectedDate] = React.useState("");
   const [selectedSlot, setSelectedSlot] = React.useState("");
+  const [notes, setNotes] = React.useState("");
   const [termsAccepted, setTermsAccepted] = React.useState(false);
   const [termsError, setTermsError] = React.useState(false);
   const [termsModalOpen, setTermsModalOpen] = React.useState(false);
@@ -271,6 +273,33 @@ const TryOn = () => {
             setSelectedSlot={setSelectedSlot}
           />
 
+          {selectedDate && (
+            <div className="mt-6">
+              <label
+                htmlFor="try-on-notes"
+                className="block text-sm font-medium text-gray-900"
+              >
+                Any specific dresses in mind?{" "}
+                <span className="font-normal text-gray-400">(optional)</span>
+              </label>
+              <div className="mt-1">
+                <textarea
+                  id="try-on-notes"
+                  name="try-on-notes"
+                  rows={3}
+                  value={notes}
+                  maxLength={TRY_ON_NOTES_MAX_LENGTH}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="block w-full rounded-lg border border-rose-900 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                We&apos;ll try our best to have these ready if they&apos;re
+                available. Rental bookings take priority.
+              </p>
+            </div>
+          )}
+
           <div className="mt-6 space-y-4 rounded-md border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900">
               Before you book
@@ -391,6 +420,7 @@ const TryOn = () => {
                   timeSlot={selectedSlot}
                   name={userInfo.name}
                   phone={userInfo.mobileNumber}
+                  notes={notes}
                   onSuccess={() => setIsBooked(true)}
                 />
               </Elements>

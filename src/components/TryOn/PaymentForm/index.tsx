@@ -20,6 +20,7 @@ interface ITryOnPaymentForm {
   timeSlot: string;
   name: string;
   phone: string;
+  notes: string;
   onSuccess: () => void;
 }
 
@@ -29,6 +30,7 @@ const TryOnPaymentForm = ({
   timeSlot,
   name,
   phone,
+  notes,
   onSuccess,
 }: ITryOnPaymentForm) => {
   const stripe = useStripe();
@@ -82,6 +84,7 @@ const TryOnPaymentForm = ({
           timeSlot,
           name,
           phone,
+          notes,
           paymentIntent: pendingIntent.id,
         });
       } catch (err: any) {
