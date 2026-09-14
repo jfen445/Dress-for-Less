@@ -688,15 +688,7 @@ const PoliciesContent = () => {
           <p>
             Unless your booking confirmation provides a different return time:
           </p>
-          <List
-            items={[
-              <>Weekend rentals must be returned by Monday by 8:00pm.</>,
-              <>
-                Weekday rentals must be returned by 12:00pm on the day after the
-                event.
-              </>,
-            ]}
-          />
+          <p>All rentals must be returned by Monday by 8:00pm.</p>
           <p>
             A &ldquo;weekend rental&rdquo; generally means a rental for an event
             held on Friday, Saturday or Sunday.
@@ -854,7 +846,7 @@ const PoliciesContent = () => {
           />
           <p>
             The event date alone does not tell us when you will leave the
-            address. If you are travelling, we would suggest posting it to where
+            address. If you are travelling, we would suggest to post it to where
             you are travelling to, where possible.
           </p>
           <p>
@@ -1293,6 +1285,205 @@ const PoliciesContent = () => {
           If an accident happens, contact Dress for Less promptly. Do not
           attempt to clean or repair the garment yourself.
         </p>
+      </Section>
+      <Section title="15. Customer Cancellations and Booking Changes">
+        <p>
+          The cancellation options available depend on when we receive your
+          cancellation request.
+        </p>
+        <p>
+          All cancellation requests must be made in writing by contacting Dress
+          for Less. The cancellation is not confirmed until we have acknowledged
+          your request.
+        </p>
+        <p>
+          The timeframes below are calculated from the event date selected on
+          your booking.
+        </p>
+
+        <SubSection title="15.1 Cancellations within 24 hours of booking">
+          <p>
+            Where you contact us within 24 hours of placing your booking, you
+            may receive a refund of the amount paid, minus a $5 processing fee.
+          </p>
+          <p>This option is not available where:</p>
+          <List
+            items={[
+              <>your event date is seven days or less away;</>,
+              <>
+                the garment has already been prepared or packed for your
+                booking;
+              </>,
+              <>the garment has already been dispatched;</>,
+              <>the garment has already been collected; or</>,
+              <>the rental period has otherwise commenced.</>,
+            ]}
+          />
+          <p>
+            Where any of the above applies, the cancellation terms based on the
+            number of days before your event will apply instead.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.2 Cancellations more than 14 days before the event">
+          <p>
+            Where your cancellation request is received more than 14 full days
+            before your event date, you may choose one of the following:
+          </p>
+          <List
+            items={[
+              <>
+                <strong>Refund:</strong> A refund of the amount paid, minus a
+                $20 processing and cancellation fee.
+              </>,
+              <>
+                <strong>Store credit:</strong> Store credit for the amount paid,
+                minus a $10 processing fee.
+              </>,
+            ]}
+          />
+          <p>
+            Store credit will be valid for 12 months from the date it is issued
+            and cannot be exchanged for cash.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.3 Cancellations between eight and 14 days before the event">
+          <p>
+            Where your cancellation request is received between eight and 14
+            full days before your event date, no monetary refund will be
+            provided.
+          </p>
+          <p>
+            You may receive store credit equal to 50% of the amount paid for the
+            cancelled booking.
+          </p>
+          <p>
+            The remaining 50% will be retained to account for the garment having
+            been reserved and unavailable to other customers.
+          </p>
+          <p>
+            Store credit will be valid for 12 months from the date it is issued
+            and cannot be exchanged for cash.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.4 Cancellations seven days or less before the event">
+          <p>
+            Where your cancellation request is received seven days or less
+            before your event date, no refund or store credit will be provided.
+          </p>
+          <p>This applies even where:</p>
+          <List
+            items={[
+              <>the booking was placed less than 24 hours earlier;</>,
+              <>your event has been cancelled or postponed;</>,
+              <>you no longer require the garment;</>,
+              <>you have selected the wrong garment, size or event date;</>,
+              <>you have found another outfit;</>,
+              <>you are unable to attend the event; or</>,
+              <>your personal circumstances have changed.</>,
+            ]}
+          />
+          <p>
+            No refund or store credit will be provided once a garment has been
+            prepared, packed, dispatched, collected or otherwise supplied for
+            the booking.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.5 Changing the garment or event date">
+          <p>
+            Requests to change your garment, size or event date are subject to
+            availability and are not guaranteed.
+          </p>
+          <p>
+            Where a change is requested more than 14 days before the original
+            event date, we may allow the amount paid to be transferred to
+            another available garment or event date.
+          </p>
+          <p>
+            An administration fee or any difference in rental price may apply.
+          </p>
+          <p>
+            Where the replacement garment has a higher rental price, the
+            customer must pay the difference before the change is confirmed. Any
+            difference may not be refunded where the replacement garment has a
+            lower rental price.
+          </p>
+          <p>
+            Requests made within 14 days of the original event date will be
+            assessed under the cancellation timeframes above. We are not
+            required to transfer or reschedule the booking.
+          </p>
+          <p>
+            A booking change is not confirmed until Dress for Less has approved
+            it in writing and any additional amount has been paid.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.6 Postage and additional charges">
+          <p>
+            Where postage, rural delivery, early dispatch or another additional
+            service has already been purchased, arranged or used, that charge
+            may be non-refundable.
+          </p>
+          <p>
+            Where the garment has not yet been dispatched and the postage
+            service has not been used, any refund or store credit will be
+            calculated in accordance with the applicable cancellation option
+            above.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.7 Store credit conditions">
+          <p>Unless otherwise stated, cancellation store credit:</p>
+          <List
+            items={[
+              <>is valid for 12 months from the date of issue;</>,
+              <>may only be used by the customer to whom it was issued;</>,
+              <>may be used towards an available Dress for Less rental;</>,
+              <>cannot be exchanged or redeemed for cash;</>,
+              <>cannot be transferred or sold without our approval; and</>,
+              <>must be applied before its expiry date.</>,
+            ]}
+          />
+          <p>
+            Any new booking made using store credit is subject to the prices,
+            availability and Terms &amp; Conditions that apply when the new
+            booking is placed.
+          </p>
+        </SubSection>
+
+        <SubSection title="15.8 Cancellations by Dress for Less">
+          <p>
+            In rare circumstances, Dress for Less may need to cancel a booking
+            because the garment has been damaged, lost, returned late by another
+            customer or has otherwise become unavailable.
+          </p>
+          <p>
+            Where this occurs, we will contact you as soon as reasonably
+            possible and may offer:
+          </p>
+          <List
+            items={[
+              <>a suitable replacement garment;</>,
+              <>a transfer of the amount paid to another available booking;</>,
+              <>store credit; or</>,
+              <>a refund of the amount paid for the unavailable garment.</>,
+            ]}
+          />
+          <p>
+            Dress for Less will not be responsible for indirect or consequential
+            costs arising from the cancellation, except where required under New
+            Zealand law.
+          </p>
+          <p>
+            Nothing in this cancellation policy limits any rights or remedies
+            available under the Consumer Guarantees Act 1993, the Fair Trading
+            Act 1986 or any other applicable New Zealand law.
+          </p>
+        </SubSection>
       </Section>
     </>
   );
