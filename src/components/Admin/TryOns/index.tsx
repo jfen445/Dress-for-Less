@@ -1,5 +1,4 @@
 import React from "react";
-import dayjs from "dayjs";
 import { getAllTryOnBookings, updateTryOnBookingStatus } from "@/api/admin";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
@@ -10,6 +9,7 @@ import EmailTryOnRemindersModal from "@/components/Admin/EmailTryOnRemindersModa
 import AdminTryOnAvailability from "@/components/Admin/TryOnAvailability";
 import { TryOnStatus } from "../../../../common/enums/TryOnStatus";
 import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
+import { auckland } from "../../../../lib/utils/timezone";
 
 type TryOnBookingRow = {
   _id: string;
@@ -37,8 +37,8 @@ const getStatusColour = (status: TryOnStatus) => {
   }
 };
 
-const previousMonday = (d = dayjs()) => {
-  // dayjs().day(): Sunday = 0, Monday = 1, ..., Saturday = 6
+const previousMonday = (d = auckland.now()) => {
+  // .day(): Sunday = 0, Monday = 1, ..., Saturday = 6
   const daysToSubtract = (d.day() + 6) % 7; // 0 when Monday, 1 when Tuesday, ..., 6 when Sunday
   return d.subtract(daysToSubtract, "day").startOf("day");
 };
@@ -94,37 +94,30 @@ const AdminTryOns = () => {
 
   const { thisWeekBookings, upcomingBookings, pastBookings, reminderBookings } =
     React.useMemo(() => {
-      const now = dayjs();
-      const currentSunday = (
-        now.day() === 0 ? now : now.add(7 - now.day(), "day")
-      )
-        .hour(23)
-        .minute(59)
-        .second(59)
-        .millisecond(999);
-      const monday = previousMonday();
+      // Auckland, not the admin's own clock: a "YYYY-MM-DD" booking date is a
+      // wall-clock day in the shop's zone, so comparing it against a Sydney or
+      // UTC "now" shifts the week boundaries by a day.
+      const now = auckland.now();
+      const monday = previousMonday(now);
+      const currentSunday = monday.add(6, "day").endOf("day");
       const nextSunday = currentSunday.add(7, "day");
 
-      const sorted = [...bookings].sort((a, b) =>
-        dayjs(a.date).diff(dayjs(b.date)),
-      );
+      // Both bounds inclusive. `isAfter(monday)` dropped any booking dated on
+      // the week's Monday: it parses to exactly Monday 00:00, so it was neither
+      // after Monday nor before it, and fell out of all three lists.
+      const dayOf = (b: TryOnBookingRow) => auckland.startOfDay(b.date);
+      const inWeek = (b: TryOnBookingRow, until: typeof currentSunday) =>
+        !dayOf(b).isBefore(monday) && !dayOf(b).isAfter(until);
 
-      const thisWeek = sorted.filter(
-        (b) =>
-          dayjs(b.date).isBefore(currentSunday) &&
-          dayjs(b.date).isAfter(monday),
-      );
-      const upcoming = sorted.filter((b) =>
-        dayjs(b.date).isAfter(currentSunday),
-      );
+      const sorted = [...bookings].sort((a, b) => dayOf(a).diff(dayOf(b)));
+
+      const thisWeek = sorted.filter((b) => inWeek(b, currentSunday));
+      const upcoming = sorted.filter((b) => dayOf(b).isAfter(currentSunday));
       const past = sorted
-        .filter((b) => dayjs(b.date).isBefore(monday))
-        .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+        .filter((b) => dayOf(b).isBefore(monday))
+        .sort((a, b) => dayOf(b).diff(dayOf(a)));
 
-      const reminders = sorted.filter(
-        (b) =>
-          !dayjs(b.date).isBefore(monday) && !dayjs(b.date).isAfter(nextSunday),
-      );
+      const reminders = sorted.filter((b) => inWeek(b, nextSunday));
 
       return {
         thisWeekBookings: thisWeek,
@@ -147,7 +140,7 @@ const AdminTryOns = () => {
               )}
             </td>
             <td className="px-3 py-4 text-sm text-gray-500">
-              {dayjs(booking.date).format("MMMM D, YYYY")}
+              {auckland.format(booking.date, "MMMM D, YYYY")}
             </td>
             <td className="px-3 py-4 text-sm text-gray-500">
               {formatTryOnTimeSlot(booking.timeSlot)}
