@@ -75,6 +75,7 @@ export async function createAdminTryOnBooking(data: {
   phone?: string;
   date: string;
   timeSlot: string;
+  notes?: string;
 }) {
   return api.post(`/api/admin/tryOnBookings`, data);
 }

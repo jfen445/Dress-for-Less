@@ -15,7 +15,10 @@ import {
   tryOnAvailabilityDao,
   tryOnSlotIndexViolation,
 } from "../fakes/daos";
-import { TRY_ON_FEE } from "../../common/constants/tryOn";
+import {
+  TRY_ON_FEE,
+  TRY_ON_NOTES_MAX_LENGTH,
+} from "../../common/constants/tryOn";
 
 vi.mock("../../lib/db/db", () => ({ dbConnect: vi.fn(async () => undefined) }));
 vi.mock("../../lib/db/schema", async () => (await import("../fakes/daos")).schemaModule);
@@ -119,6 +122,31 @@ describe("POST /api/tryOnBooking — the reserve", () => {
     const row = tryOnBookingFor(PAYMENT_INTENT)!;
     expect(row.paymentSuccess).toBe(false);
     expect(row.reservedAt).toBe(NOW_ISO);
+  });
+
+  // The note rides on the reserve, not the confirm, so it is already stored
+  // if the card is then declined.
+  it("stores the note the customer left", async () => {
+    const { status } = await reserve({
+      body: { notes: "  the black satin midi  " },
+    });
+
+    expect(status).toBe(201);
+    expect(tryOnBookingFor(PAYMENT_INTENT)!.notes).toBe("the black satin midi");
+  });
+
+  it("bounds a note that arrives too long", async () => {
+    await reserve({ body: { notes: "x".repeat(TRY_ON_NOTES_MAX_LENGTH + 50) } });
+
+    expect(tryOnBookingFor(PAYMENT_INTENT)!.notes).toHaveLength(
+      TRY_ON_NOTES_MAX_LENGTH,
+    );
+  });
+
+  it("reserves without a note, and never writes a non-string as one", async () => {
+    await reserve({ body: { notes: { evil: true } } });
+
+    expect(tryOnBookingFor(PAYMENT_INTENT)!.notes).toBe("");
   });
 
   it("refuses an unauthenticated caller", async () => {

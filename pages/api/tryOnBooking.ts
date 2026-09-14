@@ -17,7 +17,10 @@ import { reconcileTryOnReservation } from "../../lib/tryOn/reconcileTryOnReserva
 import { findUser } from "../../lib/db/user-dao";
 import { auckland } from "../../lib/utils/timezone";
 import { TryOnStatus } from "../../common/enums/TryOnStatus";
-import { TRY_ON_FEE } from "../../common/constants/tryOn";
+import {
+  TRY_ON_FEE,
+  normaliseTryOnNotes,
+} from "../../common/constants/tryOn";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   typescript: true,
@@ -62,6 +65,7 @@ export default async function handler(
     }
 
     const { date, timeSlot, name, phone, paymentIntent } = req.body;
+    const notes = normaliseTryOnNotes(req.body.notes);
 
     if (!date || !timeSlot || !name || !paymentIntent) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -164,6 +168,7 @@ export default async function handler(
             date,
             timeSlot,
             price: TRY_ON_FEE,
+            notes,
             paymentIntent,
             reservedAt: auckland.now().toISOString(),
             status: TryOnStatus.Booked,

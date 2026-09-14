@@ -33,6 +33,7 @@ function renderForm() {
       timeSlot="18:30"
       name="Ada Lovelace"
       phone="021 000 0000"
+      notes="the black satin midi"
       onSuccess={onSuccess}
     />,
   );
@@ -78,6 +79,9 @@ describe("reserve, then charge", () => {
         timeSlot: "18:30",
         name: "Ada Lovelace",
         phone: "021 000 0000",
+        // Carried on the reserve, not the confirm: the note is part of the row
+        // that holds the slot, so it survives a payment that never completes.
+        notes: "the black satin midi",
         paymentIntent: INTENT_ID,
       }),
     );

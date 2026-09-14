@@ -152,7 +152,7 @@ const OrderSuccess = ({
                         <a href={`/dresses?id=${dress?._id}`}>{dress?.name}</a>
                       </h4>
                       <p className="mt-2 text-sm text-gray-600">
-                        {dress?.description}
+                        {dress?.brand}
                       </p>
                     </div>
                     <div className="mt-6 flex flex-1 items-end">

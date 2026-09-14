@@ -5,7 +5,10 @@ import { getAllAdminUsers, createAdminTryOnBooking } from "@/api/admin";
 import { getTakenTryOnSlots } from "@/api/tryOnBooking";
 import { UserType } from "../../../../common/types";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
-import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
+import {
+  TRY_ON_NOTES_MAX_LENGTH,
+  formatTryOnTimeSlot,
+} from "../../../../common/constants/tryOn";
 
 interface ICreateTryOnBookingModal {
   isOpen: boolean;
@@ -29,6 +32,7 @@ const CreateTryOnBookingModal = ({
   const [phone, setPhone] = React.useState("");
   const [date, setDate] = React.useState("");
   const [timeSlot, setTimeSlot] = React.useState("");
+  const [notes, setNotes] = React.useState("");
   const [availableSlots, setAvailableSlots] = React.useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [toast, setToast] = React.useState<ToastType>({
@@ -63,6 +67,7 @@ const CreateTryOnBookingModal = ({
     setPhone("");
     setDate("");
     setTimeSlot("");
+    setNotes("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,6 +99,7 @@ const CreateTryOnBookingModal = ({
         phone: phone || undefined,
         date,
         timeSlot,
+        notes: notes || undefined,
       });
       onCreated();
       setOpen(false);
@@ -244,6 +250,25 @@ const CreateTryOnBookingModal = ({
               </select>
             </div>
           </div>
+
+          {/* Same gate as the customer page: there is nothing to note until
+              there is an appointment to hang it on. */}
+          {date && (
+            <div>
+              <label className={labelCls}>
+                Notes{" "}
+                <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                maxLength={TRY_ON_NOTES_MAX_LENGTH}
+                className={inputCls}
+                placeholder="Dresses the customer wants to try, sizes, anything to prep"
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button

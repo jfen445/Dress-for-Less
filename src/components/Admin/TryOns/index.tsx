@@ -19,6 +19,7 @@ type TryOnBookingRow = {
   date: string;
   timeSlot: string;
   price: number;
+  notes?: string;
   status: TryOnStatus;
   user?: { name?: string; email?: string }[];
 };
@@ -144,6 +145,15 @@ const AdminTryOns = () => {
             </td>
             <td className="px-3 py-4 text-sm text-gray-500">
               {formatTryOnTimeSlot(booking.timeSlot)}
+            </td>
+            <td className="max-w-xs px-3 py-4 text-sm text-gray-500">
+              {booking.notes ? (
+                <span className="whitespace-pre-wrap break-words">
+                  {booking.notes}
+                </span>
+              ) : (
+                <span className="text-gray-300">—</span>
+              )}
             </td>
             <td className="px-3 py-4 text-sm text-gray-500">
               ${booking.price.toFixed(2)}
@@ -276,6 +286,12 @@ const AdminTryOns = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                       >
+                        Notes
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
                         Fee
                       </th>
                       <th
@@ -296,7 +312,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={6}
+                        colSpan={7}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         This week try-ons
@@ -310,7 +326,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={6}
+                        colSpan={7}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         Upcoming try-ons
@@ -324,7 +340,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={6}
+                        colSpan={7}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         Previous try-ons
@@ -335,7 +351,7 @@ const AdminTryOns = () => {
                     {bookings.length === 0 && (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={7}
                           className="py-6 text-center text-sm text-gray-500"
                         >
                           No try-on bookings yet.

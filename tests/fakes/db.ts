@@ -80,6 +80,7 @@ export type FakeTryOnBooking = {
   timeSlot: string;
   paymentSuccess: boolean;
   reservedAt: string | null;
+  notes?: string;
 };
 
 type Store = {
