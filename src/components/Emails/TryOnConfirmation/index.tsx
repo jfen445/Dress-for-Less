@@ -65,9 +65,10 @@ const TryOnConfirmationEmail = ({
           </Text>
         </Section>
         <Text style={paragraph}>
-          Please arrive on time for your appointment. Full arrival details,
-          including try-on location, will be provided the day before your try-on
-          session.
+          As we often have back-to-back appointments, please arrive as close to
+          your scheduled time as possible. When you arrive, please wait outside
+          the garage door. We&apos;ll open the garage door and let you in as
+          soon as we&apos;re ready for your appointment.
         </Text>
         <Hr style={hr} />
         <Heading as="h2" style={subHeading}>
