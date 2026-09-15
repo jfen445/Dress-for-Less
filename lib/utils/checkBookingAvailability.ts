@@ -9,6 +9,7 @@ import { DeliveryType } from "../../common/enums/DeliveryType";
 export type ReservationRank = { reservedAt: string; paymentIntent: string };
 
 export type BlockingRow = {
+  dressId: string;
   size: string;
   blockedFrom: string;
   blockedUntil: string;
@@ -30,7 +31,9 @@ export type BlockingRow = {
 // about which of them should give way — without which both would back out and
 // neither would get the dress.
 export function outranksReservation(
-  row: BlockingRow,
+  // Which dress a row is for has no bearing on the ordering, so it isn't asked
+  // for: this settles precedence between two reservations, not availability.
+  row: Omit<BlockingRow, "dressId">,
   candidate: ReservationRank,
 ): boolean {
   if (row.paymentSuccess || !row.reservedAt) return true;
@@ -87,8 +90,12 @@ export async function findBlockingBookings(
     excludeBookingId,
   );
 
+  // The dress must be compared explicitly: the DAO query is already scoped to
+  // one dress, but alsoConsider carries every line of the caller's request, so
+  // without this a sibling line for a *different* dress blocks on size alone.
   const blocking = [...existingBookings, ...(alsoConsider ?? [])].filter(
     (booking: BlockingRow) =>
+      booking.dressId === dressId &&
       booking.size === size &&
       isDateBlockedByExistingBooking(startDate, endDate, deliveryType, booking) &&
       (!outranking || outranksReservation(booking, outranking)),
