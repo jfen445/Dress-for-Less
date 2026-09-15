@@ -2,6 +2,7 @@ import React from "react";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import Calendar from "@/components/ProductPage/Calendar";
+import Toggle from "@/components/Toggle";
 import useAllDresses from "@/hooks/useAllDresses";
 import { getAllAdminUsers, createAdminBooking } from "@/api/admin";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
@@ -47,6 +48,7 @@ type BookingLineItem = {
   // Blank means a normal one-day booking; the server reads it as the rental
   // date. Set to run the rental on past its first day.
   endDate: string;
+  isExtended: boolean;
   // Blank means "use the catalogue price". Extended rentals have no per-day
   // rule, so the admin quotes them by hand.
   price: string;
@@ -59,6 +61,7 @@ const emptyLineItem = (id: string): BookingLineItem => ({
   size: "",
   dateBooked: "",
   endDate: "",
+  isExtended: false,
   price: "",
   notes: "",
 });
@@ -280,6 +283,7 @@ const CreateBookingModal = ({
         size: availableSizes[0] ?? "",
         dateBooked: "",
         endDate: "",
+        isExtended: false,
         price: "",
         notes: "",
       },
@@ -323,16 +327,18 @@ const CreateBookingModal = ({
     setIsSubmitting(true);
     try {
       await createAdminBooking({
-        items: items.map(({ dressId, size, dateBooked, endDate, price, notes }) => ({
-          dressId,
-          size,
-          dateBooked,
-          // Omitted rather than sent blank, so the server's own fallback to
-          // dateBooked is the single place the default lives.
-          ...(endDate && endDate !== dateBooked ? { endDate } : {}),
-          ...(price.trim() === "" ? {} : { price: Number(price) }),
-          notes,
-        })),
+        items: items.map(
+          ({ dressId, size, dateBooked, endDate, price, notes }) => ({
+            dressId,
+            size,
+            dateBooked,
+            // Omitted rather than sent blank, so the server's own fallback to
+            // dateBooked is the single place the default lives.
+            ...(endDate && endDate !== dateBooked ? { endDate } : {}),
+            ...(price.trim() === "" ? {} : { price: Number(price) }),
+            notes,
+          }),
+        ),
         ...(customerMode === "existing"
           ? { userId }
           : {
@@ -456,7 +462,10 @@ const CreateBookingModal = ({
                           // before the new one, or behind a booking that only
                           // the old span cleared. Cheaper to re-pick than to
                           // reason about which.
-                          updateItem(item.id, { dateBooked: next, endDate: "" });
+                          updateItem(item.id, {
+                            dateBooked: next,
+                            endDate: "",
+                          });
                         }}
                         sizes={sizes}
                         selectedSize={item.size}
@@ -482,41 +491,61 @@ const CreateBookingModal = ({
                   )}
 
                   {item.dressId && item.size && item.dateBooked && (
-                    <div>
-                      <label className={`${labelCls} mb-0`}>
-                        Return date{" "}
-                        <span className="text-gray-400 font-normal">
-                          (optional — leave blank for a single-day rental)
-                        </span>
-                      </label>
-                      <Calendar
-                        setSelectedDate={(date) =>
+                    <div className="space-y-3">
+                      <Toggle
+                        title="Extended rental"
+                        description="Keep the dress for more than the rental day"
+                        enabled={item.isExtended}
+                        setEnabled={(value) => {
+                          const next =
+                            typeof value === "function"
+                              ? value(item.isExtended)
+                              : value;
                           updateItem(item.id, {
-                            endDate:
-                              typeof date === "function"
-                                ? (date as (prev: string) => string)(
-                                    item.endDate,
-                                  )
-                                : date,
-                          })
-                        }
-                        sizes={sizes}
-                        selectedSize={item.size}
-                        dressId={item.dressId}
-                        isAdmin={true}
-                        deliveryType={deliveryType}
-                        rangeStart={item.dateBooked}
+                            isExtended: next,
+                            endDate: next ? item.endDate : "",
+                          });
+                        }}
                       />
-                      {item.endDate && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Returns:{" "}
-                          {new Date(item.endDate).toLocaleDateString("en-NZ", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </p>
+
+                      {item.isExtended && (
+                        <div>
+                          <label className={`${labelCls} mb-0`}>
+                            Return date
+                          </label>
+                          <Calendar
+                            setSelectedDate={(date) =>
+                              updateItem(item.id, {
+                                endDate:
+                                  typeof date === "function"
+                                    ? (date as (prev: string) => string)(
+                                        item.endDate,
+                                      )
+                                    : date,
+                              })
+                            }
+                            sizes={sizes}
+                            selectedSize={item.size}
+                            dressId={item.dressId}
+                            isAdmin={true}
+                            deliveryType={deliveryType}
+                            rangeStart={item.dateBooked}
+                          />
+                          {item.endDate && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              Returns:{" "}
+                              {new Date(item.endDate).toLocaleDateString(
+                                "en-NZ",
+                                {
+                                  weekday: "long",
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                },
+                              )}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
