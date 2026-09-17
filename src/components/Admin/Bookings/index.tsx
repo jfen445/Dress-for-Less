@@ -1054,9 +1054,12 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
           getBookings();
           setToast({ message, variant: ToastVariant.SUCCESS, show: true });
         }}
-        onError={(message) =>
-          setToast({ message, variant: ToastVariant.WARNING, show: true })
-        }
+        onError={(message) => {
+          // Refetched here too: a partial send reports as a warning, and the
+          // orders that did go out have already been stamped.
+          getBookings();
+          setToast({ message, variant: ToastVariant.WARNING, show: true });
+        }}
       />
       <DownloadBookingsModal
         isOpen={downloadModalOpen}

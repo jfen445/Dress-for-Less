@@ -1,8 +1,11 @@
 import React from "react";
 import dayjs from "dayjs";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Modal from "@/components/Modal";
 import Button from "@/components/Button";
 import { Booking, BookingItem, BookingLineItem } from "../../../../common/types";
+import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { getStatusColour } from "../../../../lib/utils/bookingStatusColors";
 import { sendBookingEmails } from "@/api/admin";
 import { sizedImageUrl } from "../../../../sanity/lib/image";
 
@@ -36,6 +39,35 @@ const groupByBooking = (lineItems: BookingLineItem[]): BookingGroup[] => {
   return [...groups.values()];
 };
 
+const SECTION_HEADER_CLASS =
+  "text-xs font-semibold uppercase tracking-wide text-gray-500";
+
+// A collapsible section divider spanning the table's columns. Both sections
+// live in the same table as the rows they head, so the columns stay aligned
+// across the divide.
+const renderSectionToggle = (
+  label: string,
+  open: boolean,
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>,
+) => (
+  <tr className="bg-gray-50">
+    <td colSpan={4} className="p-0">
+      <Button
+        variant="ghost"
+        type="button"
+        onClick={() => setOpen((isOpen) => !isOpen)}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-1.5 px-4 py-2 text-left hover:bg-gray-100 ${SECTION_HEADER_CLASS}`}
+      >
+        <ChevronRightIcon
+          className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        {label}
+      </Button>
+    </td>
+  </tr>
+);
+
 const EmailBookingsModal = ({
   isOpen,
   setOpen,
@@ -44,21 +76,48 @@ const EmailBookingsModal = ({
   onError,
 }: EmailBookingsModalProps) => {
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [showSent, setShowSent] = React.useState(true);
+  const [showUnpacked, setShowUnpacked] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
 
   const groups = React.useMemo(() => groupByBooking(lineItems), [lineItems]);
 
+  // Only a packed order can be emailed: the instructions tell the customer a
+  // parcel is on its way or ready to collect. Everything else is listed but
+  // not selectable, so an order missing from the send list is explained
+  // rather than absent. Not-packed wins over already-sent, so every row
+  // outside that last section is one the send will accept.
+  const { ready, sent, unpacked } = React.useMemo(() => {
+    const ready: BookingGroup[] = [];
+    const sent: BookingGroup[] = [];
+    const unpacked: BookingGroup[] = [];
+    for (const group of groups) {
+      if (group.booking.status !== BookingStatus.Packed) unpacked.push(group);
+      else if (group.booking.instructionsSentAt) sent.push(group);
+      else ready.push(group);
+    }
+    return { ready, sent, unpacked };
+  }, [groups]);
+
+  // Re-sending is allowed, so the sent rows count as selectable too.
+  const selectable = React.useMemo(() => [...ready, ...sent], [ready, sent]);
+
   React.useEffect(() => {
-    if (isOpen) setSelectedIds(new Set());
+    if (isOpen) {
+      setSelectedIds(new Set());
+      setShowSent(true);
+      setShowUnpacked(false);
+    }
   }, [isOpen]);
 
-  const allSelected = groups.length > 0 && selectedIds.size === groups.length;
+  const allSelected =
+    selectable.length > 0 && selectedIds.size === selectable.length;
 
   const toggleAll = () => {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(groups.map((group) => group.bookingId)));
+      setSelectedIds(new Set(selectable.map((group) => group.bookingId)));
     }
   };
 
@@ -75,13 +134,125 @@ const EmailBookingsModal = ({
     setIsSending(true);
     try {
       const res = await sendBookingEmails([...selectedIds]);
-      onSent(res.data?.message ?? "Emails sent successfully");
+      const { message, failed, skipped } = res.data ?? {};
+      // A partial send answers 2xx but isn't a success: an order rejected for
+      // not being packed, or an email Resend refused, has to read as a warning
+      // or it disappears behind a green toast.
+      if (failed || skipped) onError(message ?? "Some emails were not sent");
+      else onSent(message ?? "Emails sent successfully");
       setOpen(false);
-    } catch {
-      onError("Failed to send emails. Please try again.");
+    } catch (err: any) {
+      onError(
+        err?.response?.data?.message ??
+          "Failed to send emails. Please try again.",
+      );
     } finally {
       setIsSending(false);
     }
+  };
+
+  const renderRow = ({ bookingId, booking, items }: BookingGroup) => {
+    const isSelectable = booking.status === BookingStatus.Packed;
+    const checked = selectedIds.has(bookingId);
+    const user = booking.user?.[0];
+    const hasBeenEmailed = Boolean(booking.instructionsSentAt);
+    // Listed once per method rather than once per dress, since the
+    // methods are already shown against each dress below.
+    const methods = [...new Set(items.map((item) => item.deliveryType as string))];
+
+    return (
+      <tr
+        key={bookingId}
+        title={isSelectable ? undefined : "Only packed orders can be emailed"}
+        className={
+          isSelectable
+            ? `cursor-pointer hover:bg-gray-50 ${checked ? "bg-pink-50" : ""}`
+            : "cursor-not-allowed opacity-60"
+        }
+        onClick={isSelectable ? () => toggleOne(bookingId) : undefined}
+      >
+        <td className="py-3 pl-4 pr-2 align-top">
+          <input
+            type="checkbox"
+            checked={isSelectable && checked}
+            disabled={!isSelectable}
+            onChange={() => toggleOne(bookingId)}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1 rounded border-gray-300 text-pink-600 disabled:cursor-not-allowed"
+          />
+        </td>
+        <td className="py-3 px-3 align-top">
+          {booking.orderNumber && (
+            <div className="mb-2 text-xs text-gray-500">
+              #{booking.orderNumber}
+            </div>
+          )}
+          <div className="flex flex-col gap-3">
+            {items.map((item, index) => (
+              <div
+                key={
+                  (item._id as string) ??
+                  `${item.dressId}-${item.dateBooked}-${index}`
+                }
+                className="flex items-center gap-2"
+              >
+                {item.dress?.images?.[0] && (
+                  <img
+                    src={sizedImageUrl(item.dress.images[0], { width: 64 })}
+                    alt={item.dress.name}
+                    className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                  />
+                )}
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {item.dress?.name}
+                  </div>
+                  <div className="text-gray-500 text-xs">
+                    {item.dress?.brand}
+                  </div>
+                  <div className="text-gray-500 text-xs">
+                    Size {item.size} ·{" "}
+                    {dayjs(item.dateBooked).format("MMM D, YYYY")} ·{" "}
+                    {item.deliveryType}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </td>
+        <td className="py-3 px-3 align-top">
+          <div className="text-gray-900">{user?.name}</div>
+          <div className="text-gray-500 text-xs">{user?.email}</div>
+        </td>
+        <td className="py-3 px-3 align-top">
+          <div className="flex flex-wrap items-center gap-1">
+            <span
+              className={`inline-flex rounded-md px-2 py-0.5 text-xs ring-1 ring-inset ${getStatusColour(
+                booking.status,
+              )}`}
+            >
+              {booking.status}
+            </span>
+            {methods.map((method) => (
+              <span
+                key={method}
+                className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+              >
+                {method}
+              </span>
+            ))}
+            {hasBeenEmailed && (
+              <span
+                title={`Already emailed: ${dayjs(booking.instructionsSentAt).format("MMM D, YYYY h:mm A")}`}
+                className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
+              >
+                Already emailed
+              </span>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
   };
 
   return (
@@ -90,8 +261,8 @@ const EmailBookingsModal = ({
         Send booking instructions
       </h2>
       <p className="text-sm text-gray-500 mb-4">
-        Select the orders to email pickup or delivery instructions to. Each order
-        receives one email covering all of its dresses.
+        Only packed orders can be emailed. Each order receives one email
+        covering all of its dresses.
       </p>
 
       <div className="overflow-y-auto max-h-[55vh] border border-gray-200 rounded-md">
@@ -102,8 +273,10 @@ const EmailBookingsModal = ({
                 <input
                   type="checkbox"
                   checked={allSelected}
+                  disabled={selectable.length === 0}
                   onChange={toggleAll}
-                  className="rounded border-gray-300 text-pink-600"
+                  title="Select all packed orders"
+                  className="rounded border-gray-300 text-pink-600 disabled:cursor-not-allowed"
                 />
               </th>
               <th className="py-3 px-3 text-left font-semibold text-gray-700">
@@ -125,98 +298,47 @@ const EmailBookingsModal = ({
                 </td>
               </tr>
             ) : (
-              groups.map(({ bookingId, booking, items }) => {
-                const checked = selectedIds.has(bookingId);
-                const user = booking.user?.[0];
-                const hasBeenEmailed = Boolean(booking.instructionsSentAt);
-                // Listed once per method rather than once per dress, since the
-                // methods are already shown against each dress below.
-                const methods = [
-                  ...new Set(items.map((item) => item.deliveryType as string)),
-                ];
-                return (
-                  <tr
-                    key={bookingId}
-                    className={`cursor-pointer hover:bg-gray-50 ${checked ? "bg-pink-50" : ""}`}
-                    onClick={() => toggleOne(bookingId)}
+              <>
+                <tr className="bg-gray-50">
+                  <td
+                    colSpan={4}
+                    className={`${SECTION_HEADER_CLASS} px-4 py-2`}
                   >
-                    <td className="py-3 pl-4 pr-2 align-top">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleOne(bookingId)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-1 rounded border-gray-300 text-pink-600"
-                      />
-                    </td>
-                    <td className="py-3 px-3 align-top">
-                      {booking.orderNumber && (
-                        <div className="mb-2 text-xs text-gray-500">
-                          #{booking.orderNumber}
-                        </div>
-                      )}
-                      <div className="flex flex-col gap-3">
-                        {items.map((item, index) => (
-                          <div
-                            key={
-                              (item._id as string) ??
-                              `${item.dressId}-${item.dateBooked}-${index}`
-                            }
-                            className="flex items-center gap-2"
-                          >
-                            {item.dress?.images?.[0] && (
-                              <img
-                                src={sizedImageUrl(item.dress.images[0], {
-                                  width: 64,
-                                })}
-                                alt={item.dress.name}
-                                className="h-8 w-8 rounded-full object-cover flex-shrink-0"
-                              />
-                            )}
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {item.dress?.name}
-                              </div>
-                              <div className="text-gray-500 text-xs">
-                                {item.dress?.brand}
-                              </div>
-                              <div className="text-gray-500 text-xs">
-                                Size {item.size} ·{" "}
-                                {dayjs(item.dateBooked).format("MMM D, YYYY")} ·{" "}
-                                {item.deliveryType}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 align-top">
-                      <div className="text-gray-900">{user?.name}</div>
-                      <div className="text-gray-500 text-xs">{user?.email}</div>
-                    </td>
-                    <td className="py-3 px-3 align-top">
-                      <div className="flex flex-wrap items-center gap-1">
-                        {methods.map((method) => (
-                          <span
-                            key={method}
-                            className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
-                          >
-                            {method}
-                          </span>
-                        ))}
-                        {hasBeenEmailed && (
-                          <span
-                            title={`Already emailed: ${dayjs(booking.instructionsSentAt).format("MMM D, YYYY h:mm A")}`}
-                            className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
-                          >
-                            Already emailed
-                          </span>
-                        )}
-                      </div>
+                    Ready to send ({ready.length})
+                  </td>
+                </tr>
+                {ready.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-gray-400">
+                      No packed orders waiting to be emailed.
                     </td>
                   </tr>
-                );
-              })
+                ) : (
+                  ready.map(renderRow)
+                )}
+
+                {sent.length > 0 && (
+                  <>
+                    {renderSectionToggle(
+                      `Sent (${sent.length})`,
+                      showSent,
+                      setShowSent,
+                    )}
+                    {showSent && sent.map(renderRow)}
+                  </>
+                )}
+
+                {unpacked.length > 0 && (
+                  <>
+                    {renderSectionToggle(
+                      `Not packed yet (${unpacked.length})`,
+                      showUnpacked,
+                      setShowUnpacked,
+                    )}
+                    {showUnpacked && unpacked.map(renderRow)}
+                  </>
+                )}
+              </>
             )}
           </tbody>
         </table>
@@ -224,8 +346,8 @@ const EmailBookingsModal = ({
 
       <div className="mt-4 flex items-center justify-between">
         <span className="text-sm text-gray-500">
-          {selectedIds.size} of {groups.length} order
-          {groups.length !== 1 ? "s" : ""} selected
+          {selectedIds.size} of {selectable.length} packed order
+          {selectable.length !== 1 ? "s" : ""} selected
         </span>
         <div className="flex gap-3">
           <Button

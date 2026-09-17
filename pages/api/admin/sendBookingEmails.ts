@@ -8,6 +8,7 @@ import { findUser } from "../../../lib/db/user-dao";
 import { BookingSchema } from "../../../lib/db/schema";
 import { getDress } from "../../../sanity/sanity.query";
 import { AccountType } from "../../../common/enums/AccountType";
+import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { EmailSendResult } from "../../../common/enums/EmailSendResult";
 import BookingInstructionsEmail, {
   getBookingInstructionsSubject,
@@ -54,6 +55,20 @@ export default async function handler(
     },
   ]);
 
+  // bookings must be packed to send instructions
+  const sendable = bookings.filter(
+    (booking) => booking.status === BookingStatus.Packed,
+  );
+  const skipped = bookings.length - sendable.length;
+
+  if (sendable.length === 0)
+    return res.status(409).json({
+      message: `No emails sent: ${skipped} order${skipped !== 1 ? "s are" : " is"} not packed`,
+      sent: 0,
+      failed: 0,
+      skipped,
+    });
+
   const resend = new Resend(process.env.RESEND_API_KEY as string);
 
   // Sent one at a time, not in parallel: Resend rate-limits at 2 requests per
@@ -68,7 +83,7 @@ export default async function handler(
   // One email per booking, not per item: an order with three dresses gets a
   // single message listing all three, so the customer isn't sent three
   // near-identical instruction emails for one order.
-  for (const [i, booking] of bookings.entries()) {
+  for (const [i, booking] of sendable.entries()) {
     if (i > 0) await new Promise((resolve) => setTimeout(resolve, 550));
 
     try {
@@ -114,10 +129,7 @@ export default async function handler(
 
       // Recorded even if the id is somehow absent, so a send is never dropped
       // from the sent set on account of a missing id.
-      emailIdsByBooking.set(
-        booking._id.toString(),
-        data?.id ? [data.id] : [],
-      );
+      emailIdsByBooking.set(booking._id.toString(), data?.id ? [data.id] : []);
 
       results.push(EmailSendResult.Sent);
     } catch (err) {
@@ -132,7 +144,7 @@ export default async function handler(
   const failed = results.filter(
     (result) => result === EmailSendResult.Failed,
   ).length;
-  const sent = bookings.length - failed;
+  const sent = sendable.length - failed;
 
   // Only the bookings whose email actually sent are stamped — exactly the ones
   // that made it into the map. Written per booking rather than with one
@@ -163,13 +175,30 @@ export default async function handler(
     );
   }
 
-  if (failed > 0 && sent === 0)
-    return res.status(500).json({ message: "Failed to send all emails" });
+  // Counts are returned alongside the message so the caller can pick a toast
+  // variant: a partial send reads as success on the wire (2xx) but isn't one.
+  const skippedNote = skipped > 0 ? `, ${skipped} skipped (not packed)` : "";
 
-  if (failed > 0)
-    return res.status(207).json({ message: `${sent} sent, ${failed} failed` });
+  if (failed > 0 && sent === 0)
+    return res.status(500).json({
+      message: `Failed to send all emails${skippedNote}`,
+      sent,
+      failed,
+      skipped,
+    });
+
+  if (failed > 0 || skipped > 0)
+    return res.status(207).json({
+      message: `${sent} sent${failed > 0 ? `, ${failed} failed` : ""}${skippedNote}`,
+      sent,
+      failed,
+      skipped,
+    });
 
   return res.status(200).json({
     message: `${sent} email${sent !== 1 ? "s" : ""} sent successfully`,
+    sent,
+    failed,
+    skipped,
   });
 }
