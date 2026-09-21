@@ -4,7 +4,7 @@ import * as React from "react";
 import { Booking, UserType } from "../../common/types";
 import { getAllBookings, getDressBookingStatuses } from "@/api/admin";
 import { BookingStatus } from "../../common/enums/BookingStatus";
-import { auckland } from "../../lib/utils/timezone";
+import { bucketBookings } from "../../lib/utils/bookingBuckets";
 
 export type ActiveDressBooking = {
   dressId: string;
@@ -61,49 +61,13 @@ const AdminBookingContextProvider = ({ children }: React.PropsWithChildren) => {
   const getBookings = async () => {
     setIsLoading(true);
     await getAllBookings().then((data) => {
-      const now = auckland.now();
-      const currentSunday = (
-        now.day() === 0 ? now : now.add(7 - now.day(), "day")
-      ).endOf("day");
-      // now.day(): Sunday = 0, Monday = 1, ..., Saturday = 6
-      const previousMonday = now.subtract((now.day() + 6) % 7, "day").startOf("day");
-
-      const primaryDate = (booking: Booking) => booking.items[0]?.dateBooked;
-      const dateOf = (booking: Booking) => auckland.toZone(primaryDate(booking));
-      // An extended rental is "this week" for as long as it is out, so the
-      // buckets test the whole span rather than only the day it began —
-      // otherwise a rental that started three weeks ago and is still in a
-      // customer's wardrobe sits in the archive table.
-      const endOf = (booking: Booking) =>
-        auckland.toZone(booking.items[0]?.endDate ?? primaryDate(booking));
-
-      const sortedBookings = (data.data as unknown as Booking[]).sort(
-        (a, b) => dateOf(a).diff(dateOf(b)),
+      const { thisWeek, upcoming, past } = bucketBookings(
+        data.data as unknown as Booking[],
       );
 
-      // Evaluated in order, so the three stay mutually exclusive and a booking
-      // spanning a boundary is only ever listed once.
-      const overlapsThisWeek = (booking: Booking) =>
-        dateOf(booking).isBefore(currentSunday) &&
-        endOf(booking).isAfter(previousMonday);
-
-      const thisWeek = sortedBookings.filter(overlapsThisWeek);
-
-      const allBookings = sortedBookings.filter(
-        (booking) =>
-          !overlapsThisWeek(booking) && dateOf(booking).isAfter(currentSunday),
-      );
-
-      const pastBookings = sortedBookings
-        .filter(
-          (booking) =>
-            !overlapsThisWeek(booking) && endOf(booking).isBefore(previousMonday),
-        )
-        .sort((a, b) => dateOf(b).diff(dateOf(a)));
-      setPastBookings(pastBookings);
-
+      setPastBookings(past);
       setThisWeekBookings(thisWeek);
-      setBookings(allBookings);
+      setBookings(upcoming);
     });
     setIsLoading(false);
   };
