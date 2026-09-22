@@ -24,8 +24,10 @@ const handler = (await import("../../pages/api/cron/send-return-reminders")).def
 // chased the next day, so the delivery window is exactly yesterday. (Monday
 // reaches back three days and the weekend chases nothing, which would blur
 // what these tests are trying to isolate.)
+// 21:00 UTC is 09:00 the next morning in Auckland, which is when the workflow
+// fires — so "today" inside the handler is the 3rd, not the 2nd.
 const NOW_ISO = "2026-06-02T21:00:00.000Z";
-const YESTERDAY = "2026-06-02";
+const TODAY = "2026-06-03";
 
 let dressId: string;
 let userId: string;
@@ -86,12 +88,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("the return reminder cron — extended rentals", () => {
-  it("chases a rental that ended yesterday but began weeks ago", async () => {
+describe("the return reminder cron", () => {
+  it("chases a rental due back today but booked weeks ago", async () => {
     // The case the whole change exists for. Selecting on dateBooked alone
     // never loads this row, so the reminder is silently never sent — no error,
     // no retry, nothing to notice.
-    seedPaidBooking({ dateBooked: "2026-05-20", endDate: YESTERDAY });
+    seedPaidBooking({ dateBooked: "2026-05-20", returnDate: TODAY });
 
     const { status } = await runCron();
 
@@ -99,11 +101,8 @@ describe("the return reminder cron — extended rentals", () => {
     expect(sendEmail).toHaveBeenCalledTimes(1);
   });
 
-  it("stays quiet for a rental that started yesterday and runs for another fortnight", async () => {
-    // The query matches this on dateBooked and hands it over anyway; the
-    // per-item filter is what keeps the customer from being told their dress
-    // is due back on day two of a two-week rental.
-    seedPaidBooking({ dateBooked: YESTERDAY, endDate: "2026-06-16" });
+  it("stays quiet for a rental that runs for another fortnight", async () => {
+    seedPaidBooking({ dateBooked: "2026-06-02", returnDate: "2026-06-16" });
 
     const { status } = await runCron();
 
@@ -111,30 +110,48 @@ describe("the return reminder cron — extended rentals", () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("still chases an ordinary booking with no end date at all", async () => {
-    // Every row written before extended bookings existed looks like this.
-    seedPaidBooking({ dateBooked: YESTERDAY });
+  it("keys on the return date, not the event date", async () => {
+    // A dress worn today is not due back today — the derivation never produces
+    // a same-day return. Chasing on dateBooked would email this customer while
+    // they are still at the event.
+    seedPaidBooking({ dateBooked: TODAY, returnDate: "2026-06-04" });
 
     await runCron();
 
-    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("gives the template both dates so the email can show the period", async () => {
-    seedPaidBooking({ dateBooked: "2026-05-20", endDate: YESTERDAY });
+  it("gives the template both dates", async () => {
+    seedPaidBooking({ dateBooked: "2026-05-20", returnDate: TODAY });
 
     await runCron();
 
     expect(ReturnReminderEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         dateBooked: "2026-05-20",
-        endDate: YESTERDAY,
+        returnDate: TODAY,
       }),
     );
   });
 
+  it("chases a drop-off due back at the weekend", async () => {
+    // 2026-06-06 is a Saturday. Only Post returns roll off the weekend, so a
+    // Pickup falling due then has to be chased on the day like any other —
+    // the weekday branch this replaced sent nothing at all on a Saturday.
+    vi.setSystemTime(new Date("2026-06-05T21:00:00.000Z"));
+    seedPaidBooking({
+      dateBooked: "2026-06-05",
+      returnDate: "2026-06-06",
+      deliveryType: "Pickup",
+    });
+
+    await runCron();
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+  });
+
   it("ignores an unpaid hold", async () => {
-    seedPaidBooking({ dateBooked: YESTERDAY });
+    seedPaidBooking({ dateBooked: "2026-06-02", returnDate: TODAY });
     db.bookings[0].paymentSuccess = false;
 
     expect((await runCron()).body.message).toBe("No bookings to remind");

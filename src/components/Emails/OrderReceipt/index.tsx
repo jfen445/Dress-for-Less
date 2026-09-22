@@ -149,16 +149,14 @@ const OrderReceiptEmail = ({ orderReceipt }: IOrderReceipt) => {
                       <br />
                       {dayjs(item.dateBooked).format("dddd, D MMMM YYYY")}
                     </Text>
-                    {/* Only on an extended rental. For a one-day booking the
-                        return date is the event date, and printing it twice
-                        reads as a mistake. */}
-                    {item.endDate && item.endDate !== item.dateBooked && (
-                      <Text style={bookingDetail}>
-                        <span style={bookingDetailLabel}>Return by</span>
-                        <br />
-                        {dayjs(item.endDate).format("dddd, D MMMM YYYY")}
-                      </Text>
-                    )}
+                    {/* On every booking, not just an extended one: the return
+                        date always falls after the event date, so there is no
+                        case where this repeats the row above. */}
+                    <Text style={bookingDetail}>
+                      <span style={bookingDetailLabel}>Return by</span>
+                      <br />
+                      {dayjs(item.returnDate).format("dddd, D MMMM YYYY")}
+                    </Text>
                     <Text style={{ ...bookingDetail, marginBottom: 0 }}>
                       <span style={bookingDetailLabel}>Delivery method</span>
                       <br />

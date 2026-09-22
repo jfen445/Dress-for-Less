@@ -16,6 +16,9 @@ export function buildBooking(
   const items: BookingItem[] = products.map((item) => ({
     dressId: item._id,
     dateBooked: item.dateBooked,
+    // Placeholders. The reserve derives all three from dateBooked and the
+    // delivery method and never reads them off the request.
+    returnDate: "",
     blockedFrom: "",
     blockedUntil: "",
     deliveryType: item.deliveryType,

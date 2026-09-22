@@ -66,9 +66,10 @@ export function mapBookingItemToEvent(
   item: BookingItem,
 ): BookingCalendarEvent {
   const start = item.dateBooked;
-  // An extended rental renders as a span; the event is already allDay with
-  // separate start/end, so the scheduler needs nothing else to draw it.
-  const end = item.endDate ?? item.dateBooked;
+  // Runs to the return date, so the bar covers every day the dress is with the
+  // customer. The event is already allDay with separate start/end, so the
+  // scheduler needs nothing else to draw it.
+  const end = item.returnDate ?? item.dateBooked;
   const userName = booking.user?.[0]?.name ?? "Unknown";
   const dressName = item.dress?.name ?? "Dress";
   const address = formatAddress(item);

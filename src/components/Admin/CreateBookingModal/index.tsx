@@ -6,8 +6,17 @@ import Toggle from "@/components/Toggle";
 import useAllDresses from "@/hooks/useAllDresses";
 import { getAllAdminUsers, createAdminBooking } from "@/api/admin";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
+import { calculateReturnDate } from "../../../../lib/utils/bookingWindow";
 import { UserType, Address, Sizes, DressType } from "../../../../common/types";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
+
+const formatLongDate = (date: string) =>
+  new Date(date).toLocaleDateString("en-NZ", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 const DELIVERY_FEES: Record<DeliveryType, number> = {
   [DeliveryType.Delivery]: 15,
@@ -45,10 +54,10 @@ type BookingLineItem = {
   dressId: string;
   size: string;
   dateBooked: string;
-  // Blank means a normal one-day booking; the server reads it as the rental
-  // date. Set to run the rental on past its first day.
-  endDate: string;
-  isExtended: boolean;
+  // Blank means the server derives the return date from dateBooked and the
+  // delivery method; set only when the admin picked a later one.
+  returnDate: string;
+  overridesReturn: boolean;
   // Blank means "use the catalogue price". Extended rentals have no per-day
   // rule, so the admin quotes them by hand.
   price: string;
@@ -60,8 +69,8 @@ const emptyLineItem = (id: string): BookingLineItem => ({
   dressId: "",
   size: "",
   dateBooked: "",
-  endDate: "",
-  isExtended: false,
+  returnDate: "",
+  overridesReturn: false,
   price: "",
   notes: "",
 });
@@ -72,9 +81,7 @@ const describeConflicts = (conflicts: any[]) =>
   conflicts
     .map((c) => {
       const span =
-        c.endDate && c.endDate !== c.dateBooked
-          ? `${c.dateBooked} to ${c.endDate}`
-          : c.dateBooked;
+        c.returnDate ? `${c.dateBooked} to ${c.returnDate}` : c.dateBooked;
       return c.orderNumber ? `#${c.orderNumber} (${span})` : span;
     })
     .join(", ");
@@ -263,13 +270,13 @@ const CreateBookingModal = ({
       dressId,
       size: availableSizes[0] ?? "",
       dateBooked: "",
-      endDate: "",
+      returnDate: "",
       price: "",
     });
   };
 
   const handleSizeChange = (id: string, size: string) => {
-    updateItem(id, { size, dateBooked: "", endDate: "" });
+    updateItem(id, { size, dateBooked: "", returnDate: "" });
   };
 
   const addItem = () => {
@@ -282,8 +289,8 @@ const CreateBookingModal = ({
         dressId: dress?._id ?? "",
         size: availableSizes[0] ?? "",
         dateBooked: "",
-        endDate: "",
-        isExtended: false,
+        returnDate: "",
+        overridesReturn: false,
         price: "",
         notes: "",
       },
@@ -328,13 +335,13 @@ const CreateBookingModal = ({
     try {
       await createAdminBooking({
         items: items.map(
-          ({ dressId, size, dateBooked, endDate, price, notes }) => ({
+          ({ dressId, size, dateBooked, returnDate, price, notes }) => ({
             dressId,
             size,
             dateBooked,
             // Omitted rather than sent blank, so the server's own fallback to
             // dateBooked is the single place the default lives.
-            ...(endDate && endDate !== dateBooked ? { endDate } : {}),
+            ...(returnDate ? { returnDate } : {}),
             ...(price.trim() === "" ? {} : { price: Number(price) }),
             notes,
           }),
@@ -464,7 +471,7 @@ const CreateBookingModal = ({
                           // reason about which.
                           updateItem(item.id, {
                             dateBooked: next,
-                            endDate: "",
+                            returnDate: "",
                           });
                         }}
                         sizes={sizes}
@@ -475,16 +482,7 @@ const CreateBookingModal = ({
                       />
                       {item.dateBooked && (
                         <p className="text-sm text-gray-500 mt-1">
-                          Selected:{" "}
-                          {new Date(item.dateBooked).toLocaleDateString(
-                            "en-NZ",
-                            {
-                              weekday: "long",
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            },
-                          )}
+                          Selected: {formatLongDate(item.dateBooked)}
                         </p>
                       )}
                     </div>
@@ -492,23 +490,32 @@ const CreateBookingModal = ({
 
                   {item.dressId && item.size && item.dateBooked && (
                     <div className="space-y-3">
+                      {!item.overridesReturn && (
+                        <p className="text-sm text-gray-500">
+                          Due back{" "}
+                          {formatLongDate(
+                            calculateReturnDate(item.dateBooked, deliveryType),
+                          )}
+                        </p>
+                      )}
+
                       <Toggle
-                        title="Extended rental"
-                        description="Keep the dress for more than the rental day"
-                        enabled={item.isExtended}
+                        title="Override return date"
+                        description="Let the customer keep the dress past its usual return day"
+                        enabled={item.overridesReturn}
                         setEnabled={(value) => {
                           const next =
                             typeof value === "function"
-                              ? value(item.isExtended)
+                              ? value(item.overridesReturn)
                               : value;
                           updateItem(item.id, {
-                            isExtended: next,
-                            endDate: next ? item.endDate : "",
+                            overridesReturn: next,
+                            returnDate: next ? item.returnDate : "",
                           });
                         }}
                       />
 
-                      {item.isExtended && (
+                      {item.overridesReturn && (
                         <div>
                           <label className={`${labelCls} mb-0`}>
                             Return date
@@ -516,10 +523,10 @@ const CreateBookingModal = ({
                           <Calendar
                             setSelectedDate={(date) =>
                               updateItem(item.id, {
-                                endDate:
+                                returnDate:
                                   typeof date === "function"
                                     ? (date as (prev: string) => string)(
-                                        item.endDate,
+                                        item.returnDate,
                                       )
                                     : date,
                               })
@@ -531,18 +538,9 @@ const CreateBookingModal = ({
                             deliveryType={deliveryType}
                             rangeStart={item.dateBooked}
                           />
-                          {item.endDate && (
+                          {item.returnDate && (
                             <p className="text-sm text-gray-500 mt-1">
-                              Returns:{" "}
-                              {new Date(item.endDate).toLocaleDateString(
-                                "en-NZ",
-                                {
-                                  weekday: "long",
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                },
-                              )}
+                              Returns: {formatLongDate(item.returnDate)}
                             </p>
                           )}
                         </div>
@@ -762,10 +760,10 @@ const CreateBookingModal = ({
                 >
                   <span>
                     {dress.name}
-                    {item.endDate && item.endDate !== item.dateBooked && (
+                    {item.returnDate && (
                       <span className="text-gray-400">
                         {" "}
-                        ({item.dateBooked} → {item.endDate})
+                        ({item.dateBooked} → {item.returnDate})
                       </span>
                     )}
                   </span>

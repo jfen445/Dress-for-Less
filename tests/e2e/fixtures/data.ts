@@ -4,7 +4,7 @@
 
 import dressFixture from "./dress.json";
 import { auckland } from "../../../lib/utils/timezone";
-import { calculateBookingWindow } from "../../../lib/utils/bookingWindow";
+import { calculateWindowForEvent } from "../../../lib/utils/bookingWindow";
 import { DeliveryType } from "../../../common/enums/DeliveryType";
 
 // The same JSON the Node-level Sanity intercept serves to getStaticProps, so
@@ -120,7 +120,7 @@ export const bookingAvailability = (over: Record<string, unknown> = {}) => {
     dressId: DRESS_ID,
     size: "M",
     dateBooked,
-    ...calculateBookingWindow(dateBooked, dateBooked, DeliveryType.Delivery),
+    ...calculateWindowForEvent(dateBooked, DeliveryType.Delivery),
     ...over,
   };
 };

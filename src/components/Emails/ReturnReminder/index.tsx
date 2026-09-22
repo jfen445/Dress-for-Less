@@ -25,10 +25,10 @@ export interface ReturnReminderProps {
   dressImage: string;
   size: string;
   dateBooked: string;
-  // Set only on an extended rental. The body copy is relative ("due back
-  // today") and stays correct either way; this changes the label from a bare
-  // date to the span, so a reminder sent weeks after dateBooked makes sense.
-  endDate?: string;
+  // The day this email goes out. Shown as its own row so a reminder sent weeks
+  // after dateBooked — an extended rental — still reads sensibly; the body copy
+  // is relative ("due back today") and stays correct either way.
+  returnDate: string;
   deliveryType: string;
 }
 
@@ -46,27 +46,19 @@ const ReturnReminderEmail = ({
   deliveryType,
   size,
   dateBooked,
-  endDate,
+  returnDate,
 }: ReturnReminderProps) => {
   const dropOff = isDropOff(deliveryType);
-  const formattedDate = new Date(dateBooked).toLocaleDateString("en-NZ", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("en-NZ", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
 
-  // Rendered only when the rental actually runs past its first day, so an
-  // ordinary booking produces exactly the email it always did.
-  const formattedEndDate =
-    endDate && endDate !== dateBooked
-      ? new Date(endDate).toLocaleDateString("en-NZ", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "";
+  const formattedDate = formatDate(dateBooked);
+  const formattedReturnDate = formatDate(returnDate);
 
   return (
     <Html>
@@ -197,14 +189,15 @@ const ReturnReminderEmail = ({
                   <br />
                   {size}
                 </Text>
-                <Text style={{ ...bookingDetail, marginBottom: 0 }}>
-                  <span style={bookingDetailLabel}>
-                    {formattedEndDate ? "Rental period" : "Date Booked"}
-                  </span>
+                <Text style={bookingDetail}>
+                  <span style={bookingDetailLabel}>Event date</span>
                   <br />
-                  {formattedEndDate
-                    ? `${formattedDate} — ${formattedEndDate}`
-                    : formattedDate}
+                  {formattedDate}
+                </Text>
+                <Text style={{ ...bookingDetail, marginBottom: 0 }}>
+                  <span style={bookingDetailLabel}>Return by</span>
+                  <br />
+                  {formattedReturnDate}
                 </Text>
               </Column>
             </Row>

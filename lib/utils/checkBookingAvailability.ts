@@ -1,6 +1,9 @@
 import { getDressPricing } from "../../sanity/sanity.query";
 import { getBookingAvailabilityByDress } from "../db/booking-dao";
-import { isDateBlockedByExistingBooking } from "./bookingWindow";
+import {
+  isDateBlockedForEvent,
+  isDateBlockedForRange,
+} from "./bookingWindow";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 
 // Server-side counterpart to the Calendar's disabledDays stock-count check —
@@ -16,7 +19,7 @@ export type BlockingRow = {
   bookingId?: string;
   orderNumber?: string;
   dateBooked?: string;
-  endDate?: string;
+  returnDate?: string;
   paymentSuccess?: boolean;
   reservedAt?: string;
   paymentIntent?: string;
@@ -63,20 +66,29 @@ export type AvailabilityOptions = {
   // request. Without these, two overlapping lines in one submission would each
   // be checked against a world that does not contain the other, and both pass.
   alsoConsider?: BlockingRow[];
+  // An admin-chosen return date. Omitted by every customer path, which lets the
+  // date be derived from eventDate — passing one derived at the call site would
+  // be the same thing said less safely.
+  returnDate?: string;
 };
 
-// startDate/endDate are equal for a normal booking; an extended one moves the
-// end out, which widens the window the candidate has to fit into.
+// Which existing rows block a booking of `eventDate`, counted against the
+// dress's stock for that size. With options.returnDate the candidate is checked
+// as a range ending on that date; without it, on its derived return date.
 export async function findBlockingBookings(
   dressId: string,
   size: string,
-  startDate: string,
-  endDate: string,
+  eventDate: string,
   deliveryType: DeliveryType,
   options: AvailabilityOptions = {},
 ): Promise<AvailabilityCheck> {
-  const { excludePaymentIntent, outranking, excludeBookingId, alsoConsider } =
-    options;
+  const {
+    excludePaymentIntent,
+    outranking,
+    excludeBookingId,
+    alsoConsider,
+    returnDate,
+  } = options;
 
   const dress = await getDressPricing(dressId);
   if (!dress) return { available: false, stock: 0, blocking: [] };
@@ -97,7 +109,9 @@ export async function findBlockingBookings(
     (booking: BlockingRow) =>
       booking.dressId === dressId &&
       booking.size === size &&
-      isDateBlockedByExistingBooking(startDate, endDate, deliveryType, booking) &&
+      (returnDate
+        ? isDateBlockedForRange(eventDate, returnDate, deliveryType, booking)
+        : isDateBlockedForEvent(eventDate, deliveryType, booking)) &&
       (!outranking || outranksReservation(booking, outranking)),
   );
 
@@ -107,8 +121,7 @@ export async function findBlockingBookings(
 export async function isBookingAvailable(
   dressId: string,
   size: string,
-  startDate: string,
-  endDate: string,
+  eventDate: string,
   deliveryType: DeliveryType,
   excludePaymentIntent?: string,
   outranking?: ReservationRank,
@@ -117,8 +130,7 @@ export async function isBookingAvailable(
   const { available } = await findBlockingBookings(
     dressId,
     size,
-    startDate,
-    endDate,
+    eventDate,
     deliveryType,
     { excludePaymentIntent, outranking, excludeBookingId },
   );

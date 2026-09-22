@@ -37,8 +37,8 @@ export async function createAdminBooking(data: {
     dressId: string;
     size: string;
     dateBooked: string;
-    // Omitted for a normal booking; the server defaults it to dateBooked.
-    endDate?: string;
+    // Omitted unless the admin overrode it; the server derives it otherwise.
+    returnDate?: string;
     // Omitted to use the catalogue price.
     price?: number;
     notes?: string;

@@ -1,120 +1,204 @@
 import { auckland } from "./timezone";
 import { DeliveryType } from "../../common/enums/DeliveryType";
 
-// Transcribed from tools/decisionmatrix.csv. Tuesday/Post uses the "preferred"
-// 5-day offset, not the "Friday fallback" — never actually the answer in any
-// row of the matrix, so unverifiable either way, but "preferred" is the
-// stated default and is used consistently for both existing and candidate.
-const POST_TIMING_BY_WEEKDAY: Record<
-  number,
-  { dispatchOffsetDays: number; turnaroundOffsetDays: number }
-> = {
-  1 /* Mon */: { dispatchOffsetDays: 4, turnaroundOffsetDays: 4 },
-  2 /* Tue */: { dispatchOffsetDays: 5, turnaroundOffsetDays: 4 },
-  3 /* Wed */: { dispatchOffsetDays: 5, turnaroundOffsetDays: 4 },
-  4 /* Thu */: { dispatchOffsetDays: 3, turnaroundOffsetDays: 6 },
-  5 /* Fri */: { dispatchOffsetDays: 2, turnaroundOffsetDays: 5 },
-  6 /* Sat */: { dispatchOffsetDays: 3, turnaroundOffsetDays: 4 },
-  0 /* Sun */: { dispatchOffsetDays: 4, turnaroundOffsetDays: 3 },
+// The tables below are transcribed from tools/decisionmatrix.csv — one each
+// from its "Initial dispatch / collection", "Return due" and "Ready again"
+// columns.
+
+// Days before the event date that a Post booking is dispatched, keyed by the
+// event's weekday. Tuesday uses the matrix's "preferred" 5-day figure rather
+// than its Friday fallback.
+const POST_DISPATCH_OFFSET_BY_WEEKDAY: Record<number, number> = {
+  1 /* Mon */: 4,
+  2 /* Tue */: 5,
+  3 /* Wed */: 5,
+  4 /* Thu */: 3,
+  5 /* Fri */: 2,
+  6 /* Sat */: 3,
+  0 /* Sun */: 4,
 };
 
-// Every Pickup row is "Collect [day before] or [event day]" with a ready-again
-// date exactly 3 days after the event, regardless of weekday. The dispatch
-// offset depends on role: the earlier/conservative option (1 day before) when
-// storing an existing booking's window (protects against understating how
-// long it's unavailable), the later/optimistic option (0, same day) when
-// checking whether a candidate date is available (same-day collection is
-// always a valid fallback, so it determines true earliest availability).
-const PICKUP_TURNAROUND_OFFSET_DAYS = 3;
+// Days from the event date to the date a Post booking is due back, keyed by the
+// event's weekday. Friday, Saturday and Sunday events all land on the following
+// Monday, so no Post booking is ever due back at a weekend.
+const POST_RETURN_LAG_BY_WEEKDAY: Record<number, number> = {
+  1 /* Mon */: 1,
+  2 /* Tue */: 1,
+  3 /* Wed */: 1,
+  4 /* Thu */: 1,
+  5 /* Fri */: 3,
+  6 /* Sat */: 2,
+  0 /* Sun */: 1,
+};
+
+// Days from the return date to the date the dress can go out again, keyed by
+// the *return* date's weekday. Saturday and Sunday are unreachable through the
+// lag table above and are refused by the admin override, but are defined so the
+// lookup is total — a missing entry produces an Invalid Date and a window that
+// blocks nothing. Both take Monday's figure, as a weekend return would arrive.
+const POST_TURNAROUND_FROM_RETURN_BY_WEEKDAY: Record<number, number> = {
+  1 /* Mon */: 2,
+  2 /* Tue */: 3,
+  3 /* Wed */: 3,
+  4 /* Thu */: 3,
+  5 /* Fri */: 5,
+  6 /* Sat */: 4,
+  0 /* Sun */: 3,
+};
+
+// Pickup timing is flat across weekdays: collected the day before the event or
+// on the day itself, due back the next day, out again two days after that. The
+// two dispatch figures are selected by the `optimistic` flag below.
+const PICKUP_RETURN_LAG_DAYS = 1;
+const PICKUP_TURNAROUND_FROM_RETURN_DAYS = 2;
 const PICKUP_DISPATCH_OFFSET_DAYS = { conservative: 1, optimistic: 0 };
 
-// Ceiling on an extended rental
+// Largest permitted span from event date to return date, in days.
 export const MAX_RENTAL_DAYS = 90;
 
 export type BookingWindow = { blockedFrom: string; blockedUntil: string };
 
-function getTiming(
-  dateBooked: string,
+// Only DeliveryType.Pickup takes the Pickup figures. Delivery and the unused
+// PickupDelivery/DeliveryPickup variants all read the Post tables.
+const isPickup = (deliveryType: DeliveryType) =>
+  deliveryType === DeliveryType.Pickup;
+
+// The date a booking made for `eventDate` is due back with us — by 1pm for
+// Post, 8pm for drop-off. Always at least one day after the event.
+export function calculateReturnDate(
+  eventDate: string,
+  deliveryType: DeliveryType,
+): string {
+  const day = auckland.toZone(eventDate);
+  const lag = isPickup(deliveryType)
+    ? PICKUP_RETURN_LAG_DAYS
+    : POST_RETURN_LAG_BY_WEEKDAY[day.day()];
+  return day.add(lag, "day").format("YYYY-MM-DD");
+}
+
+// Whether a return date is one we can accept. A Post return is lodged over an
+// NZ Post counter, which is shut at weekends; a drop-off goes into an
+// unattended box, so any day works. The derived dates never violate this — only
+// an admin override can.
+export function isReturnDayAllowed(
+  returnDate: string,
+  deliveryType: DeliveryType,
+): boolean {
+  if (isPickup(deliveryType)) return true;
+  const weekday = auckland.toZone(returnDate).day();
+  return weekday !== 0 && weekday !== 6;
+}
+
+// Days before the event date that the dress leaves us. `optimistic` selects
+// same-day Pickup collection over the day before; it has no effect on Post.
+function dispatchOffsetDays(
+  eventDate: string,
   deliveryType: DeliveryType,
   optimistic = false,
-) {
-  if (deliveryType === DeliveryType.Pickup) {
-    return {
-      dispatchOffsetDays: optimistic
-        ? PICKUP_DISPATCH_OFFSET_DAYS.optimistic
-        : PICKUP_DISPATCH_OFFSET_DAYS.conservative,
-      turnaroundOffsetDays: PICKUP_TURNAROUND_OFFSET_DAYS,
-    };
+): number {
+  if (isPickup(deliveryType)) {
+    return optimistic
+      ? PICKUP_DISPATCH_OFFSET_DAYS.optimistic
+      : PICKUP_DISPATCH_OFFSET_DAYS.conservative;
   }
-  // Delivery, and the currently-unused PickupDelivery/DeliveryPickup variants
-  // (no rows for them in the matrix), fall back to the Post/Delivery table.
-  return POST_TIMING_BY_WEEKDAY[auckland.toZone(dateBooked).day()];
+  return POST_DISPATCH_OFFSET_BY_WEEKDAY[auckland.toZone(eventDate).day()];
 }
 
-// Inclusive of both ends, so a normal one-day rental spans 1.
-export function rentalSpanDays(startDate: string, endDate: string): number {
-  return auckland.toZone(endDate).diff(auckland.toZone(startDate), "day") + 1;
+// Days after the return date before the dress is available again — the trip
+// back, the clean and the pack.
+function turnaroundFromReturnDays(
+  returnDate: string,
+  deliveryType: DeliveryType,
+): number {
+  if (isPickup(deliveryType)) return PICKUP_TURNAROUND_FROM_RETURN_DAYS;
+  return POST_TURNAROUND_FROM_RETURN_BY_WEEKDAY[
+    auckland.toZone(returnDate).day()
+  ];
 }
 
-// A booking runs startDate → endDate; the two are equal for a normal rental,
-// and an extended one just moves the end out. Dispatch is anchored on the
-// start, turnaround on the END — the turnaround offset covers the return trip
-// and cleaning, so anchoring it on the start would free the dress days before
-// the customer has even sent it back.
-//
-// Always conservative — used when a booking is actually created/stored, so
-// its stored window represents the full span it realistically ties up the
-// dress, regardless of what gets booked around it.
-export function calculateBookingWindow(
-  startDate: string,
-  endDate: string,
+// Days from `eventDate` to `returnDate`, counting both ends. Used only for the
+// MAX_RENTAL_DAYS ceiling.
+export function rentalSpanDays(eventDate: string, returnDate: string): number {
+  return (
+    auckland.toZone(returnDate).diff(auckland.toZone(eventDate), "day") + 1
+  );
+}
+
+// blockedFrom is `eventDate` minus the dispatch offset; blockedUntil is
+// `returnDate` plus the turnaround. The near end therefore moves with the
+// event, the far end with the return.
+const windowFor = (
+  eventDate: string,
+  returnDate: string,
+  deliveryType: DeliveryType,
+  optimistic: boolean,
+): BookingWindow => ({
+  blockedFrom: auckland
+    .toZone(eventDate)
+    .subtract(dispatchOffsetDays(eventDate, deliveryType, optimistic), "day")
+    .format("YYYY-MM-DD"),
+  blockedUntil: auckland
+    .toZone(returnDate)
+    .add(turnaroundFromReturnDays(returnDate, deliveryType), "day")
+    .format("YYYY-MM-DD"),
+});
+
+// The window to store for a booking whose return date is the derived one —
+// every customer booking, and any admin booking without an override. Uses the
+// conservative (day-before) Pickup dispatch, so the stored window is the widest
+// the booking could occupy.
+export function calculateWindowForEvent(
+  eventDate: string,
   deliveryType: DeliveryType,
 ): BookingWindow {
-  const { dispatchOffsetDays } = getTiming(startDate, deliveryType);
-  const { turnaroundOffsetDays } = getTiming(endDate, deliveryType);
-  return {
-    blockedFrom: auckland
-      .toZone(startDate)
-      .subtract(dispatchOffsetDays, "day")
-      .format("YYYY-MM-DD"),
-    blockedUntil: auckland
-      .toZone(endDate)
-      .add(turnaroundOffsetDays, "day")
-      .format("YYYY-MM-DD"),
-  };
+  return windowFor(
+    eventDate,
+    calculateReturnDate(eventDate, deliveryType),
+    deliveryType,
+    false,
+  );
 }
 
-// Is the candidate range blocked by one existing booking's stored window?
-// Uses optimistic (same-day) Pickup dispatch timing for the candidate side —
-// we want to know if ANY valid handover timing makes the range work, not the
-// conservative worst case used to store existing bookings.
-export function isDateBlockedByExistingBooking(
-  candidateStart: string,
-  candidateEnd: string,
-  candidateDeliveryType: DeliveryType,
+// The same window for an explicitly chosen return date, as set by the admin
+// override. Paired with calculateWindowForEvent, which derives that date
+// instead of taking it.
+export function calculateWindowForRange(
+  eventDate: string,
+  returnDate: string,
+  deliveryType: DeliveryType,
+): BookingWindow {
+  return windowFor(eventDate, returnDate, deliveryType, false);
+}
+
+// True when a candidate booking of `eventDate`, returning on its derived return
+// date, overlaps `existingWindow` — i.e. the candidate's own window neither
+// ends on or before the existing one starts, nor starts on or after it ends.
+export function isDateBlockedForEvent(
+  eventDate: string,
+  deliveryType: DeliveryType,
   existingWindow: BookingWindow,
 ): boolean {
-  const { dispatchOffsetDays } = getTiming(
-    candidateStart,
-    candidateDeliveryType,
-    true,
+  return isDateBlockedForRange(
+    eventDate,
+    calculateReturnDate(eventDate, deliveryType),
+    deliveryType,
+    existingWindow,
   );
-  const { turnaroundOffsetDays } = getTiming(
-    candidateEnd,
-    candidateDeliveryType,
-    true,
-  );
+}
 
-  const candidateDispatch = auckland
-    .toZone(candidateStart)
-    .subtract(dispatchOffsetDays, "day")
-    .format("YYYY-MM-DD");
-  const candidateReadyAgain = auckland
-    .toZone(candidateEnd)
-    .add(turnaroundOffsetDays, "day")
-    .format("YYYY-MM-DD");
+// The same overlap test for an explicitly chosen return date. The candidate's
+// window is built with optimistic (same-day) Pickup dispatch, so it is the
+// narrowest window the candidate could occupy — the opposite of the widest one
+// stored for an existing booking.
+export function isDateBlockedForRange(
+  eventDate: string,
+  returnDate: string,
+  deliveryType: DeliveryType,
+  existingWindow: BookingWindow,
+): boolean {
+  const candidate = windowFor(eventDate, returnDate, deliveryType, true);
 
-  const isAfterExisting = candidateDispatch >= existingWindow.blockedUntil;
-  const isBeforeExisting = candidateReadyAgain <= existingWindow.blockedFrom;
+  const isAfterExisting = candidate.blockedFrom >= existingWindow.blockedUntil;
+  const isBeforeExisting = candidate.blockedUntil <= existingWindow.blockedFrom;
   return !(isAfterExisting || isBeforeExisting); // YYYY-MM-DD sorts lexicographically
 }

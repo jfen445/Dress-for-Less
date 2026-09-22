@@ -16,7 +16,9 @@ export type FakeBookingItem = {
   dressId: string;
   size: string;
   dateBooked: string;
-  endDate?: string;
+  // Optional here, unlike the real schema, so a fixture can seed a row that
+  // only exists to block a date and say nothing about when it comes back.
+  returnDate?: string;
   deliveryType: string;
   blockedFrom: string;
   blockedUntil: string;

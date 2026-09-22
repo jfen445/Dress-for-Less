@@ -8,6 +8,7 @@ import { getAllAdminUsers } from "@/api/admin";
 import { updateBooking } from "@/api/booking";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BookingStatus } from "../../../../common/enums/BookingStatus";
+import { calculateReturnDate } from "../../../../lib/utils/bookingWindow";
 import {
   Booking,
   UserType,
@@ -51,14 +52,24 @@ const inputCls =
   "block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6";
 const labelCls = "block text-sm font-medium text-gray-700 mb-1";
 
+const formatLongDate = (date: string) =>
+  new Date(date).toLocaleDateString("en-NZ", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
 type EditableLineItem = {
   id: string;
   itemId?: string; // existing BookingItem._id, undefined for a newly added row
   dressId: string;
   size: string;
   dateBooked: string;
-  endDate: string; // Blank means the rental ends the day it starts.
-  isExtended: boolean;
+  // Blank means the server derives the return date from dateBooked and the
+  // delivery method; set only when the admin picked a later one.
+  returnDate: string;
+  overridesReturn: boolean;
   price: string;
   notes: string;
 };
@@ -68,9 +79,7 @@ const describeConflicts = (conflicts: any[]) =>
   conflicts
     .map((c) => {
       const span =
-        c.endDate && c.endDate !== c.dateBooked
-          ? `${c.dateBooked} to ${c.endDate}`
-          : c.dateBooked;
+        c.returnDate ? `${c.dateBooked} to ${c.returnDate}` : c.dateBooked;
       return c.orderNumber ? `#${c.orderNumber} (${span})` : span;
     })
     .join(", ");
@@ -177,20 +186,28 @@ const EditBookingModal = ({
   React.useEffect(() => {
     if (!isOpen || !booking) return;
     setItems(
-      booking.items.map((item) => ({
-        id: makeItemId(),
-        itemId: item._id,
-        dressId: item.dressId ?? "",
-        size: (item.size as string) ?? "",
-        dateBooked: item.dateBooked ?? "",
-        // Shown blank when it matches the rental date, so an ordinary booking
-        // does not look like an extended one that happens to be a day long.
-        endDate:
-          item.endDate && item.endDate !== item.dateBooked ? item.endDate : "",
-        isExtended: Boolean(item.endDate && item.endDate !== item.dateBooked),
-        price: item.price != null ? String(item.price) : "",
-        notes: item.notes ?? "",
-      })),
+      booking.items.map((item) => {
+        // Compared against the DERIVED return date, not the event date: every
+        // booking's return date falls after its event date, so testing that
+        // would mark all of them as overridden and show the toggle already on.
+        const derived = item.dateBooked
+          ? calculateReturnDate(item.dateBooked, item.deliveryType)
+          : "";
+        const overridden = Boolean(item.returnDate && item.returnDate !== derived);
+
+        return {
+          id: makeItemId(),
+          itemId: item._id,
+          dressId: item.dressId ?? "",
+          size: (item.size as string) ?? "",
+          dateBooked: item.dateBooked ?? "",
+          // Blank unless overridden, so the server re-derives it on save.
+          returnDate: overridden ? item.returnDate : "",
+          overridesReturn: overridden,
+          price: item.price != null ? String(item.price) : "",
+          notes: item.notes ?? "",
+        };
+      }),
     );
     setCustomerMode("existing");
     setUserId(booking.userId);
@@ -247,13 +264,13 @@ const EditBookingModal = ({
       dressId,
       size: availableSizes[0] ?? "",
       dateBooked: "",
-      endDate: "",
+      returnDate: "",
       price: "",
     });
   };
 
   const handleSizeChange = (id: string, size: string) => {
-    updateItem(id, { size, dateBooked: "", endDate: "" });
+    updateItem(id, { size, dateBooked: "", returnDate: "" });
   };
 
   const addItem = () => {
@@ -266,8 +283,8 @@ const EditBookingModal = ({
         dressId: dress?._id ?? "",
         size: availableSizes[0] ?? "",
         dateBooked: "",
-        endDate: "",
-        isExtended: false,
+        returnDate: "",
+        overridesReturn: false,
         price: "",
         notes: "",
       },
@@ -310,12 +327,12 @@ const EditBookingModal = ({
     try {
       await updateBooking(booking._id, {
         items: items.map(
-          ({ itemId, dressId, size, dateBooked, endDate, price, notes }) => ({
+          ({ itemId, dressId, size, dateBooked, returnDate, price, notes }) => ({
             itemId,
             dressId,
             size,
             dateBooked,
-            ...(endDate && endDate !== dateBooked ? { endDate } : {}),
+            ...(returnDate ? { returnDate } : {}),
             ...(price.trim() === "" ? {} : { price: Number(price) }),
             notes,
           }),
@@ -435,7 +452,7 @@ const EditBookingModal = ({
                                 item.dateBooked,
                               )
                             : date;
-                        updateItem(item.id, { dateBooked: next, endDate: "" });
+                        updateItem(item.id, { dateBooked: next, returnDate: "" });
                       }}
                       sizes={sizes}
                       selectedSize={item.size}
@@ -460,23 +477,32 @@ const EditBookingModal = ({
 
                 {item.dressId && item.size && item.dateBooked && (
                   <div className="space-y-3">
+                    {!item.overridesReturn && (
+                      <p className="text-sm text-gray-500">
+                        Due back{" "}
+                        {formatLongDate(
+                          calculateReturnDate(item.dateBooked, deliveryType),
+                        )}
+                      </p>
+                    )}
+
                     <Toggle
-                      title="Extended rental"
-                      description="Keep the dress for more than the rental day"
-                      enabled={item.isExtended}
+                      title="Override return date"
+                      description="Let the customer keep the dress past its usual return day"
+                      enabled={item.overridesReturn}
                       setEnabled={(value) => {
                         const next =
                           typeof value === "function"
-                            ? value(item.isExtended)
+                            ? value(item.overridesReturn)
                             : value;
                         updateItem(item.id, {
-                          isExtended: next,
-                          endDate: next ? item.endDate : "",
+                          overridesReturn: next,
+                          returnDate: next ? item.returnDate : "",
                         });
                       }}
                     />
 
-                    {item.isExtended && (
+                    {item.overridesReturn && (
                       <div>
                         <label className={`${labelCls} mb-0`}>
                           Return date
@@ -484,10 +510,10 @@ const EditBookingModal = ({
                         <Calendar
                           setSelectedDate={(date) =>
                             updateItem(item.id, {
-                              endDate:
+                              returnDate:
                                 typeof date === "function"
                                   ? (date as (prev: string) => string)(
-                                      item.endDate,
+                                      item.returnDate,
                                     )
                                   : date,
                             })
@@ -497,23 +523,14 @@ const EditBookingModal = ({
                           dressId={item.dressId}
                           isAdmin={true}
                           // Without this the booking collides with itself and
-                          // no end date is offered at all.
+                          // no return date is offered at all.
                           excludeBookingId={booking?._id}
                           deliveryType={deliveryType}
                           rangeStart={item.dateBooked}
                         />
-                        {item.endDate && (
+                        {item.returnDate && (
                           <p className="text-sm text-gray-500 mt-1">
-                            Returns:{" "}
-                            {new Date(item.endDate).toLocaleDateString(
-                              "en-NZ",
-                              {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              },
-                            )}
+                            Returns: {formatLongDate(item.returnDate)}
                           </p>
                         )}
                       </div>
@@ -747,10 +764,10 @@ const EditBookingModal = ({
               <div key={item.id} className="flex justify-between text-gray-600">
                 <span>
                   {dress.name}
-                  {item.endDate && item.endDate !== item.dateBooked && (
+                  {item.returnDate && (
                     <span className="text-gray-400">
                       {" "}
-                      ({item.dateBooked} → {item.endDate})
+                      ({item.dateBooked} → {item.returnDate})
                     </span>
                   )}
                 </span>

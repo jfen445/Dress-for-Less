@@ -7,7 +7,6 @@ import { BookingSchema } from "../../../lib/db/schema";
 import { getBookingsByDateRange } from "../../../lib/db/booking-dao";
 import { getDress } from "../../../sanity/sanity.query";
 import { EmailSendResult } from "../../../common/enums/EmailSendResult";
-import { DeliveryType } from "../../../common/enums/DeliveryType";
 import ReturnReminderEmail, {
   getReturnReminderSubject,
 } from "@/components/Emails/ReturnReminder";
@@ -26,53 +25,35 @@ export default async function handler(
   if (!token || token !== process.env.CRON_SECRET)
     return res.status(401).json({ error: "Unauthorized" });
 
-  const now = auckland.now();
-  const dayOfWeek = now.day(); // 0 = Sunday, 1 = Monday, ... 6 = Saturday
-  const yesterday = now.subtract(1, "day").format("YYYY-MM-DD");
+  const today = auckland.now().format("YYYY-MM-DD");
 
-  // send pick up reminders daily
-  const pickupWindow = { startDate: yesterday, endDate: yesterday };
-
-  // Delivery returns go through NZ Post, which is shut weekends: Mon-Thu
-  // bookings get their reminder the next day, Fri/Sat/Sun bookings all wait
-  // until Monday, and there's nothing to chase on Saturday/Sunday itself.
-  const deliveryWindow =
-    dayOfWeek === 1
-      ? {
-          startDate: now.subtract(3, "day").format("YYYY-MM-DD"),
-          endDate: yesterday,
-        }
-      : dayOfWeek >= 2 && dayOfWeek <= 5
-        ? { startDate: yesterday, endDate: yesterday }
-        : null;
-
-  const queryStart = deliveryWindow
-    ? deliveryWindow.startDate
-    : pickupWindow.startDate;
+  // One day wide, and the same window for both delivery methods. The weekday
+  // branching this replaces existed only because the return date was not
+  // stored: Friday, Saturday and Sunday deliveries all fall due on the Monday,
+  // which is now worked out when the booking is written. Catching up after a
+  // missed run would be a change to these two dates and nothing else.
+  const dueWindow = { startDate: today, endDate: today };
 
   await dbConnect();
 
-  const bookings = await getBookingsByDateRange(queryStart, yesterday);
+  const bookings = await getBookingsByDateRange(
+    dueWindow.startDate,
+    dueWindow.endDate,
+  );
 
   const isInWindow = (
-    dateBooked: string,
-    window: { startDate: string; endDate: string } | null,
+    returnDate: string | undefined,
+    window: { startDate: string; endDate: string },
   ) =>
-    window !== null &&
-    dateBooked >= window.startDate &&
-    dateBooked <= window.endDate;
+    returnDate != null &&
+    returnDate >= window.startDate &&
+    returnDate <= window.endDate;
 
+  // The query matches a booking on any one of its items, so a multi-line
+  // booking with one dress due today still has to be narrowed to that dress.
   const reminders = bookings.flatMap((booking) =>
     booking.items
-      .filter((item: any) =>
-        isInWindow(
-          // An extended rental falls due after its end date
-          item.endDate ?? item.dateBooked,
-          item.deliveryType === DeliveryType.Pickup
-            ? pickupWindow
-            : deliveryWindow,
-        ),
-      )
+      .filter((item: any) => isInWindow(item.returnDate, dueWindow))
       .map((item: any) => ({ booking, item })),
   );
 
@@ -109,7 +90,7 @@ export default async function handler(
           dressImage: dress?.images?.[0] ?? "",
           size: item.size,
           dateBooked: item.dateBooked,
-          endDate: item.endDate,
+          returnDate: item.returnDate,
           deliveryType: item.deliveryType,
         }),
       });

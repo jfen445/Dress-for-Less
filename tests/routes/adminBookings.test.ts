@@ -28,12 +28,17 @@ const handler = (await import("../../pages/api/admin/bookings")).default;
 
 const NOW_ISO = "2026-05-31T21:00:00.000Z";
 
-// Thursday. Delivery dispatch is −3 and Thursday's own turnaround is +6, so a
-// one-day booking here blocks 2026-09-28 → 2026-10-07.
+// Thursday. Delivery dispatch is −3, and it falls due the next day (Friday),
+// whose turnaround is +5 — so an ordinary booking here blocks 2026-09-28 →
+// 2026-10-07 and is due back on DERIVED_RETURN.
 const START = "2026-10-01";
-// Sunday, ten days later. Sunday's turnaround is +3, so the extended window
-// runs 2026-09-28 → 2026-10-14.
-const END = "2026-10-11";
+const DERIVED_RETURN = "2026-10-02";
+// A return date an admin picked: the Friday a week later, so its turnaround is
+// also +5 and the window runs 2026-09-28 → 2026-10-14. Friday rather than a
+// weekend because a posted return has to reach an NZ Post counter.
+const END = "2026-10-09";
+// Sunday. Only ever offered to a Delivery booking by mistake.
+const WEEKEND_RETURN = "2026-10-11";
 const EXTENDED_WINDOW = { blockedFrom: "2026-09-28", blockedUntil: "2026-10-14" };
 const ONE_DAY_WINDOW = { blockedFrom: "2026-09-28", blockedUntil: "2026-10-07" };
 
@@ -117,39 +122,43 @@ afterEach(() => {
 });
 
 describe("POST /api/admin/bookings — extended bookings", () => {
-  it("stores the end date and a window spanning the whole rental", async () => {
-    const { status } = await createBooking({ items: [line({ endDate: END })] });
+  it("stores the chosen return date and a window running to it", async () => {
+    const { status } = await createBooking({
+      items: [line({ returnDate: END })],
+    });
     expect(status).toBe(201);
 
     const item = db.bookings[0].items[0];
     expect(item.dateBooked).toBe(START);
-    expect(item.endDate).toBe(END);
-    // Dispatch from the start weekday, turnaround from the end weekday.
+    expect(item.returnDate).toBe(END);
+    // Dispatch from the event weekday, turnaround from the return weekday.
     expect(item.blockedFrom).toBe(EXTENDED_WINDOW.blockedFrom);
     expect(item.blockedUntil).toBe(EXTENDED_WINDOW.blockedUntil);
   });
 
-  it("leaves an ordinary booking exactly as it was", async () => {
+  it("derives the return date when the admin did not override it", async () => {
     const { status } = await createBooking();
     expect(status).toBe(201);
 
     const item = db.bookings[0].items[0];
-    expect(item.endDate).toBe(START);
+    expect(item.returnDate).toBe(DERIVED_RETURN);
     expect(item.blockedUntil).toBe(ONE_DAY_WINDOW.blockedUntil);
   });
 
   it("refuses an extended booking laid over an existing one", async () => {
     // 2026-10-12 is a Monday, blocking 2026-10-08 → 2026-10-16. It is placed
     // in the gap only the extended range reaches: booking 10-01 alone is ready
-    // again on 10-07 and clears it, while holding the dress to 10-11 pushes
-    // that to 10-14 and collides. So this fails both if the range is ignored
-    // and if the old exact-date comparison comes back (10-12 !== 10-01).
+    // again on 10-07 and clears it, while holding the dress until it falls due
+    // on 10-09 pushes that to 10-14 and collides. So this fails both if the
+    // range is ignored and if the old exact-date comparison comes back.
     existingBookingOn("2026-10-12", { blockedFrom: "2026-10-08", blockedUntil: "2026-10-16" });
 
     expect((await createBooking()).status).toBe(201);
     db.bookings.pop();
 
-    const { status, body } = await createBooking({ items: [line({ endDate: END })] });
+    const { status, body } = await createBooking({
+      items: [line({ returnDate: END })],
+    });
 
     expect(status).toBe(409);
     expect(body.conflicts).toHaveLength(1);
@@ -162,7 +171,9 @@ describe("POST /api/admin/bookings — extended bookings", () => {
   it("refuses when a block-out falls inside the range, not just on its first day", async () => {
     db.blockouts.push({ dressId, size: "M", date: "2026-10-05" } as any);
 
-    const { status } = await createBooking({ items: [line({ endDate: END })] });
+    const { status } = await createBooking({
+      items: [line({ returnDate: END })],
+    });
 
     expect(status).toBe(409);
     expect(db.bookings).toHaveLength(0);
@@ -173,8 +184,8 @@ describe("POST /api/admin/bookings — extended bookings", () => {
     // carrying the accepted lines forward both would pass.
     const { status } = await createBooking({
       items: [
-        line({ endDate: END }),
-        line({ dateBooked: "2026-10-06", endDate: "2026-10-08" }),
+        line({ returnDate: END }),
+        line({ dateBooked: "2026-10-06", returnDate: "2026-10-08" }),
       ],
     });
 
@@ -193,9 +204,33 @@ describe("POST /api/admin/bookings — extended bookings", () => {
 });
 
 describe("POST /api/admin/bookings — range validation", () => {
-  it("refuses an end date before the start date", async () => {
+  it("refuses a return date before the event date", async () => {
     const { status } = await createBooking({
-      items: [line({ endDate: "2026-09-30" })],
+      items: [line({ returnDate: "2026-09-30" })],
+    });
+
+    expect(status).toBe(400);
+    expect(db.bookings).toHaveLength(0);
+  });
+
+  it("refuses a return date earlier than the derived one", async () => {
+    // The event date itself, which reads as a plausible "same-day return" and
+    // is the value every pre-existing row carried in the field this replaced.
+    // It is never valid: the dress is with the customer that day.
+    const { status, body } = await createBooking({
+      items: [line({ returnDate: START })],
+    });
+
+    expect(status).toBe(400);
+    expect(body.message).toContain(DERIVED_RETURN);
+    expect(db.bookings).toHaveLength(0);
+  });
+
+  it("refuses a weekend return on a posted booking", async () => {
+    // There is no counter to lodge the parcel at, so the matrix rolls every
+    // weekend return to the Monday. Only an override can reach one.
+    const { status } = await createBooking({
+      items: [line({ returnDate: WEEKEND_RETURN })],
     });
 
     expect(status).toBe(400);
@@ -204,9 +239,10 @@ describe("POST /api/admin/bookings — range validation", () => {
 
   it("refuses a rental longer than the maximum span", async () => {
     // A mistyped year is the case this exists for: it would otherwise withdraw
-    // the dress from sale for twelve months with nothing to flag it.
+    // the dress from sale for twelve months with nothing to flag it. 2027-10-01
+    // is a Friday, so it clears the weekday gate and reaches this one.
     const { status } = await createBooking({
-      items: [line({ endDate: "2027-10-01" })],
+      items: [line({ returnDate: "2027-10-01" })],
     });
 
     expect(status).toBe(400);
@@ -217,7 +253,7 @@ describe("POST /api/admin/bookings — range validation", () => {
     const { createUser } = await import("../fakes/daos").then((m) => m.userDao);
 
     const { status } = await createBooking({
-      items: [line({ endDate: "2027-10-01" })],
+      items: [line({ returnDate: "2027-10-01" })],
       newUser: { email: "new@example.com", firstName: "New", lastName: "Person" },
     });
 
@@ -231,7 +267,7 @@ describe("POST /api/admin/bookings — range validation", () => {
 describe("POST /api/admin/bookings — pricing", () => {
   it("takes the price the admin entered", async () => {
     const { status } = await createBooking({
-      items: [line({ endDate: END, price: 340 })],
+      items: [line({ returnDate: END, price: 340 })],
     });
 
     expect(status).toBe(201);

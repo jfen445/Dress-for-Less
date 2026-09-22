@@ -53,7 +53,10 @@ const billingAddressSchema = new Schema({
 const bookingItemSchema = new Schema({
   dressId: { type: String, required: true },
   dateBooked: { type: String, required: true },
-  endDate: { type: String, required: false },
+  // The date the dress is due back — by 1pm for Post, 8pm for drop-off. Derived
+  // from dateBooked unless an admin overrode it, and backfilled onto every
+  // pre-existing row by scripts/migrate-return-dates.js.
+  returnDate: { type: String, required: true },
   blockedFrom: { type: String, required: true },
   blockedUntil: { type: String, required: true },
   deliveryType: { type: String, required: true, default: "delivery" },

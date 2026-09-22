@@ -113,8 +113,8 @@ export type BookingItem = {
   _id?: string;
   dressId: string;
   dateBooked: string;
-  // Absent on a normal booking. Always read as `endDate ?? dateBooked`.
-  endDate?: string;
+  // The date the dress is due back. Always set, and always after dateBooked.
+  returnDate: string;
   blockedFrom: string;
   blockedUntil: string;
   deliveryType: DeliveryType;
@@ -171,7 +171,7 @@ export type BookingAvailability = {
   dressId: string;
   size: String;
   dateBooked: string;
-  endDate?: string;
+  returnDate?: string;
   blockedFrom: string;
   blockedUntil: string;
 };
@@ -262,9 +262,8 @@ export type OrderReceipt = {
   dressId: string;
   name: string;
   dateBooked: string;
-  // Present only on an extended rental; the templates show a return date when
-  // it differs from dateBooked and are byte-identical otherwise.
-  endDate?: string;
+  // Rendered as its own "Return by" row on every receipt.
+  returnDate: string;
   blockedFrom: string;
   blockedUntil: string;
   price: number;

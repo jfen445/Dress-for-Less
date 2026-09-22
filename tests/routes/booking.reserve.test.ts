@@ -170,14 +170,16 @@ describe("POST /api/booking — the reserve", () => {
     expect(row.totalPrice).toBe(DRESS_PRICE + SHIPPING);
   });
 
-  it("ignores an endDate in the payload", async () => {
+  it("derives the return date and ignores one in the payload", async () => {
     // Extended rentals are admin-only. There is no per-day price, so honouring
-    // a client-supplied range would sell a month at the one-day rate and hold
-    // the dress out of sale for the whole of it.
-    await reserve({ items: [item({ endDate: "2026-08-10" })] });
+    // a client-supplied return date would sell a month at the one-day rate and
+    // hold the dress out of sale for the whole of it.
+    //
+    // 2026-07-10 is a Friday, so the parcel cannot be lodged until the Monday.
+    await reserve({ items: [item({ returnDate: "2026-08-10" })] });
 
     const row = bookingFor(PAYMENT_INTENT)!;
-    expect(row.items[0].endDate).toBe(EVENT_DATE);
+    expect(row.items[0].returnDate).toBe("2026-07-13");
     expect(row.items[0].blockedUntil).toBe("2026-07-15");
   });
 

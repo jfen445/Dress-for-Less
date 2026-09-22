@@ -22,7 +22,7 @@ export interface ICart {
 export interface IBookingItem {
   dressId: string;
   dateBooked: string;
-  endDate?: string;
+  returnDate: string;
   blockedFrom: string;
   blockedUntil: string;
   deliveryType: string;

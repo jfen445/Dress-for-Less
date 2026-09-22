@@ -31,7 +31,10 @@ const NOW_ISO = "2026-05-31T21:00:00.000Z";
 // blocks 2026-09-28 → 2026-10-07. Ending Sunday 10-11 (+3) extends that to
 // 2026-10-14.
 const START = "2026-10-01";
-const END = "2026-10-11";
+// A Friday: its turnaround is +5, so the extended window runs to 2026-10-14.
+// A weekend date would be refused outright — there is no counter to post at.
+const END = "2026-10-09";
+const WEEKEND_RETURN = "2026-10-11";
 const DRESS_PRICE = 150;
 
 let dressId: string;
@@ -167,12 +170,12 @@ describe("PATCH /api/booking — editing a booking's own dates", () => {
   });
 
   it("extends a rental in place", async () => {
-    const { status } = await edit([line({ endDate: END })]);
+    const { status } = await edit([line({ returnDate: END })]);
 
     expect(status).toBe(200);
 
     const item = db.bookings.find((b) => b._id === bookingId)!.items[0];
-    expect(item.endDate).toBe(END);
+    expect(item.returnDate).toBe(END);
     expect(item.blockedUntil).toBe("2026-10-14");
   });
 
@@ -180,13 +183,13 @@ describe("PATCH /api/booking — editing a booking's own dates", () => {
     // Every admin booking carries the same "ADMIN_MANUAL" intent, so excluding
     // by payment intent would drop this rival too and the clash would go
     // unnoticed. 2026-10-12 blocks 2026-10-08 → 2026-10-16: clear of the
-    // one-day booking, hit by the extension to 10-11.
+    // ordinary booking, hit by the extension falling due on 10-09.
     seedRivalAdminBooking("2026-10-12", "2026-10-08", "2026-10-16");
 
     // Unchanged still saves — the rival does not block the original dates.
     expect((await edit([line()])).status).toBe(200);
 
-    const { status, body } = await edit([line({ endDate: END })]);
+    const { status, body } = await edit([line({ returnDate: END })]);
 
     expect(status).toBe(409);
     expect(body.conflicts).toHaveLength(1);
@@ -194,19 +197,27 @@ describe("PATCH /api/booking — editing a booking's own dates", () => {
   });
 
   it("refuses a return date before the rental date", async () => {
-    const { status } = await edit([line({ endDate: "2026-09-30" })]);
+    const { status } = await edit([line({ returnDate: "2026-09-30" })]);
+
+    expect(status).toBe(400);
+  });
+
+  it("refuses a weekend return on a posted booking", async () => {
+    // The edit path carries its own copy of the gate, so it is proven here
+    // rather than inferred from the create path passing.
+    const { status } = await edit([line({ returnDate: WEEKEND_RETURN })]);
 
     expect(status).toBe(400);
   });
 
   it("refuses a rental longer than the maximum span", async () => {
-    const { status } = await edit([line({ endDate: "2027-10-01" })]);
+    const { status } = await edit([line({ returnDate: "2027-10-01" })]);
 
     expect(status).toBe(400);
   });
 
   it("takes the price the admin entered", async () => {
-    await edit([line({ endDate: END, price: 340 })]);
+    await edit([line({ returnDate: END, price: 340 })]);
 
     const booking = db.bookings.find((b) => b._id === bookingId)!;
     expect(booking.items[0].price).toBe(340);
