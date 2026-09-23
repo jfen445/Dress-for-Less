@@ -26,7 +26,7 @@ export interface BookingInstructionsItem {
   dateBooked: string;
   // Set only on an extended rental, where the dress is due back later than
   // the day of the event.
-  endDate?: string;
+  returnDate: string;
   deliveryType: string;
 }
 
@@ -222,13 +222,6 @@ const BookingInstructionsEmail = ({ items }: BookingInstructionsProps) => {
               {items.length > 1 ? "Your order" : "Your booking"}
             </Text>
             {items.map((item, index) => {
-              // Rendered only when the rental actually runs past its first day,
-              // so an ordinary booking produces exactly the row it always did.
-              const formattedEndDate =
-                item.endDate && item.endDate !== item.dateBooked
-                  ? formatDate(item.endDate)
-                  : "";
-
               return (
                 <Row
                   key={`${item.dressName}-${item.size}-${item.dateBooked}-${index}`}
@@ -260,13 +253,11 @@ const BookingInstructionsEmail = ({ items }: BookingInstructionsProps) => {
                       <br />
                       {formatDate(item.dateBooked)}
                     </Text>
-                    {formattedEndDate && (
-                      <Text style={bookingDetail}>
-                        <span style={bookingDetailLabel}>Return by</span>
-                        <br />
-                        {formattedEndDate}
-                      </Text>
-                    )}
+                    <Text style={bookingDetail}>
+                      <span style={bookingDetailLabel}>Return by</span>
+                      <br />
+                      {formatDate(item.returnDate)}
+                    </Text>
                     <Text style={{ ...bookingDetail, marginBottom: 0 }}>
                       <span style={bookingDetailLabel}>Delivery</span>
                       <br />

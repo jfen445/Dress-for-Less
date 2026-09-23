@@ -57,7 +57,7 @@ export async function getBookingAvailabilityByDress(
         dressId: "$items.dressId",
         size: "$items.size",
         dateBooked: "$items.dateBooked",
-        endDate: "$items.endDate",
+        returnDate: "$items.returnDate",
         blockedFrom: "$items.blockedFrom",
         blockedUntil: "$items.blockedUntil",
       },
@@ -213,23 +213,18 @@ export async function getAllBookings() {
   ]);
 }
 
+// Paid bookings with at least one item falling due in [startDate, endDate].
+// Matched on returnDate alone: dateBooked says nothing about when a dress is
+// wanted back, and an extended rental's event date can sit weeks earlier.
+// Matching the booking is deliberately coarser than matching the item — the
+// caller still has to pick out which of a multi-line booking's items are due.
 export async function getBookingsByDateRange(startDate: string, endDate: string) {
   return BookingSchema.aggregate([
     {
       $match: {
         paymentSuccess: true,
-        // Deliberately over-broad, as it already was: one date range stands in
-        // for the per-method windows the caller applies afterwards. The $or
-        // adds extended bookings, whose return falls due after endDate while
-        // dateBooked sits weeks earlier — matching on dateBooked alone would
-        // never load them, so their reminder would silently never send.
         items: {
-          $elemMatch: {
-            $or: [
-              { dateBooked: { $gte: startDate, $lte: endDate } },
-              { endDate: { $gte: startDate, $lte: endDate } },
-            ],
-          },
+          $elemMatch: { returnDate: { $gte: startDate, $lte: endDate } },
         },
       },
     },

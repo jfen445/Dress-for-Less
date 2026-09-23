@@ -1,5 +1,5 @@
 import React from "react";
-import { getAllTryOnBookings, updateTryOnBookingStatus } from "@/api/admin";
+import { getAllTryOnBookings } from "@/api/admin";
 import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
@@ -7,7 +7,6 @@ import CreateTryOnBookingModal from "@/components/Admin/CreateTryOnBookingModal"
 import DeleteTryOnBookingModal from "@/components/Admin/DeleteTryOnBookingModal";
 import EmailTryOnRemindersModal from "@/components/Admin/EmailTryOnRemindersModal";
 import AdminTryOnAvailability from "@/components/Admin/TryOnAvailability";
-import { TryOnStatus } from "../../../../common/enums/TryOnStatus";
 import { formatTryOnTimeSlot } from "../../../../common/constants/tryOn";
 import { auckland } from "../../../../lib/utils/timezone";
 
@@ -20,22 +19,7 @@ type TryOnBookingRow = {
   timeSlot: string;
   price: number;
   notes?: string;
-  status: TryOnStatus;
   user?: { name?: string; email?: string }[];
-};
-
-const getStatusColour = (status: TryOnStatus) => {
-  switch (status) {
-    case TryOnStatus.Completed:
-      return "bg-green-50 text-green-700 ring-green-600/20";
-    case TryOnStatus.Cancelled:
-      return "bg-red-50 text-red-700 ring-red-600/20";
-    case TryOnStatus.NoShow:
-      return "bg-orange-50 text-orange-700 ring-orange-600/20";
-    case TryOnStatus.Booked:
-    default:
-      return "bg-blue-50 text-blue-700 ring-blue-600/20";
-  }
 };
 
 const previousMonday = (d = auckland.now()) => {
@@ -59,7 +43,7 @@ const AdminTryOns = () => {
 
   const [showThisWeek, setShowThisWeek] = React.useState(true);
   const [showUpcoming, setShowUpcoming] = React.useState(true);
-  const [showPrevious, setShowPrevious] = React.useState(true);
+  const [showPrevious, setShowPrevious] = React.useState(false);
 
   const fetchBookings = () => {
     setIsLoading(true);
@@ -78,20 +62,6 @@ const AdminTryOns = () => {
   React.useEffect(() => {
     fetchBookings();
   }, []);
-
-  const onStatusChange = (bookingId: string, status: TryOnStatus) => {
-    setBookings((prev) =>
-      prev.map((b) => (b._id === bookingId ? { ...b, status } : b)),
-    );
-
-    updateTryOnBookingStatus(bookingId, status).catch(() =>
-      setToast({
-        message: "Failed to update status",
-        variant: ToastVariant.WARNING,
-        show: true,
-      }),
-    );
-  };
 
   const { thisWeekBookings, upcomingBookings, pastBookings, reminderBookings } =
     React.useMemo(() => {
@@ -157,23 +127,6 @@ const AdminTryOns = () => {
             </td>
             <td className="px-3 py-4 text-sm text-gray-500">
               ${booking.price.toFixed(2)}
-            </td>
-            <td className="px-3 py-4 text-sm">
-              <select
-                value={booking.status}
-                onChange={(e) =>
-                  onStatusChange(booking._id, e.target.value as TryOnStatus)
-                }
-                className={`block rounded-md border-0 py-1.5 pl-3 pr-8 text-sm ring-1 ring-inset sm:leading-6 ${getStatusColour(
-                  booking.status,
-                )}`}
-              >
-                {Object.values(TryOnStatus).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
             </td>
             <td className="px-3 py-4 text-right text-sm">
               <button
@@ -294,12 +247,6 @@ const AdminTryOns = () => {
                       >
                         Fee
                       </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Status
-                      </th>
                       <th scope="col" className="px-3 py-3.5">
                         <span className="sr-only">Delete</span>
                       </th>
@@ -312,7 +259,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={7}
+                        colSpan={6}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         This week try-ons
@@ -326,7 +273,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={7}
+                        colSpan={6}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         Upcoming try-ons
@@ -340,7 +287,7 @@ const AdminTryOns = () => {
                     >
                       <th
                         scope="colgroup"
-                        colSpan={7}
+                        colSpan={6}
                         className="bg-gray-50 py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-3"
                       >
                         Previous try-ons
@@ -351,7 +298,7 @@ const AdminTryOns = () => {
                     {bookings.length === 0 && (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={6}
                           className="py-6 text-center text-sm text-gray-500"
                         >
                           No try-on bookings yet.

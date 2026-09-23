@@ -197,7 +197,7 @@ export async function sendEmailConfirmation(booking: Booking) {
         dressId: item.dressId,
         name: user?.name ?? "",
         dateBooked: item.dateBooked,
-        endDate: item.endDate,
+        returnDate: item.returnDate,
         blockedFrom: item.blockedFrom,
         blockedUntil: item.blockedUntil,
         price: item.price,

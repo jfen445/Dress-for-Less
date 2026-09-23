@@ -13,7 +13,7 @@ const SUN = "2026-09-27";
 const booking = (
   orderNumber: string,
   dateBooked: string,
-  endDate?: string,
+  returnDate?: string,
 ): Booking =>
   ({
     _id: orderNumber,
@@ -23,7 +23,7 @@ const booking = (
       {
         dressId: "d1",
         dateBooked,
-        ...(endDate ? { endDate } : {}),
+        ...(returnDate ? { returnDate } : {}),
         blockedFrom: dateBooked,
         blockedUntil: dateBooked,
         deliveryType: "Pickup",
@@ -58,9 +58,11 @@ describe("bucketBookings", () => {
     expect(past).toEqual([]);
   });
 
-  // The same tie, on a booking written before endDate existed — endOf falls
-  // back to dateBooked, so dropping the field does not dodge the boundary.
-  it("keeps a legacy booking with no endDate on that Monday in thisWeek", () => {
+  // The same tie, on a row with no returnDate at all. The schema requires one,
+  // so this is the defensive floor rather than a shape the app produces: endOf
+  // falls back to dateBooked, and the booking still lands in a bucket instead
+  // of vanishing from the table.
+  it("keeps a booking with no returnDate on that Monday in thisWeek", () => {
     const { thisWeek, past } = bucketBookings([booking("DFL-2", MON)], midWeek);
 
     expect(orderNumbers(thisWeek)).toEqual(["DFL-2"]);

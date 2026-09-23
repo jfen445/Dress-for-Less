@@ -7,7 +7,10 @@ import { AUCKLAND_TZ, auckland } from "../../../../lib/utils/timezone";
 import { isBookingAllowedForDate } from "../../../../lib/utils/deliveryRules";
 import {
   MAX_RENTAL_DAYS,
-  isDateBlockedByExistingBooking,
+  calculateReturnDate,
+  isDateBlockedForEvent,
+  isDateBlockedForRange,
+  isReturnDayAllowed,
   rentalSpanDays,
 } from "../../../../lib/utils/bookingWindow";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
@@ -23,9 +26,9 @@ interface ICanlender {
   isAdmin?: boolean;
   excludeBookingId?: string;
   deliveryType?: DeliveryType;
-  // When set, picks the END of a rental starting on that date, asking
-  // availability about the whole span through the predicate the reserve uses.
-  // Admin-only — there is no customer price for an extended rental.
+  // When set, picks the RETURN DATE of a booking whose event date is this,
+  // asking availability about the whole span through the predicate the reserve
+  // uses. Admin-only — there is no customer price for an extended rental.
   rangeStart?: string;
 }
 
@@ -114,7 +117,7 @@ const Calendar = ({
       relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
-          isDateBlockedByExistingBooking(dateStr, dateStr, method, booking),
+          isDateBlockedForEvent(dateStr, method, booking),
       ).length ?? 0;
 
     if (blockedCount >= sizeStock) {
@@ -130,14 +133,23 @@ const Calendar = ({
     }
 
     const dateStr = date.format("YYYY-MM-DD");
+    const method = deliveryType ?? DeliveryType.Delivery;
 
-    // Outside range mode the candidate is a single day, which is the same
-    // thing as a span whose ends coincide — so one code path serves both.
-    const spanStart = rangeStart ?? dateStr;
+    // In range mode the calendar is picking a return date for the booking that
+    // starts on rangeStart; outside it, the event date itself. The span runs
+    // from the event date to the return date, and collapses to the single day
+    // when there is no range.
+    const eventDate = rangeStart ?? dateStr;
 
     if (rangeStart) {
-      if (dateStr < rangeStart) return true;
+      // The derived return date is the floor: a dress cannot come back before
+      // the day it is due, and picking the event date itself — which the old
+      // rangeStart comparison allowed — is never a real choice.
+      if (dateStr < calculateReturnDate(rangeStart, method)) return true;
       if (rentalSpanDays(rangeStart, dateStr) > MAX_RENTAL_DAYS) return true;
+      // Weekend only matters for a return; Saturday events are the common case,
+      // so this is scoped to range mode rather than applied to every pick.
+      if (!isReturnDayAllowed(dateStr, method)) return true;
     }
 
     // Overlap between the span and the block-out, which collapses to the
@@ -145,7 +157,7 @@ const Calendar = ({
     const isBlockedOut = blockOuts.some(
       (b) =>
         b.size === selectedSize &&
-        spanStart <= b.endDate.slice(0, 10) &&
+        eventDate <= b.endDate.slice(0, 10) &&
         dateStr >= b.startDate.slice(0, 10),
     );
     if (isBlockedOut) return true;
@@ -156,13 +168,13 @@ const Calendar = ({
       ? bookings?.filter((b) => b.bookingId !== excludeBookingId)
       : bookings;
 
-    const method = deliveryType ?? DeliveryType.Delivery;
-
     const blockedCount =
       relevantBookings?.filter(
         (booking) =>
           booking.size == selectedSize &&
-          isDateBlockedByExistingBooking(spanStart, dateStr, method, booking),
+          (rangeStart
+            ? isDateBlockedForRange(rangeStart, dateStr, method, booking)
+            : isDateBlockedForEvent(dateStr, method, booking)),
       ).length ?? 0;
 
     if (blockedCount >= sizeStock) {

@@ -11,7 +11,9 @@ import { BookingStatus } from "../../../common/enums/BookingStatus";
 import { checkBlockOut } from "../../../lib/db/blockout-dao";
 import {
   MAX_RENTAL_DAYS,
-  calculateBookingWindow,
+  calculateReturnDate,
+  calculateWindowForRange,
+  isReturnDayAllowed,
   rentalSpanDays,
 } from "../../../lib/utils/bookingWindow";
 import { findBlockingBookings } from "../../../lib/utils/checkBookingAvailability";
@@ -28,7 +30,7 @@ const isValidPrice = (value: unknown) =>
 const describeConflict = (row: any) => ({
   orderNumber: row.orderNumber,
   dateBooked: row.dateBooked,
-  endDate: row.endDate ?? row.dateBooked,
+  returnDate: row.returnDate,
   blockedFrom: row.blockedFrom,
   blockedUntil: row.blockedUntil,
 });
@@ -118,14 +120,23 @@ export default async function handler(
     // Checked before the customer row is created below, so a bad date or price
     // can't leave an orphaned user behind when the request then fails.
     for (const item of itemsPayload) {
-      const endDate = item.endDate || item.dateBooked;
+      // Present only when an admin overrode it; otherwise the derived date
+      // applies. Both gates below can only ever fire on an override — a derived
+      // date is by construction the earliest one and never falls at a weekend.
+      const earliestReturn = calculateReturnDate(item.dateBooked, deliveryType);
+      const returnDate = item.returnDate || earliestReturn;
 
-      if (endDate < item.dateBooked) {
+      if (returnDate < earliestReturn) {
         return res.status(400).json({
-          message: "The return date must be on or after the rental date",
+          message: `The dress cannot be returned before ${earliestReturn}`,
         });
       }
-      if (rentalSpanDays(item.dateBooked, endDate) > MAX_RENTAL_DAYS) {
+      if (!isReturnDayAllowed(returnDate, deliveryType)) {
+        return res.status(400).json({
+          message: "A posted return must fall on a weekday",
+        });
+      }
+      if (rentalSpanDays(item.dateBooked, returnDate) > MAX_RENTAL_DAYS) {
         return res.status(400).json({
           message: `A rental cannot run longer than ${MAX_RENTAL_DAYS} days`,
         });
@@ -157,13 +168,14 @@ export default async function handler(
       const dress = await getDressPricing(item.dressId);
       if (!dress) return res.status(404).json({ message: "Dress not found" });
 
-      const endDate = item.endDate || item.dateBooked;
+      const returnDate =
+        item.returnDate || calculateReturnDate(item.dateBooked, deliveryType);
 
       const blocked = await checkBlockOut(
         item.dressId,
         item.size,
         item.dateBooked,
-        endDate,
+        returnDate,
       );
       if (blocked)
         return res
@@ -178,12 +190,11 @@ export default async function handler(
         item.dressId,
         item.size,
         item.dateBooked,
-        endDate,
         deliveryType,
         // The lines already accepted from this same request aren't written
         // yet, so without them two overlapping lines would each be checked
         // against a world not containing the other, and both would pass.
-        { alsoConsider: bookingItems },
+        { alsoConsider: bookingItems, returnDate },
       );
       if (!available)
         return res.status(409).json({
@@ -195,16 +206,16 @@ export default async function handler(
       const price = hasPriceOverride(item.price)
         ? Number(item.price)
         : parseInt(dress.price);
-      const { blockedFrom, blockedUntil } = calculateBookingWindow(
+      const { blockedFrom, blockedUntil } = calculateWindowForRange(
         item.dateBooked,
-        endDate,
+        returnDate,
         deliveryType,
       );
 
       bookingItems.push({
         dressId: item.dressId,
         dateBooked: item.dateBooked,
-        endDate,
+        returnDate,
         blockedFrom,
         blockedUntil,
         deliveryType,

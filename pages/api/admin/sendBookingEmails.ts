@@ -107,7 +107,7 @@ export default async function handler(
         dressImage: dresses.get(item.dressId)?.images?.[0] ?? "",
         size: item.size,
         dateBooked: item.dateBooked,
-        endDate: item.endDate,
+        returnDate: item.returnDate,
         deliveryType: item.deliveryType,
       }));
 

@@ -36,7 +36,10 @@ import { getDressPricing } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import {
   MAX_RENTAL_DAYS,
-  calculateBookingWindow,
+  calculateReturnDate,
+  calculateWindowForEvent,
+  calculateWindowForRange,
+  isReturnDayAllowed,
   rentalSpanDays,
 } from "../../lib/utils/bookingWindow";
 import {
@@ -227,7 +230,6 @@ export default async function handler(
           item.dressId,
           item.size as string,
           item.dateBooked,
-          item.dateBooked,
           item.deliveryType,
           paymentIntent,
           outranking,
@@ -365,12 +367,12 @@ export default async function handler(
     const bookingItems: IBookingItem[] = items.map((item) => ({
       dressId: item.dressId,
       dateBooked: item.dateBooked,
-      // Pinned, never read from the body. Customers cannot extend a rental:
-      // there is no per-day price, so a client-supplied range would sell a
-      // month at the one-day rate and hold the dress out of sale meanwhile.
-      // Admin-only until that pricing rule exists.
-      endDate: item.dateBooked,
-      ...calculateBookingWindow(item.dateBooked, item.dateBooked, item.deliveryType),
+      // Derived from the event date, never read from the body. Customers cannot
+      // extend a rental: there is no per-day price, so a client-supplied return
+      // date would sell a month at the one-day rate and hold the dress out of
+      // sale meanwhile. Admin-only until that pricing rule exists.
+      returnDate: calculateReturnDate(item.dateBooked, item.deliveryType),
+      ...calculateWindowForEvent(item.dateBooked, item.deliveryType),
       deliveryType: String(item.deliveryType),
       address: item.address && {
         company: item.address?.company ?? "",
@@ -613,14 +615,23 @@ export default async function handler(
       // same reason: before the customer row below is written, so a bad date
       // cannot leave an orphaned user behind.
       for (const item of itemsPayload) {
-        const itemEnd = item.endDate || item.dateBooked;
+        const earliestReturn = calculateReturnDate(
+          item.dateBooked,
+          deliveryType,
+        );
+        const returnDate = item.returnDate || earliestReturn;
 
-        if (itemEnd < item.dateBooked) {
+        if (returnDate < earliestReturn) {
           return res.status(400).json({
-            message: "The return date must be on or after the rental date",
+            message: `The dress cannot be returned before ${earliestReturn}`,
           });
         }
-        if (rentalSpanDays(item.dateBooked, itemEnd) > MAX_RENTAL_DAYS) {
+        if (!isReturnDayAllowed(returnDate, deliveryType)) {
+          return res.status(400).json({
+            message: "A posted return must fall on a weekday",
+          });
+        }
+        if (rentalSpanDays(item.dateBooked, returnDate) > MAX_RENTAL_DAYS) {
           return res.status(400).json({
             message: `A rental cannot run longer than ${MAX_RENTAL_DAYS} days`,
           });
@@ -651,13 +662,14 @@ export default async function handler(
         const dress = await getDressPricing(item.dressId);
         if (!dress) return res.status(404).json({ message: "Dress not found" });
 
-        const endDate = item.endDate || item.dateBooked;
+        const returnDate =
+          item.returnDate || calculateReturnDate(item.dateBooked, deliveryType);
 
         const blocked = await checkBlockOut(
           item.dressId,
           item.size,
           item.dateBooked,
-          endDate,
+          returnDate,
         );
         if (blocked)
           return res.status(409).json({
@@ -671,9 +683,8 @@ export default async function handler(
           item.dressId,
           item.size,
           item.dateBooked,
-          endDate,
           deliveryType,
-          { excludeBookingId: bookingId, alsoConsider: bookingItems },
+          { excludeBookingId: bookingId, alsoConsider: bookingItems, returnDate },
         );
         if (!available) {
           return res.status(409).json({
@@ -682,7 +693,7 @@ export default async function handler(
             conflicts: blocking.map((row: any) => ({
               orderNumber: row.orderNumber,
               dateBooked: row.dateBooked,
-              endDate: row.endDate ?? row.dateBooked,
+              returnDate: row.returnDate,
               blockedFrom: row.blockedFrom,
               blockedUntil: row.blockedUntil,
             })),
@@ -696,9 +707,9 @@ export default async function handler(
           Number.isFinite(Number(item.price))
             ? Number(item.price)
             : parseInt(dress.price);
-        const { blockedFrom, blockedUntil } = calculateBookingWindow(
+        const { blockedFrom, blockedUntil } = calculateWindowForRange(
           item.dateBooked,
-          endDate,
+          returnDate,
           deliveryType,
         );
         const existingItem = item.itemId
@@ -709,7 +720,7 @@ export default async function handler(
           _id: existingItem?._id,
           dressId: item.dressId,
           dateBooked: item.dateBooked,
-          endDate,
+          returnDate,
           blockedFrom,
           blockedUntil,
           deliveryType,

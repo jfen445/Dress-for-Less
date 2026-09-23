@@ -14,10 +14,12 @@ export type BookingBuckets = {
 // same instant and a strict comparison drops the booking.
 const primaryDate = (booking: Booking) => booking.items[0]?.dateBooked;
 const startOf = (booking: Booking) => auckland.toZone(primaryDate(booking));
-// Falls back to the start date: endDate only exists on bookings written since
-// the field was added, and equals dateBooked unless an admin extended it.
+// The return date, which always falls after the event date — so a booking is
+// "out" until the day it comes back. The fallback is defensive only: the schema
+// requires the field, and a row missing it must still land in a bucket rather
+// than disappear from the admin table.
 const endOf = (booking: Booking) =>
-  auckland.toZone(booking.items[0]?.endDate ?? primaryDate(booking));
+  auckland.toZone(booking.items[0]?.returnDate ?? primaryDate(booking));
 
 // Sorts bookings into the three lists the admin table renders. Every booking
 // must land in exactly one — anything falling through all three vanishes from

@@ -273,7 +273,7 @@ async function getBookingAvailabilityByDress(
           dressId: item.dressId,
           size: item.size,
           dateBooked: item.dateBooked,
-          endDate: item.endDate,
+          returnDate: item.returnDate,
           blockedFrom: item.blockedFrom,
           blockedUntil: item.blockedUntil,
         })),
@@ -365,10 +365,9 @@ async function getBookingsByDateRange(startDate: string, endDate: string) {
         b.paymentSuccess === true &&
         b.items.some(
           (item) =>
-            (item.dateBooked >= startDate && item.dateBooked <= endDate) ||
-            (item.endDate != null &&
-              item.endDate >= startDate &&
-              item.endDate <= endDate),
+            item.returnDate != null &&
+            item.returnDate >= startDate &&
+            item.returnDate <= endDate,
         ),
     )
     .map((b) => ({ ...b, user: db.users.filter((u) => u._id === b.userId) }));
