@@ -45,6 +45,27 @@ const AdminCoupons = () => {
     null,
   );
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [selectedStatuses, setSelectedStatuses] = React.useState<CouponStatus[]>(
+    [CouponStatus.Scheduled, CouponStatus.Active],
+  );
+
+  const toggleStatus = (status: CouponStatus) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status],
+    );
+  };
+
+  // No selection means no filter, matching the bookings tab: clearing every
+  // chip shows everything rather than an empty table.
+  const filteredCoupons = React.useMemo(
+    () =>
+      selectedStatuses.length
+        ? coupons.filter((c) => selectedStatuses.includes(getCouponStatus(c)))
+        : coupons,
+    [coupons, selectedStatuses],
+  );
 
   const fetchCoupons = () => {
     setIsLoading(true);
@@ -404,111 +425,142 @@ const AdminCoupons = () => {
           </div>
         </form>
 
+        <div className="mb-4 flex flex-wrap gap-2">
+          {Object.values(CouponStatus).map((status) => {
+            const isActive = selectedStatuses.includes(status);
+            return (
+              <Button
+                key={status}
+                variant="ghost"
+                onClick={() => toggleStatus(status)}
+                className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                  isActive
+                    ? `${statusClass(status)} ring-transparent`
+                    : "bg-white text-gray-500 ring-gray-300"
+                }`}
+              >
+                {status}
+              </Button>
+            );
+          })}
+          {selectedStatuses.length > 0 && (
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedStatuses([])}
+              className="text-xs text-gray-400 hover:text-gray-600 underline self-center"
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center">
             <Spinner />
           </div>
-        ) : coupons.length === 0 ? (
-          <p className="text-sm text-gray-500">No coupons issued.</p>
+        ) : filteredCoupons.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            {coupons.length === 0
+              ? "No coupons issued."
+              : "No coupons match the selected filters."}
+          </p>
         ) : (
           <div className="flow-root">
-            <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-              <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead>
-                    <tr>
-                      <th
-                        scope="col"
-                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
-                      >
-                        Customer
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Discount
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Applies to
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Reason
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Starts
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Expires
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Status
-                      </th>
-                      <th scope="col" className="px-3 py-3.5" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {coupons.map((c) => {
-                      const status = getCouponStatus(c);
-                      return (
-                        <tr key={c._id}>
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                            {getCustomerLabel(c)}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {c.discountType === CouponType.Percentage
-                              ? `${c.discountAmount}%`
-                              : `$${c.discountAmount.toFixed(2)}`}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {getAppliesToLabel(c)}
-                          </td>
-                          <td className="px-3 py-4 text-sm text-gray-500 max-w-[16rem] truncate">
-                            {c.reason || "-"}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {dayjs(c.startDate).format("MMM D, YYYY h:mma")}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {dayjs(c.expiryDate).format("MMM D, YYYY h:mma")}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm">
-                            <span
-                              className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusClass(status)}`}
-                            >
-                              {status}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
-                            <Button
-                              variant="ghost"
-                              onClick={() => setCouponToDelete(c)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium"
-                            >
-                              Remove
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div className="w-full py-2 align-middle">
+              <table className="w-full divide-y divide-gray-300">
+                <thead>
+                  <tr>
+                    <th
+                      scope="col"
+                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+                    >
+                      Customer
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Discount
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Applies to
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Reason
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Starts
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Expires
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Status
+                    </th>
+                    <th scope="col" className="px-3 py-3.5" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {filteredCoupons.map((c) => {
+                    const status = getCouponStatus(c);
+                    return (
+                      <tr key={c._id}>
+                        <td className="break-words py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                          {getCustomerLabel(c)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {c.discountType === CouponType.Percentage
+                            ? `${c.discountAmount}%`
+                            : `$${c.discountAmount.toFixed(2)}`}
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-500">
+                          {getAppliesToLabel(c)}
+                        </td>
+                        <td className="break-words px-3 py-4 text-sm text-gray-500">
+                          {c.reason || "-"}
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-500">
+                          {dayjs(c.startDate).format("MMM D, YYYY h:mma")}
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-500">
+                          {dayjs(c.expiryDate).format("MMM D, YYYY h:mma")}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                          <span
+                            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusClass(status)}`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
+                          <Button
+                            variant="ghost"
+                            onClick={() => setCouponToDelete(c)}
+                            className="text-red-500 hover:text-red-700 text-xs font-medium"
+                          >
+                            Remove
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
