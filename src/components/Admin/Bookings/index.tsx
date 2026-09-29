@@ -23,10 +23,12 @@ import DownloadBookingsModal from "../DownloadBookingsModal";
 import CreateLabelModal from "../CreateLabelModal";
 import BookingHistoryModal from "../BookingHistoryModal";
 import { auckland } from "../../../../lib/utils/timezone";
+import { formatBookingDate } from "../../../../lib/utils/formatBookingDate";
 import {
-  getOrdinalSuffix,
-  formatBookingDate,
-} from "../../../../lib/utils/formatBookingDate";
+  DELIVERY_TAB_DAY_GROUPS,
+  PICKUP_TAB_DAY_GROUPS,
+  partitionThisWeek,
+} from "../../../../lib/utils/bookingDayGroups";
 import {
   MagnifyingGlassIcon,
   PencilSquareIcon,
@@ -44,43 +46,6 @@ import AdminBookingsCalendar from "@/components/Admin/BookingsCalendar";
 type AdminBookingsProps = {
   deliveryType: DeliveryType[];
 };
-
-const formatBookingDateRange = (
-  start: dayjs.ConfigType,
-  end: dayjs.ConfigType,
-): string => {
-  const s = dayjs(start);
-  const e = dayjs(end);
-  const startLabel = `${s.format("dddd")} ${s.date()}${getOrdinalSuffix(s.date())}`;
-  const endLabel = `${e.format("dddd")} ${e.date()}${getOrdinalSuffix(e.date())} ${e.format("MMMM")}`;
-  return s.month() !== e.month()
-    ? `${startLabel} ${s.format("MMMM")} – ${endLabel}`
-    : `${startLabel} – ${endLabel}`;
-};
-
-// Monday-first weekday index: 0=Monday...6=Sunday.
-const getMondayFirstDayIndex = (date: dayjs.ConfigType): number =>
-  (auckland.toZone(date).day() + 6) % 7;
-
-type DayGroupDef = { id: string; minIndex: number; maxIndex: number };
-
-const DELIVERY_TAB_DAY_GROUPS: DayGroupDef[] = [
-  { id: "mon", minIndex: 0, maxIndex: 0 },
-  { id: "tue", minIndex: 1, maxIndex: 1 },
-  { id: "wed", minIndex: 2, maxIndex: 2 },
-  { id: "thu", minIndex: 3, maxIndex: 3 },
-  { id: "fri-sun", minIndex: 4, maxIndex: 6 },
-];
-
-const PICKUP_TAB_DAY_GROUPS: DayGroupDef[] = [
-  { id: "mon", minIndex: 0, maxIndex: 0 },
-  { id: "tue", minIndex: 1, maxIndex: 1 },
-  { id: "wed", minIndex: 2, maxIndex: 2 },
-  { id: "thu", minIndex: 3, maxIndex: 3 },
-  { id: "fri", minIndex: 4, maxIndex: 4 },
-  { id: "sat", minIndex: 5, maxIndex: 5 },
-  { id: "sun", minIndex: 6, maxIndex: 6 },
-];
 
 const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
   const {
@@ -378,45 +343,10 @@ const AdminBookings = ({ deliveryType }: AdminBookingsProps) => {
     ? DELIVERY_TAB_DAY_GROUPS
     : PICKUP_TAB_DAY_GROUPS;
 
-  const thisWeekPartition = React.useMemo(() => {
-    const now = auckland.now();
-    const todayIndex = getMondayFirstDayIndex(now);
-    const thisWeekMonday = now.subtract(todayIndex, "day").startOf("day");
-
-    const buckets = dayGroupDefs.map((def) => ({
-      ...def,
-      bookings: [] as Booking[],
-    }));
-    const demoted: Booking[] = [];
-
-    filteredThisWeekBookings.forEach((booking) => {
-      const idx = getMondayFirstDayIndex(booking.items[0]?.dateBooked);
-      if (idx < todayIndex) {
-        demoted.push(booking);
-        return;
-      }
-      buckets
-        .find((b) => idx >= b.minIndex && idx <= b.maxIndex)
-        ?.bookings.push(booking);
-    });
-
-    const dayGroups = buckets
-      .filter((b) => b.bookings.length > 0)
-      .map((b) => ({
-        id: b.id,
-        bookings: b.bookings,
-        label: `${
-          b.minIndex === b.maxIndex
-            ? formatBookingDate(thisWeekMonday.add(b.minIndex, "day"))
-            : formatBookingDateRange(
-                thisWeekMonday.add(b.minIndex, "day"),
-                thisWeekMonday.add(b.maxIndex, "day"),
-              )
-        } (${b.bookings.length})`,
-      }));
-
-    return { dayGroups, demotedToPrevious: demoted };
-  }, [filteredThisWeekBookings, dayGroupDefs]);
+  const thisWeekPartition = React.useMemo(
+    () => partitionThisWeek(filteredThisWeekBookings, dayGroupDefs),
+    [filteredThisWeekBookings, dayGroupDefs],
+  );
 
   const { dayGroups, demotedToPrevious } = thisWeekPartition;
 
