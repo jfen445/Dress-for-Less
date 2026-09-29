@@ -42,7 +42,7 @@ const PoliciesContent = () => {
       <h1 className="text-3xl font-bold mb-2">
         Dress for Less Terms & Conditions
       </h1>
-      <p className="text-sm text-gray-500 mb-6">Last updated: 22/07/2026</p>
+      <p className="text-sm text-gray-500 mb-6">Last updated: 24/09/2026</p>
 
       <div className="space-y-3 text-sm leading-relaxed text-gray-700 mb-8">
         <p>
@@ -688,15 +688,10 @@ const PoliciesContent = () => {
           <p>
             Unless your booking confirmation provides a different return time:
           </p>
-          <p>All rentals must be returned by Monday by 8:00pm.</p>
           <p>
-            A &ldquo;weekend rental&rdquo; generally means a rental for an event
-            held on Friday, Saturday or Sunday.
-          </p>
-          <p>
-            Public holidays or special rental periods may have different return
-            instructions. Any different deadline will be stated in your booking
-            confirmation or return instructions.
+            All rentals must be returned the day after your date booked by
+            8:00pm. eg. If your event is on Saturday, the garment must be
+            returned by 8:00pm on Sunday.
           </p>
         </SubSection>
 
