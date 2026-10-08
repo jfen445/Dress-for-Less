@@ -80,6 +80,20 @@ export async function createAdminTryOnBooking(data: {
   return api.post(`/api/admin/tryOnBookings`, data);
 }
 
+export async function updateAdminTryOnBooking(
+  bookingId: string,
+  data: {
+    userId?: string;
+    newUser?: { email: string; firstName: string; lastName: string };
+    phone?: string;
+    date: string;
+    timeSlot: string;
+    notes?: string;
+  },
+) {
+  return api.patch(`/api/admin/tryOnBookings?bookingId=${bookingId}`, data);
+}
+
 export async function updateTryOnBookingStatus(
   bookingId: string,
   status: string,

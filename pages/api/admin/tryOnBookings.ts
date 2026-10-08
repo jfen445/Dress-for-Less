@@ -6,8 +6,11 @@ import { createUser, findUser, findUserById } from "../../../lib/db/user-dao";
 import { AccountType } from "../../../common/enums/AccountType";
 import {
   getAllTryOnBookings,
+  getTryOnBookingById,
+  updateTryOnBooking,
   updateTryOnBookingStatus,
   checkTryOnSlotTaken,
+  findTryOnSlotConflicts,
   grantTryOnCoupon,
   deleteTryOnBooking,
 } from "../../../lib/db/tryon-booking-dao";
@@ -43,9 +46,110 @@ export default async function handler(
 
   if (req.method === "PATCH") {
     const bookingId = req.query.bookingId as string;
-    const { status } = req.body;
+    if (!bookingId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-    if (!bookingId || !status) {
+    const { date, timeSlot } = req.body;
+
+    // A body carrying a date and a slot is a full edit (EditTryOnBookingModal);
+    // one carrying only a status is the older status-only PATCH.
+    if (date && timeSlot) {
+      const existing = await getTryOnBookingById(bookingId);
+      if (!existing) {
+        return res.status(404).json({ message: "Try-on booking not found" });
+      }
+
+      const { userId: bodyUserId, newUser, phone, status } = req.body;
+      const notes = normaliseTryOnNotes(req.body.notes);
+
+      if (!bodyUserId && !newUser) {
+        return res
+          .status(400)
+          .json({ message: "A customer or new customer details are required" });
+      }
+
+      // Only when the slot actually moves: availability rows for days that have
+      // been and gone get cleared from /admin, and that must not make an
+      // existing appointment unsaveable because its notes needed a typo fixed.
+      if (date !== existing.date || timeSlot !== existing.timeSlot) {
+        const availability = await getAvailabilityForDate(date);
+        if (!availability || !availability.timeSlots.includes(timeSlot)) {
+          return res.status(400).json({
+            message: "This time slot is not available on the selected date",
+          });
+        }
+      }
+
+      try {
+        // Checked before any customer is created, so a slot that has gone can't
+        // leave an orphaned user row behind.
+        const conflicts = await findTryOnSlotConflicts(
+          date,
+          timeSlot,
+          bookingId,
+        );
+        if (conflicts.length > 0) {
+          return res
+            .status(409)
+            .json({ message: "This time slot has already been booked" });
+        }
+
+        let userId = bodyUserId;
+        let name: string;
+        let email: string;
+
+        if (userId) {
+          const existingUser = await findUserById(userId);
+          if (!existingUser) {
+            return res.status(404).json({ message: "Customer not found" });
+          }
+          name = existingUser.name;
+          email = existingUser.email;
+        } else {
+          const result = await createUser({
+            email: newUser.email,
+            name: `${newUser.firstName} ${newUser.lastName}`,
+            mobileNumber: "",
+            instagramHandle: "",
+            role: "user",
+          });
+          userId =
+            "insertedId" in result
+              ? result.insertedId.toString()
+              : result._id.toString();
+          name = `${newUser.firstName} ${newUser.lastName}`;
+          email = newUser.email;
+        }
+
+        const booking = await updateTryOnBooking(bookingId, {
+          userId,
+          name,
+          email,
+          phone: phone ?? "",
+          date,
+          timeSlot,
+          notes,
+          ...(status ? { status } : {}),
+        });
+
+        return res
+          .status(200)
+          .json({ message: "Try-on booking updated", booking });
+      } catch (err: any) {
+        // The unique index on { date, timeSlot } firing: another row took the
+        // slot between the check above and this write.
+        if (err?.code === 11000) {
+          return res
+            .status(409)
+            .json({ message: "This time slot has already been booked" });
+        }
+        return res.status(500).json({ message: "Booking error", error: err });
+      }
+    }
+
+    const { status } = req.body;
+    if (!status) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 

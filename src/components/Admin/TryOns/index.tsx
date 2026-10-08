@@ -4,6 +4,7 @@ import Button from "@/components/Button";
 import Spinner from "@/components/Spinner";
 import Toast, { ToastType, ToastVariant } from "@/components/Toast";
 import CreateTryOnBookingModal from "@/components/Admin/CreateTryOnBookingModal";
+import EditTryOnBookingModal from "@/components/Admin/EditTryOnBookingModal";
 import DeleteTryOnBookingModal from "@/components/Admin/DeleteTryOnBookingModal";
 import EmailTryOnRemindersModal from "@/components/Admin/EmailTryOnRemindersModal";
 import AdminTryOnAvailability from "@/components/Admin/TryOnAvailability";
@@ -12,6 +13,7 @@ import { auckland } from "../../../../lib/utils/timezone";
 
 type TryOnBookingRow = {
   _id: string;
+  userId?: string;
   name: string;
   email: string;
   phone?: string;
@@ -33,6 +35,9 @@ const AdminTryOns = () => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   const [emailModalOpen, setEmailModalOpen] = React.useState(false);
+  const [editTarget, setEditTarget] = React.useState<TryOnBookingRow | null>(
+    null,
+  );
   const [deleteTarget, setDeleteTarget] =
     React.useState<TryOnBookingRow | null>(null);
   const [toast, setToast] = React.useState<ToastType>({
@@ -80,13 +85,22 @@ const AdminTryOns = () => {
       const inWeek = (b: TryOnBookingRow, until: typeof currentSunday) =>
         !dayOf(b).isBefore(monday) && !dayOf(b).isAfter(until);
 
-      const sorted = [...bookings].sort((a, b) => dayOf(a).diff(dayOf(b)));
+      // Within a day, alphabetical by customer — the admin reads these day by
+      // day, and the time slot is on the row anyway.
+      const byName = (a: TryOnBookingRow, b: TryOnBookingRow) =>
+        (a.name ?? "").localeCompare(b.name ?? "", undefined, {
+          sensitivity: "base",
+        });
+
+      const sorted = [...bookings].sort(
+        (a, b) => dayOf(a).diff(dayOf(b)) || byName(a, b),
+      );
 
       const thisWeek = sorted.filter((b) => inWeek(b, currentSunday));
       const upcoming = sorted.filter((b) => dayOf(b).isAfter(currentSunday));
       const past = sorted
         .filter((b) => dayOf(b).isBefore(monday))
-        .sort((a, b) => dayOf(b).diff(dayOf(a)));
+        .sort((a, b) => dayOf(b).diff(dayOf(a)) || byName(a, b));
 
       const reminders = sorted.filter((b) => inWeek(b, nextSunday));
 
@@ -128,7 +142,14 @@ const AdminTryOns = () => {
             <td className="px-3 py-4 text-sm text-gray-500">
               ${booking.price.toFixed(2)}
             </td>
-            <td className="px-3 py-4 text-right text-sm">
+            <td className="whitespace-nowrap px-3 py-4 text-right text-sm">
+              <button
+                type="button"
+                onClick={() => setEditTarget(booking)}
+                className="mr-4 text-indigo-600 hover:text-indigo-900"
+              >
+                Edit
+              </button>
               <button
                 type="button"
                 onClick={() => setDeleteTarget(booking)}
@@ -157,6 +178,24 @@ const AdminTryOns = () => {
             show: true,
           });
         }}
+      />
+      <EditTryOnBookingModal
+        isOpen={!!editTarget}
+        setOpen={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+        booking={editTarget}
+        onEdited={() => {
+          fetchBookings();
+          setToast({
+            message: "Try-on booking updated",
+            variant: ToastVariant.SUCCESS,
+            show: true,
+          });
+        }}
+        onError={(message) =>
+          setToast({ message, variant: ToastVariant.WARNING, show: true })
+        }
       />
       <DeleteTryOnBookingModal
         isOpen={!!deleteTarget}
@@ -248,7 +287,7 @@ const AdminTryOns = () => {
                         Fee
                       </th>
                       <th scope="col" className="px-3 py-3.5">
-                        <span className="sr-only">Delete</span>
+                        <span className="sr-only">Actions</span>
                       </th>
                     </tr>
                   </thead>
