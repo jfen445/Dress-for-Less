@@ -102,6 +102,27 @@ export async function getTryOnBookingByPaymentIntent(paymentIntent: String) {
   );
 }
 
+// Rows already holding a slot, ignoring one booking — the admin edit's own row,
+// which otherwise reports itself as the conflict when only the notes changed.
+// Keyed on _id, not paymentIntent: every admin-created row carries
+// "ADMIN_MANUAL", so excluding by intent would hide every other admin booking
+// from the check too.
+export async function findTryOnSlotConflicts(
+  date: String,
+  timeSlot: String,
+  excludeBookingId: string,
+) {
+  return TryOnBookingSchema.find({
+    date,
+    timeSlot,
+    _id: { $ne: excludeBookingId },
+  });
+}
+
+export async function getTryOnBookingById(bookingId: String) {
+  return TryOnBookingSchema.findById(bookingId);
+}
+
 export async function getTryOnBookingsByUser(userId: String) {
   return TryOnBookingSchema.find(
     { userId },
@@ -128,6 +149,17 @@ export async function updateTryOnBookingStatus(
   status: String,
 ) {
   return TryOnBookingSchema.updateOne({ _id: bookingId }, { $set: { status } });
+}
+
+export async function updateTryOnBooking(
+  bookingId: String,
+  updates: Record<string, unknown>,
+) {
+  return TryOnBookingSchema.findByIdAndUpdate(
+    bookingId,
+    { $set: updates },
+    { new: true },
+  );
 }
 
 export async function deleteTryOnBooking(bookingId: String) {
