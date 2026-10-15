@@ -85,22 +85,31 @@ const AdminTryOns = () => {
       const inWeek = (b: TryOnBookingRow, until: typeof currentSunday) =>
         !dayOf(b).isBefore(monday) && !dayOf(b).isAfter(until);
 
-      // Within a day, alphabetical by customer — the admin reads these day by
-      // day, and the time slot is on the row anyway.
+      // Within a day, appointment order — a day's rows read as the running
+      // sheet for that evening. Zero-padded "HH:MM", so a plain string compare
+      // is already chronological.
+      const byTime = (a: TryOnBookingRow, b: TryOnBookingRow) =>
+        (a.timeSlot ?? "").localeCompare(b.timeSlot ?? "");
+
+      // Only reachable for two rows sharing a slot, which the unique index on
+      // { date, timeSlot } forbids — kept so legacy rows predating it don't
+      // shuffle between renders.
       const byName = (a: TryOnBookingRow, b: TryOnBookingRow) =>
         (a.name ?? "").localeCompare(b.name ?? "", undefined, {
           sensitivity: "base",
         });
 
       const sorted = [...bookings].sort(
-        (a, b) => dayOf(a).diff(dayOf(b)) || byName(a, b),
+        (a, b) => dayOf(a).diff(dayOf(b)) || byTime(a, b) || byName(a, b),
       );
+
+      // Days newest first, but each day still runs earliest appointment down.
+      const past = [...sorted]
+        .filter((b) => dayOf(b).isBefore(monday))
+        .sort((a, b) => dayOf(b).diff(dayOf(a)) || byTime(a, b) || byName(a, b));
 
       const thisWeek = sorted.filter((b) => inWeek(b, currentSunday));
       const upcoming = sorted.filter((b) => dayOf(b).isAfter(currentSunday));
-      const past = sorted
-        .filter((b) => dayOf(b).isBefore(monday))
-        .sort((a, b) => dayOf(b).diff(dayOf(a)) || byName(a, b));
 
       const reminders = sorted.filter((b) => inWeek(b, nextSunday));
 
