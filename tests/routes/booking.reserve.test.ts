@@ -12,7 +12,13 @@ import {
   type FakeBooking,
 } from "../fakes/db";
 import { paymentIntents, resetStripe } from "../fakes/stripe";
-import { claimCoupon, releaseCouponClaims, resetDaoSpies, resolveRuralDeliveryStatus } from "../fakes/daos";
+import {
+  claimCoupon,
+  getBookingCutoffs,
+  releaseCouponClaims,
+  resetDaoSpies,
+  resolveRuralDeliveryStatus,
+} from "../fakes/daos";
 
 // Everything that leaves the process is faked; everything that decides is real.
 // couponRules, deliveryRules, bookingWindow, reservation and
@@ -236,6 +242,49 @@ describe("the notice-from-today gate", () => {
     });
 
     expect(body.body).toEqual([dressId]);
+    expect(db.bookings).toHaveLength(0);
+  });
+
+  it("reads admin overrides uncached, so a just-published one applies", async () => {
+    await reserve();
+
+    expect(getBookingCutoffs).toHaveBeenCalledWith({ fresh: true });
+  });
+
+  it("refuses a date an admin override has closed early", async () => {
+    getBookingCutoffs.mockResolvedValue([
+      { startDate: EVENT_DATE, deliveryCutoff: { date: "2026-05-30", time: "20:00" } },
+    ]);
+
+    const { status, body } = await reserve();
+
+    expect(status).toBe(409);
+    expect(body.message).toMatch(/too late to book/i);
+    expect(db.bookings).toHaveLength(0);
+  });
+
+  it("reserves a date an admin override has kept open past the computed cutoff", async () => {
+    getBookingCutoffs.mockResolvedValue([
+      { startDate: "2026-06-02", deliveryCutoff: { date: "2026-06-01", time: "12:00" } },
+    ]);
+
+    const { status } = await reserve({ items: [tooLate()] });
+
+    expect(status).toBe(200);
+    expect(db.bookings).toHaveLength(1);
+  });
+
+  it("fails closed when the overrides can't be read, before any side effect", async () => {
+    // Falling back to the computed rule would be wrong both ways: an override
+    // can open a date as well as close it.
+    getBookingCutoffs.mockRejectedValue(new Error("sanity down"));
+    const coupon = seedCoupon({ userId, discountAmount: 20 });
+
+    const { status, body } = await reserve({ couponIds: [coupon._id] });
+
+    expect(status).toBe(503);
+    expect(body.message).toMatch(/not been charged/i);
+    expect(claimCoupon).not.toHaveBeenCalled();
     expect(db.bookings).toHaveLength(0);
   });
 });

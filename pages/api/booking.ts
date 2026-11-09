@@ -32,7 +32,7 @@ import {
   releaseCouponClaims,
 } from "../../lib/db/coupon-dao";
 import { AccountType } from "../../common/enums/AccountType";
-import { getDressPricing } from "../../sanity/sanity.query";
+import { getBookingCutoffs, getDressPricing } from "../../sanity/sanity.query";
 import { checkBlockOut } from "../../lib/db/blockout-dao";
 import {
   MAX_RENTAL_DAYS,
@@ -52,6 +52,7 @@ import {
   calculateShippingFee,
   hasDeliveryItem,
   isBookingAllowedForDate,
+  type CutoffOverride,
 } from "../../lib/utils/deliveryRules";
 import { resolveRuralDeliveryStatus } from "../../lib/nzpost/client";
 
@@ -137,12 +138,27 @@ export default async function handler(
     // longer dispatch in time. Evaluated against a single instant so a
     // multi-item order can't straddle the cutoff, and placed ahead of the price
     // lookup and every side effect — a failure here unwinds nothing.
+    // Admin overrides are read uncached, and their absence fails closed: an
+    // override can loosen a cutoff as well as tighten it, so falling back to
+    // the computed rule would be wrong in both directions.
+    let cutoffOverrides: CutoffOverride[];
+    try {
+      cutoffOverrides = await getBookingCutoffs({ fresh: true });
+    } catch (err) {
+      console.error("Failed to load booking cutoffs:", err);
+      return res.status(503).json({
+        message:
+          "We couldn't confirm booking cut-offs just now. Please try again. You have not been charged.",
+      });
+    }
+
     const pastCutoff = items
       .filter(
         (item) =>
           !isBookingAllowedForDate(
             item.dateBooked,
             item.deliveryType,
+            cutoffOverrides,
             auckland.toZone(now),
           ),
       )

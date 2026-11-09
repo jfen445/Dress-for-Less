@@ -97,6 +97,8 @@ function defaults(api: Api) {
       data.dressPage(url),
     )
     .set("GET /api/sanity/search", data.dressList().slice(0, 8))
+    // Admin cut-off overrides. None by default, so the computed rule applies.
+    .set("GET /api/sanity/cutoffs", [])
     .setPrefix("GET /api/sanity/dress/", ({ url }: StubContext) =>
       data.dress({ _id: decodeURIComponent(url.pathname.split("/").pop()!) }),
     )

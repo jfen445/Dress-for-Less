@@ -22,9 +22,11 @@ import {
   hasDeliveryItem,
   isBookingAllowedForDate,
   isPickupAllowedForDate,
+  type CutoffOverride,
 } from "../../../../lib/utils/deliveryRules";
 import { auckland } from "../../../../lib/utils/timezone";
 import useNow from "@/hooks/useNow";
+import useBookingCutoffs from "@/hooks/useBookingCutoffs";
 import { Dayjs } from "dayjs";
 import { formatCouponExpiry } from "../../../../lib/utils/couponRules";
 
@@ -76,17 +78,25 @@ const CheckoutForm = () => {
   // Two problems with two different remedies: a Delivery item can often still be
   // collected in person, whereas an item with no method left has to go. Split
   // them so we never send someone to a pickup that has already closed too.
-  const describeLateItems = (at: Dayjs): string | undefined => {
+  const describeLateItems = (
+    at: Dayjs,
+    overrides: CutoffOverride[],
+  ): string | undefined => {
     const lateItems = products.filter(
       (product) =>
-        !isBookingAllowedForDate(product.dateBooked, product.deliveryType, at),
+        !isBookingAllowedForDate(
+          product.dateBooked,
+          product.deliveryType,
+          overrides,
+          at,
+        ),
     );
     if (lateItems.length === 0) return undefined;
 
     const switchableToPickup = lateItems.filter(
       (product) =>
         product.deliveryType === DeliveryType.Delivery &&
-        isPickupAllowedForDate(product.dateBooked, at),
+        isPickupAllowedForDate(product.dateBooked, overrides, at),
     );
     const unbookable = lateItems.filter(
       (product) => !switchableToPickup.includes(product),
@@ -123,7 +133,12 @@ const CheckoutForm = () => {
   // condition that blocks submission are the same value, never two that can
   // disagree. Freshness beyond a minute is the server reserve's job.
   const now = useNow();
-  const lateItemsError = describeLateItems(now);
+  // Null until the admin overrides load; submission waits rather than judging
+  // against none, which could pass a date an override has closed.
+  const cutoffOverrides = useBookingCutoffs();
+  const lateItemsError = cutoffOverrides
+    ? describeLateItems(now, cutoffOverrides)
+    : undefined;
 
   const getSecret = async () => {
     await getClientSecret(totalPrice.toString())
@@ -166,7 +181,7 @@ const CheckoutForm = () => {
 
     // The banner is already on screen if this is set; blocking on the same value
     // means the button can never refuse silently.
-    if (lateItemsError) {
+    if (lateItemsError || !cutoffOverrides) {
       isError = true;
     }
 
@@ -511,6 +526,7 @@ const CheckoutForm = () => {
             <div className="mt-10 border-t border-gray-200 pt-6 sm:flex sm:items-center sm:justify-between">
               <Button
                 type="submit"
+                disabled={!cutoffOverrides}
                 className="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 sm:order-last sm:ml-6 sm:w-auto"
               >
                 Continue to payment

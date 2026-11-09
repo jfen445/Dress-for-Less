@@ -6,6 +6,8 @@ import {
   sliceBoundsFor,
   type DressQuery,
 } from "../lib/dresses/dressQuery";
+import type { CutoffOverride } from "../lib/utils/deliveryRules";
+import { auckland } from "../lib/utils/timezone";
 
 // Every dress query starts from the same predicate: a dress without images or a
 // price cannot be rendered or sold, so it is not part of the catalogue.
@@ -172,5 +174,23 @@ export async function searchDresses(term: string, limit: number = 8) {
     groq`*[${DRESS_BASE} && (name match $pattern || brand match $pattern || description match $pattern)]
       | order(_createdAt desc, _id asc)[0...${end}]${LISTING_PROJECTION}`,
     { pattern },
+  );
+}
+
+// Admin cut-off overrides still in play (last event date today or later).
+// `fresh` bypasses the CDN: the reserve is the authoritative gate and must see
+// an edit the moment it's published; the browser path tolerates the CDN's lag.
+export async function getBookingCutoffs({ fresh = false } = {}): Promise<
+  CutoffOverride[]
+> {
+  return (fresh ? client.withConfig({ useCdn: false }) : client).fetch(
+    groq`*[_type == "bookingCutoff" && coalesce(endDate, startDate) >= $today]{
+      _id,
+      startDate,
+      endDate,
+      deliveryCutoff,
+      pickupCutoff
+    }`,
+    { today: auckland.now().format("YYYY-MM-DD") },
   );
 }

@@ -27,6 +27,38 @@ test("greys out a date whose dispatch cutoff has passed", async ({ page }) => {
   await expect(await calendarDay(page, data.pastCutoffDate())).toBeDisabled();
 });
 
+test("greys out a date an admin cut-off override has closed", async ({
+  page,
+  api,
+}) => {
+  // Normally a month clear of its cutoff; the override closed it yesterday.
+  const date = data.bookableDate();
+  api.set("GET /api/sanity/cutoffs", [
+    {
+      startDate: date,
+      deliveryCutoff: { date: data.dayOffset(-1), time: "20:00" },
+    },
+  ]);
+
+  await openProduct(page);
+
+  await expect(await calendarDay(page, date)).toBeDisabled();
+});
+
+test("offers a past-cutoff date an admin override has kept open", async ({
+  page,
+  api,
+}) => {
+  const date = data.pastCutoffDate();
+  api.set("GET /api/sanity/cutoffs", [
+    { startDate: date, deliveryCutoff: { date, time: "23:30" } },
+  ]);
+
+  await openProduct(page);
+
+  await expect(await calendarDay(page, date)).toBeEnabled();
+});
+
 test("greys out a date already taken by an existing booking", async ({
   page,
   api,

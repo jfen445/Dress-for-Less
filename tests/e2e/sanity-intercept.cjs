@@ -50,6 +50,10 @@ function resultFor(url) {
 
   if (query.includes('_type == "faq"')) return [];
 
+  // Admin cut-off overrides: none, so the computed rule applies. Browsers get
+  // theirs from the /api/sanity/cutoffs stub, not from here.
+  if (query.includes('_type == "bookingCutoff"')) return [];
+
   if (query.includes("_id == $id")) {
     const requested = (url.searchParams.get("$id") || "").replace(/^"|"$/g, "");
     // Echo the id that was asked for, so any dress id resolves rather than 404s.
