@@ -68,7 +68,7 @@ unexpectedly survives, suspect the test before trusting the code:
 
 The app has two separate data stores:
 
-- **Sanity CMS** — dress catalogue and FAQ content. Queries live in `sanity/sanity.query.ts` (GROQ). The Sanity Studio is embedded at `/studio`. Images are resolved via `@sanity/image-url`.
+- **Sanity CMS** — dress catalogue and FAQ content, plus admin booking cut-off overrides (`bookingCutoff`). Queries live in `sanity/sanity.query.ts` (GROQ). The Sanity Studio is embedded at `/studio`. Images are resolved via `@sanity/image-url`.
 - **MongoDB** — users, carts, and bookings. Two clients are initialised in `lib/db/db.ts`: a raw `MongoClient` (used by NextAuth's adapter) and a `mongoose` connection (`dbConnect()`). Mongoose schemas are in `lib/db/schema.ts`; DAO functions are in `lib/db/booking-dao.ts`, `cart-dao.ts`, and `user-dao.ts`.
 
 ### Auth
@@ -94,6 +94,7 @@ Key routes:
 - `pages/api/sanity/dress/[id].ts` — one dress, full projection
 - `pages/api/sanity/search.ts` — typeahead search
 - `pages/api/sanity/catalogue.ts` — every dress at once. `/admin` only — see below for why the distinction matters
+- `pages/api/sanity/cutoffs.ts` — admin cut-off overrides for the browser's copy of gate 1 (`s-maxage=60`)
 
 ### Context providers
 
@@ -357,8 +358,10 @@ The shipping address field on checkout (`AddressForm`) is an NZ Post-backed auto
 Each `BookingItem` stores a `blockedFrom`/`blockedUntil` window (not the individual dates) marking when a dress is physically unavailable — computed once at creation by `calculateBookingWindow` (`lib/utils/bookingWindow.ts`) from the event date's weekday and `deliveryType`. Delivery/Post dispatch and turnaround offsets vary by weekday (see the lookup table in that file); Pickup is constant (1 day before, ready 3 days after) when stored. Availability for a new candidate date is checked with `isDateBlockedByExistingBooking`, which compares the candidate's own window (computed with an *optimistic* same-day Pickup offset, since "collect day-before or day-of" is a real choice — existing bookings always use the conservative day-before figure) against each existing booking's stored window.
 
 Two independent gates must both pass for a date to be bookable:
-1. **Notice-from-today** — `isBookingAllowedForDate` (`lib/utils/deliveryRules.ts`), which dispatches on the item's own `deliveryType` to `isPickupAllowedForDate`/`isDeliveryAllowedForDate`: cutoff is 8pm the day before that method's dispatch date.
+1. **Notice-from-today** — `isBookingAllowedForDate` (`lib/utils/deliveryRules.ts`), which dispatches on the item's own `deliveryType` to `isPickupAllowedForDate`/`isDeliveryAllowedForDate`: cutoff is 8pm the day before that method's dispatch date, unless an admin override applies (below).
 2. **No conflict** — `isDateBlockedByExistingBooking` against existing bookings of the same dress+size, counted against that size's stock.
+
+**Admin cut-off overrides** (`bookingCutoff` in Sanity, edited in Studio) replace gate 1's cutoff for event dates in a range, per method — and may be earlier *or later* than the computed one. Each method resolves independently: among entries covering the date that set that method, the shortest range wins, then the earliest cutoff (`resolveCutoffOverride`). Times are a date + `HH:mm` read as Auckland wall-clock, deliberately not a Sanity `datetime`, which converts through the editor's browser timezone. The `overrides` argument is required on every gate function so a forgotten call site is a type error. The reserve reads them uncached and **fails closed** (503) if Sanity is unreachable — an override can open a date as well as close it, so the computed rule is no safe fallback. The browser reads them through `useBookingCutoffs`, and every client gate treats "not loaded yet" as not bookable.
 
 Both gates are enforced client-side *and* re-checked by the reserve, because a browser-only gate is not a gate: gate 1 used to live only in the Calendar and (for Delivery items alone) the checkout form, so a Pickup item past its cutoff — or any item on a tab left open past 8pm — reserved and charged normally. `POST /api/booking` now applies gate 1 to every item against one instant, before the price lookup and before anything with a side effect, returning a 409 distinct from the "already booked" one. Admin paths (PATCH, `pages/api/admin/bookings.ts`) deliberately skip it, matching the Calendar's `disableForAdmin`.
 

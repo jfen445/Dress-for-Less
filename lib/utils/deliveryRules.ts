@@ -24,9 +24,52 @@ export function calculateShippingFee(
   return SHIPPING_FEE + (isRuralDelivery ? RURAL_SURCHARGE : 0);
 }
 
-// Cutoff for booking a given date/method is 8pm the day before that
-// method's dispatch date (the conservative `blockedFrom` from bookingWindow).
-function getBookingCutoff(dateStr: string, deliveryType: DeliveryType): Dayjs {
+// An admin-set cut-off for event dates startDate..endDate (inclusive; endDate
+// blank = one day), edited in Sanity as `bookingCutoff`. Each method's cut-off is
+// an Auckland wall-clock date + "HH:mm"; one without a date is not set.
+type WallClock = { date?: string; time?: string } | null;
+export type CutoffOverride = {
+  _id?: string;
+  startDate: string;
+  endDate?: string | null;
+  deliveryCutoff?: WallClock;
+  pickupCutoff?: WallClock;
+};
+
+const spanDays = (o: CutoffOverride) =>
+  auckland.toZone(o.endDate ?? o.startDate).diff(auckland.toZone(o.startDate), "day");
+
+// The override for one event date and method, or null for the computed rule.
+// Each method resolves on its own: among entries covering the date that set
+// *this* method, the shortest range wins (an exception carved out of a longer
+// period), then the earliest cut-off. It can be later than the computed one.
+export function resolveCutoffOverride(
+  dateStr: string,
+  deliveryType: DeliveryType,
+  overrides: CutoffOverride[],
+): Dayjs | null {
+  const field = deliveryType === DeliveryType.Pickup ? "pickupCutoff" : "deliveryCutoff";
+  const candidates = overrides
+    .filter((o) => o.startDate <= dateStr && dateStr <= (o.endDate ?? o.startDate))
+    .filter((o) => o[field]?.date && o[field]?.time)
+    .map((o) => ({
+      span: spanDays(o),
+      at: auckland.toZone(`${o[field]!.date}T${o[field]!.time}`),
+    }))
+    .sort((a, b) => a.span - b.span || a.at.valueOf() - b.at.valueOf());
+  return candidates[0]?.at ?? null;
+}
+
+// Cutoff for booking a given date/method: an admin override where one applies,
+// otherwise 8pm the day before that method's dispatch date (the conservative
+// `blockedFrom` from bookingWindow).
+function getBookingCutoff(
+  dateStr: string,
+  deliveryType: DeliveryType,
+  overrides: CutoffOverride[],
+): Dayjs {
+  const override = resolveCutoffOverride(dateStr, deliveryType, overrides);
+  if (override) return override;
   const { blockedFrom } = calculateWindowForEvent(dateStr, deliveryType);
   return auckland
     .toZone(blockedFrom)
@@ -37,18 +80,22 @@ function getBookingCutoff(dateStr: string, deliveryType: DeliveryType): Dayjs {
     .millisecond(0);
 }
 
+// `overrides` is required, not defaulted: a call site that forgot it would
+// silently ignore every admin cut-off rather than fail to compile.
 export function isDeliveryAllowedForDate(
   dateStr: string,
+  overrides: CutoffOverride[],
   now: Dayjs = auckland.now(),
 ): boolean {
-  return now.isBefore(getBookingCutoff(dateStr, DeliveryType.Delivery));
+  return now.isBefore(getBookingCutoff(dateStr, DeliveryType.Delivery, overrides));
 }
 
 export function isPickupAllowedForDate(
   dateStr: string,
+  overrides: CutoffOverride[],
   now: Dayjs = auckland.now(),
 ): boolean {
-  return now.isBefore(getBookingCutoff(dateStr, DeliveryType.Pickup));
+  return now.isBefore(getBookingCutoff(dateStr, DeliveryType.Pickup, overrides));
 }
 
 // The notice-from-today gate for one item, dispatched on its own method. Every
@@ -60,9 +107,10 @@ export function isPickupAllowedForDate(
 export function isBookingAllowedForDate(
   dateStr: string,
   deliveryType: DeliveryType,
+  overrides: CutoffOverride[],
   now: Dayjs = auckland.now(),
 ): boolean {
   return deliveryType === DeliveryType.Pickup
-    ? isPickupAllowedForDate(dateStr, now)
-    : isDeliveryAllowedForDate(dateStr, now);
+    ? isPickupAllowedForDate(dateStr, overrides, now)
+    : isDeliveryAllowedForDate(dateStr, overrides, now);
 }

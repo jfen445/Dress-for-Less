@@ -17,6 +17,7 @@ import { DeliveryType } from "../../../../common/enums/DeliveryType";
 import { BlockOut, BookingAvailability, Sizes } from "../../../../common/types";
 import { getAllBookingsByDress, getBlockOutsByDress } from "@/api/booking";
 import { useParams } from "next/navigation";
+import useBookingCutoffs from "@/hooks/useBookingCutoffs";
 
 interface ICanlender {
   setSelectedDate: React.Dispatch<React.SetStateAction<string>>;
@@ -46,6 +47,7 @@ const Calendar = ({
   const resolvedId = dressIdProp ?? params?.id ?? "";
   const [bookings, setBookings] = React.useState<BookingAvailability[]>();
   const [blockOuts, setBlockOuts] = React.useState<BlockOut[]>([]);
+  const cutoffOverrides = useBookingCutoffs();
 
   React.useEffect(() => {
     if (!resolvedId) return;
@@ -99,9 +101,13 @@ const Calendar = ({
 
     const method = deliveryType ?? DeliveryType.Delivery;
 
-    // Notice-from-today: has to clear the 8pm-day-before-dispatch cutoff for
-    // whichever method the shopper has selected.
-    if (!isBookingAllowedForDate(dateStr, method)) {
+    // Notice-from-today: has to clear the cutoff (admin override, else 8pm the
+    // day before dispatch) for whichever method the shopper has selected. Every
+    // date stays disabled until the overrides load.
+    if (
+      !cutoffOverrides ||
+      !isBookingAllowedForDate(dateStr, method, cutoffOverrides)
+    ) {
       return true;
     }
 

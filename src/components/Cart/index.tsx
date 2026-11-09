@@ -14,6 +14,7 @@ import { useSession } from "next-auth/react";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import useNow from "@/hooks/useNow";
+import useBookingCutoffs from "@/hooks/useBookingCutoffs";
 import { useCartContext } from "@/context/CartContext";
 
 const Cart = () => {
@@ -26,6 +27,7 @@ const Cart = () => {
   // One clock drives both the button and the per-item flags below, so a cart
   // left open past a cutoff disables itself instead of waiting for a refresh.
   const now = useNow();
+  const cutoffOverrides = useBookingCutoffs();
   const [products, setProducts] = React.useState<CartItemType[]>([]);
   const [selectedProductIds, setSelectedProductIds] = React.useState<string[]>(
     [],
@@ -198,10 +200,18 @@ const Cart = () => {
       selectedProductIds.includes(item.cartItemId),
     );
 
-    const hasLateDate = selectedProducts.some(
-      (item) =>
-        !isBookingAllowedForDate(item.dateBooked, item.deliveryType, now),
-    );
+    // Until the admin overrides load we can't tell, so checkout waits.
+    const hasLateDate =
+      cutoffOverrides === null ||
+      selectedProducts.some(
+        (item) =>
+          !isBookingAllowedForDate(
+            item.dateBooked,
+            item.deliveryType,
+            cutoffOverrides,
+            now,
+          ),
+      );
 
     const isEmpty = selectedProductIds.length == 0;
 
@@ -280,6 +290,7 @@ const Cart = () => {
                     selectedProducts={selectedProductIds}
                     setSelectedProducts={setSelectedProductIds}
                     now={now}
+                    cutoffOverrides={cutoffOverrides}
                   />
 
                   <div className="mt-10 flex justify-center">

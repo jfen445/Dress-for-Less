@@ -27,3 +27,8 @@ export async function getDressById(id: string) {
 export async function searchDresses(term: string) {
   return api.get(`/api/sanity/search?q=${encodeURIComponent(term)}`);
 }
+
+/** Admin booking cut-off overrides — see src/hooks/useBookingCutoffs.ts. */
+export async function getBookingCutoffs() {
+  return api.get(`/api/sanity/cutoffs`);
+}

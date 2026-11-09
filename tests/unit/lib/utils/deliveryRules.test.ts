@@ -7,6 +7,8 @@ import {
   isBookingAllowedForDate,
   isDeliveryAllowedForDate,
   isPickupAllowedForDate,
+  resolveCutoffOverride,
+  type CutoffOverride,
 } from "../../../../lib/utils/deliveryRules";
 import { auckland } from "../../../../lib/utils/timezone";
 import { DeliveryType } from "../../../../common/enums/DeliveryType";
@@ -59,21 +61,21 @@ describe("calculateShippingFee", () => {
 
 describe("the 8pm cutoff", () => {
   it("allows a delivery booking one second before 8pm the day before dispatch", () => {
-    expect(isDeliveryAllowedForDate(EVENT, at("2026-05-31T19:59:59"))).toBe(true);
+    expect(isDeliveryAllowedForDate(EVENT, [], at("2026-05-31T19:59:59"))).toBe(true);
   });
 
   it("refuses at exactly 8pm — the cutoff is exclusive", () => {
-    expect(isDeliveryAllowedForDate(EVENT, at("2026-05-31T20:00:00"))).toBe(false);
+    expect(isDeliveryAllowedForDate(EVENT, [], at("2026-05-31T20:00:00"))).toBe(false);
   });
 
   it("refuses after 8pm", () => {
-    expect(isDeliveryAllowedForDate(EVENT, at("2026-05-31T20:00:01"))).toBe(false);
-    expect(isDeliveryAllowedForDate(EVENT, at("2026-06-01T09:00:00"))).toBe(false);
+    expect(isDeliveryAllowedForDate(EVENT, [], at("2026-05-31T20:00:01"))).toBe(false);
+    expect(isDeliveryAllowedForDate(EVENT, [], at("2026-06-01T09:00:00"))).toBe(false);
   });
 
   it("gives Pickup its own, later cutoff", () => {
-    expect(isPickupAllowedForDate(EVENT, at("2026-06-02T19:59:59"))).toBe(true);
-    expect(isPickupAllowedForDate(EVENT, at("2026-06-02T20:00:00"))).toBe(false);
+    expect(isPickupAllowedForDate(EVENT, [], at("2026-06-02T19:59:59"))).toBe(true);
+    expect(isPickupAllowedForDate(EVENT, [], at("2026-06-02T20:00:00"))).toBe(false);
   });
 
   it("closes Delivery while Pickup is still open for the same date", () => {
@@ -81,8 +83,8 @@ describe("the 8pm cutoff", () => {
     // Pickup item is still bookable and a Delivery item is not.
     const now = at("2026-06-01T09:00:00");
 
-    expect(isDeliveryAllowedForDate(EVENT, now)).toBe(false);
-    expect(isPickupAllowedForDate(EVENT, now)).toBe(true);
+    expect(isDeliveryAllowedForDate(EVENT, [], now)).toBe(false);
+    expect(isPickupAllowedForDate(EVENT, [], now)).toBe(true);
   });
 });
 
@@ -90,18 +92,105 @@ describe("isBookingAllowedForDate", () => {
   it("dispatches on the item's own delivery type", () => {
     const now = at("2026-06-01T09:00:00");
 
-    expect(isBookingAllowedForDate(EVENT, DeliveryType.Pickup, now)).toBe(true);
-    expect(isBookingAllowedForDate(EVENT, DeliveryType.Delivery, now)).toBe(false);
+    expect(isBookingAllowedForDate(EVENT, DeliveryType.Pickup, [], now)).toBe(true);
+    expect(isBookingAllowedForDate(EVENT, DeliveryType.Delivery, [], now)).toBe(false);
   });
 
   it("treats the unused mixed variants as Delivery", () => {
     const now = at("2026-06-01T09:00:00");
 
     expect(
-      isBookingAllowedForDate(EVENT, DeliveryType.PickupDelivery, now),
+      isBookingAllowedForDate(EVENT, DeliveryType.PickupDelivery, [], now),
     ).toBe(false);
     expect(
-      isBookingAllowedForDate(EVENT, DeliveryType.DeliveryPickup, now),
+      isBookingAllowedForDate(EVENT, DeliveryType.DeliveryPickup, [], now),
     ).toBe(false);
+  });
+});
+
+describe("admin cut-off overrides", () => {
+  const wc = (date: string, time: string) => ({ date, time });
+
+  it("leaves the computed rule alone for dates no entry covers", () => {
+    const overrides: CutoffOverride[] = [
+      { startDate: "2026-06-05", deliveryCutoff: wc("2026-05-01", "12:00") },
+    ];
+    expect(resolveCutoffOverride(EVENT, DeliveryType.Delivery, overrides)).toBeNull();
+    expect(isDeliveryAllowedForDate(EVENT, overrides, at("2026-05-31T19:59:59"))).toBe(true);
+  });
+
+  it("can close a date earlier than the computed cutoff", () => {
+    const overrides = [{ startDate: EVENT, deliveryCutoff: wc("2026-05-20", "12:00") }];
+    expect(isDeliveryAllowedForDate(EVENT, overrides, at("2026-05-20T11:59:59"))).toBe(true);
+    expect(isDeliveryAllowedForDate(EVENT, overrides, at("2026-05-20T12:00:00"))).toBe(false);
+  });
+
+  it("can extend past the computed cutoff — the override wins outright", () => {
+    const overrides = [{ startDate: EVENT, deliveryCutoff: wc("2026-06-02", "09:00") }];
+    expect(isDeliveryAllowedForDate(EVENT, overrides, at("2026-06-01T09:00:00"))).toBe(true);
+  });
+
+  it("covers both ends of a range inclusively, and nothing outside it", () => {
+    const overrides = [
+      { startDate: "2026-06-03", endDate: "2026-06-05", deliveryCutoff: wc("2026-05-01", "20:00") },
+    ];
+    for (const d of ["2026-06-03", "2026-06-04", "2026-06-05"]) {
+      expect(resolveCutoffOverride(d, DeliveryType.Delivery, overrides)).not.toBeNull();
+    }
+    expect(resolveCutoffOverride("2026-06-02", DeliveryType.Delivery, overrides)).toBeNull();
+    expect(resolveCutoffOverride("2026-06-06", DeliveryType.Delivery, overrides)).toBeNull();
+  });
+
+  it("applies each method's field only to that method", () => {
+    const overrides = [{ startDate: EVENT, deliveryCutoff: wc("2026-05-20", "12:00") }];
+    // Pickup keeps its computed 8pm 2 June cutoff.
+    expect(isPickupAllowedForDate(EVENT, overrides, at("2026-06-02T19:59:59"))).toBe(true);
+    expect(isBookingAllowedForDate(EVENT, DeliveryType.PickupDelivery, overrides, at("2026-05-25T00:00:00"))).toBe(false);
+  });
+
+  it("ignores a time with no date — the Studio default on a blank field", () => {
+    const overrides = [{ startDate: EVENT, pickupCutoff: { time: "20:00" } }];
+    expect(resolveCutoffOverride(EVENT, DeliveryType.Pickup, overrides)).toBeNull();
+  });
+
+  it("lets the shortest covering range win", () => {
+    const overrides = [
+      { startDate: "2026-06-01", endDate: "2026-06-30", deliveryCutoff: wc("2026-05-01", "20:00") },
+      { startDate: EVENT, deliveryCutoff: wc("2026-06-03", "12:00") },
+    ];
+    expect(resolveCutoffOverride(EVENT, DeliveryType.Delivery, overrides)?.format()).toBe(
+      at("2026-06-03T12:00").format(),
+    );
+  });
+
+  it("falls through to the next entry that sets the method when the most specific leaves it blank", () => {
+    const overrides = [
+      { startDate: "2026-06-01", endDate: "2026-06-30", pickupCutoff: wc("2026-05-01", "20:00") },
+      { startDate: EVENT, deliveryCutoff: wc("2026-06-03", "12:00") },
+    ];
+    expect(resolveCutoffOverride(EVENT, DeliveryType.Pickup, overrides)?.format()).toBe(
+      at("2026-05-01T20:00").format(),
+    );
+  });
+
+  it("breaks a tie between equal ranges with the earliest cutoff", () => {
+    const overrides = [
+      { startDate: EVENT, deliveryCutoff: wc("2026-05-25", "20:00") },
+      { startDate: EVENT, deliveryCutoff: wc("2026-05-20", "20:00") },
+    ];
+    expect(resolveCutoffOverride(EVENT, DeliveryType.Delivery, overrides)?.format()).toBe(
+      at("2026-05-20T20:00").format(),
+    );
+  });
+
+  it("reads the time as Auckland wall-clock across NZST and NZDT", () => {
+    const winter = resolveCutoffOverride(EVENT, DeliveryType.Delivery, [
+      { startDate: EVENT, deliveryCutoff: wc("2026-06-01", "20:00") },
+    ]);
+    const summer = resolveCutoffOverride("2026-12-24", DeliveryType.Delivery, [
+      { startDate: "2026-12-24", deliveryCutoff: wc("2026-12-18", "20:00") },
+    ]);
+    expect(winter?.toISOString()).toBe("2026-06-01T08:00:00.000Z"); // UTC+12
+    expect(summer?.toISOString()).toBe("2026-12-18T07:00:00.000Z"); // UTC+13
   });
 });

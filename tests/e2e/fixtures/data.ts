@@ -29,6 +29,8 @@ export const CUSTOMER_EMAIL = "customer@example.com";
 //                   the day before that. Never bookable, whatever weekday it is.
 export const bookableDate = () => auckland.now().add(30, "day").format("YYYY-MM-DD");
 export const pastCutoffDate = () => auckland.now().add(1, "day").format("YYYY-MM-DD");
+export const dayOffset = (days: number) =>
+  auckland.now().add(days, "day").format("YYYY-MM-DD");
 
 export const dress = (over: Record<string, unknown> = {}) => ({
   ...dressFixture,

@@ -518,7 +518,12 @@ export const blockoutDao = {
     ),
 };
 
+// Admin cut-off overrides. Empty by default, so the computed rule applies;
+// a test opts in with mockResolvedValue, or mockRejectedValue for an outage.
+export const getBookingCutoffs = vi.fn(async (_opts?: { fresh?: boolean }) => [] as unknown[]);
+
 export const sanityQuery = {
+  getBookingCutoffs,
   getDress: async (dressId: string) => db.dresses.get(dressId) ?? null,
   getCatalogue: async () => Array.from(db.dresses.values()),
   // Narrowed deliberately, mirroring the real projection: a caller that reads
@@ -558,6 +563,8 @@ export function resetDaoSpies() {
   getNextOrderNumber.mockClear();
   orderNumberSequence = 1000;
   sendEmail.mockClear();
+  getBookingCutoffs.mockReset();
+  getBookingCutoffs.mockImplementation(async () => []);
   resolveRuralDeliveryStatus.mockClear();
   resolveRuralDeliveryStatus.mockImplementation(
     async (_dpid?: string, fallback = false) => ({

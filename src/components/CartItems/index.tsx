@@ -4,7 +4,10 @@ import Image from "next/image";
 import { CartItemType } from "../../../common/types";
 import dayjs, { Dayjs } from "dayjs";
 import { auckland } from "../../../lib/utils/timezone";
-import { isBookingAllowedForDate } from "../../../lib/utils/deliveryRules";
+import {
+  isBookingAllowedForDate,
+  type CutoffOverride,
+} from "../../../lib/utils/deliveryRules";
 import { useRouter } from "next/router";
 import Button from "../Button";
 import { sizedImageUrl } from "../../../sanity/lib/image";
@@ -17,6 +20,9 @@ interface ICartType {
   // Passed down rather than read here, so the rows flagged below and the parent's
   // Checkout button are always judging against the same instant.
   now: Dayjs;
+  // Null while loading: no row is flagged until we know, and the parent holds
+  // the Checkout button meanwhile.
+  cutoffOverrides: CutoffOverride[] | null;
 }
 
 const CartItems = ({
@@ -25,6 +31,7 @@ const CartItems = ({
   selectedProducts,
   setSelectedProducts,
   now,
+  cutoffOverrides,
 }: ICartType) => {
   const router = useRouter();
 
@@ -86,7 +93,13 @@ const CartItems = ({
   // The cutoff subsumes the past-date check this used to do — every cutoff falls
   // at least a day before its event date — so one predicate covers both.
   const isTooLateToBook = (product: CartItemType) =>
-    !isBookingAllowedForDate(product.dateBooked, product.deliveryType, now);
+    cutoffOverrides !== null &&
+    !isBookingAllowedForDate(
+      product.dateBooked,
+      product.deliveryType,
+      cutoffOverrides,
+      now,
+    );
 
   return (
     <form className="mt-12">
